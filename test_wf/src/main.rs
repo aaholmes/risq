@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 // Global variables
-static NORB: u32 = 28;
+static NORB: u32 = 8;
 static NUP: u32 = 4;
 static NDN: u32 = 3;
 static EPS: f64 = 1e-6;
@@ -43,6 +43,12 @@ impl Det {
     }
 }
 
+fn fmt_det(d: u128) -> String {
+    let mut s = format!("{:#10b}", d);
+    s = str::replace(&s, "0", "_");
+    str::replace(&s, "_b", "")
+}
+
 impl Wf {
     fn print(&self) {
         println!(
@@ -50,7 +56,7 @@ impl Wf {
             self.n, self.energy
         );
         for (d, c) in self.dets.iter().zip(self.coeffs.iter()) {
-            println!("{} {} {}", format!("{:b}", d.up), format!("{:b}", d.dn), c);
+            println!("{} {}   {}", fmt_det(d.up), fmt_det(d.dn), c);
         }
     }
 
@@ -90,6 +96,6 @@ fn init_wf() -> Wf {
 fn main() {
     let mut wf = init_wf();
     wf.print();
-    wf.add_det(Det { up: 23, dn: 28 });
+    wf.add_det(Det { up: 23, dn: 25 });
     wf.print();
 }
