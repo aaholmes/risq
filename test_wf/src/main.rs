@@ -20,9 +20,8 @@ struct Epair(i32, i32);
 
 // Double excitation triplet (r, s, |H|)
 struct Doub {
-    r: i32,
-    s: i32,
-    h: f64,
+    target: Epair,
+    abs_h: f64,
 }
 
 // Max-heap of double excitation triplet (r, s, |H|)
