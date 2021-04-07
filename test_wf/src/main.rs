@@ -1,9 +1,14 @@
+extern crate lexical;
+
 use std::collections::HashMap;
+use std::fs::File;
+use std::io::{self, BufRead};
+use std::path::Path;
 
 // Global variables
-static NORB: u32 = 8;
-static NUP: u32 = 4;
-static NDN: u32 = 4;
+static NORB: i32 = 28;
+static NUP: i32 = 6;
+static NDN: i32 = 6;
 static EPS: f64 = 1e-6;
 
 // Determinant
@@ -32,9 +37,105 @@ struct Doub {
     abs_h: f64,
 }
 
+#[derive(Default)]
+struct Ints {
+    nuc: f64, // Nuclear-nuclear integral
+    one_body: Vec<f64>, // One-body integrals
+    two_body: Vec<f64>, // Two-body integrals
+}
+
 // Hamiltonian, containing both integrals and heat-bath hashmap of double excitations
+#[derive(Default)]
 struct Ham {
-    doubs: HashMap<OPair, Vec<Doub>>, // Each electron pair points to a sorted vector of double excitations
+    // Heat-bath double excitation generator:
+    // each electron pair points to a sorted vector of double excitations
+    doub_generator: HashMap<OPair, Vec<Doub>>,
+    // Integrals are a one-index vector; to get any integral, use Ham.get_int(p, q, r, s)
+    ints: Ints,
+}
+
+fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
+where P: AsRef<Path>, {
+    let file = File::open(filename)?;
+    Ok(io::BufReader::new(file).lines())
+}
+
+fn combine_2(p: i32, q: i32) -> usize {
+    // Combine 2 indices in a unique way
+    let i = p.abs();
+    let j = q.abs();
+    if i < j {
+        ((i * (i - 1)) / 2 + j) as usize
+    } else {
+        ((j * (j - 1)) / 2 + i) as usize
+    }
+}
+
+fn combine_2_usize(i: usize, j: usize) -> usize {
+    // Combine 2 indices in a unique way
+    if i < j {
+        (i * (i - 1)) / 2 + j
+    } else {
+        (j * (j - 1)) / 2 + i
+    }
+}
+
+fn combine_4(p: i32, q: i32, r: i32, s: i32) -> usize {
+    // Combine 4 indices in a unique way
+    combine_2_usize(combine_2(p, q), combine_2(r, s))   
+}
+
+impl Ham {
+    pub fn read_ints(&mut self, filename: &str) {
+        // Read integrals, put them into self.ints
+        self.ints.one_body = vec![0.0; combine_2(NORB, NORB) + 1];
+        self.ints.two_body = vec![0.0; combine_4(NORB, NORB, NORB, NORB) + 1];
+        if let Ok(lines) = read_lines(filename) {
+            // Consumes the iterator, returns an (Optional) String
+            for line in lines {
+                if let Ok(read_str) = line {
+                    let mut str_split = read_str.split_whitespace();
+                    let i: f64 = lexical::parse(str_split.next().unwrap()).unwrap();
+                    let p: i32 = lexical::parse(str_split.next().unwrap()).unwrap();
+                    let q: i32 = lexical::parse(str_split.next().unwrap()).unwrap();
+                    let r: i32 = lexical::parse(str_split.next().unwrap()).unwrap();
+                    let s: i32 = lexical::parse(str_split.next().unwrap()).unwrap();
+                    if p == 0 && q == 0 && r == 0 && s == 0 {
+                        self.ints.nuc = i;
+                    } else if r == 0 && s == 0 {
+                        self.ints.one_body[combine_2(p, q)] = i;
+                    } else {
+                        self.ints.two_body[combine_4(p, q, r, s)] = i;
+                    }
+                }
+            }
+        }
+    }
+
+    fn get_int(p: i32, q: i32, r: i32, s: i32) -> f64 {
+        // Get the integral corresponding to pqrs
+        // incorporates symmetries p-q, r-s, pq-rs
+        // Insensitive to whether indices are positive or negative (up or dn spin)
+        todo!()
+    }
+
+    pub fn ham_diag(det: &Det) -> f64 {
+        // Get the diagonal element corresponding to this determinant
+        // Should only be called once
+        todo!()
+    }
+
+    pub fn ham_sing(det1: &Det, det2: &Det) -> f64 {
+        // Get the single excitation matrix element corresponding to
+        // the excitation from det1 to det2
+        todo!()
+    }
+
+    pub fn ham_doub(det1: &Det, det2: &Det) -> f64 {
+        // Get the double excitation matrix element corresponding to
+        // the excitation from det1 to det2
+        todo!()
+    }
 }
 
 impl Det {
@@ -99,5 +200,12 @@ fn main() {
     wf.add_det(Det { up: 23, dn: 27 });
     wf.print();
 
-    println!("Reading input file")
+    println!("Reading input file");
+    let mut ham: Ham = Ham::default();
+    ham.read_ints("FCIDUMP");
+    println!("Nuc term: {}", ham.ints.nuc);
+    println!("1 1 term: {}", ham.ints.one_body[combine_2(1, 1)]);
+    println!("1 3 term: {}", ham.ints.one_body[combine_2(1, 3)]);
+    println!("1 2 3 4 term: {}", ham.ints.two_body[combine_4(1, 2, 3, 4)]);
+
 }
