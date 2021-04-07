@@ -1,5 +1,13 @@
 use std::collections::HashMap;
 
+// Global variables
+struct Global {
+    norb: u32,
+    nup: u32,
+    ndn: u32,
+    var_eps: f64,
+}
+
 // Determinant
 struct Det {
     up: u128,
@@ -24,7 +32,7 @@ struct Doub {
     abs_h: f64,
 }
 
-// Max-heap of double excitation triplet (r, s, |H|)
+// Hamiltonian, containing both integrals and heat-bath hashmap of double excitations
 struct Ham {
     doubs: HashMap<OPair, Vec<Doub>>, // Each electron pair points to a sorted vector of double excitations
 }
