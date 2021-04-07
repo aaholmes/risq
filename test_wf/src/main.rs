@@ -1,12 +1,10 @@
 use std::collections::HashMap;
 
 // Global variables
-struct Global {
-    norb: u32,
-    nup: u32,
-    ndn: u32,
-    var_eps: f64,
-}
+static NORB: u32 = 28;
+static NUP: u32 = 4;
+static NDN: u32 = 3;
+static EPS: f64 = 1e-6;
 
 // Determinant
 struct Det {
@@ -15,6 +13,7 @@ struct Det {
 }
 
 // Wavefunction
+#[derive(Default)]
 struct Wf {
     n: u64, // number of dets
     inds: HashMap<Det, u64>, // hashtable : det -> u64 for looking up index by det
@@ -37,6 +36,31 @@ struct Ham {
     doubs: HashMap<OPair, Vec<Doub>>, // Each electron pair points to a sorted vector of double excitations
 }
 
+impl Det {
+    fn print (&self) {
+        println!("{} {}",
+                format!("{:b}", self.up),
+                format!("{:b}", self.dn));
+    }
+}
+
+// Init wf to the HF det (only needs to be called once)
+fn init_wf() -> Wf {
+    let mut wf: Wf = Wf::default();
+    wf.n = 1;
+    let one: u128 = 1;
+    let hf = Det{up: ((one << NUP) - 1), dn: ((one << NDN) - 1)};
+    //TODO: Implement Eq, Hash so that we can use this hashmap
+    //wf.inds.insert(hf, 0);
+    wf.dets.push(hf);
+    wf.coeffs.push(1.0);
+    //TODO: compute diag elem (only time it ever needs to be calculated directly)
+    wf.diags.push(1.0);
+    wf
+}
+
 fn main() {
-    println!("Hello, world!");
+    let wf = init_wf();
+    println!("n = {}", wf.n);
+    wf.dets[0].print();
 }
