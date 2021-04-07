@@ -53,6 +53,19 @@ impl Wf {
             println!("{} {} {}", format!("{:b}", d.up), format!("{:b}", d.dn), c);
         }
     }
+
+    fn add_det(&mut self, d: Det) {
+        //TODO: implement hashmap
+        //if (d in self.inds) {
+        self.n += 1;
+        //TODO: implement hashmap
+        //wf.inds.insert(d, self.n);
+        self.dets.push(d);
+        self.coeffs.push(0.0);
+        //TODO: implement diag elems
+        self.diags.push(1.0);
+        //}
+    }
 }
 
 // Init wf to the HF det (only needs to be called once)
@@ -75,8 +88,8 @@ fn init_wf() -> Wf {
 }
 
 fn main() {
-    let wf = init_wf();
-    println!("n = {}", wf.n);
-    wf.dets[0].print();
+    let mut wf = init_wf();
+    wf.print();
+    wf.add_det(Det { up: 23, dn: 28 });
     wf.print();
 }
