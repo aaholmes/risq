@@ -15,18 +15,18 @@ struct Wf {
     diags: Vec<f64>, // diagonal elements of Hamiltonian (so new diagonal elements can be computed quickly)
 }
 
-// Electron pair
-struct Epair(i32, i32);
+// Orbital pair
+struct OPair(i32, i32);
 
 // Double excitation triplet (r, s, |H|)
 struct Doub {
-    target: Epair,
+    target: OPair,
     abs_h: f64,
 }
 
 // Max-heap of double excitation triplet (r, s, |H|)
 struct Ham {
-    doubs: HashMap<Epair, Vec<Doub>>, // Each electron pair points to a sorted vector of double excitations
+    doubs: HashMap<OPair, Vec<Doub>>, // Each electron pair points to a sorted vector of double excitations
 }
 
 fn main() {
