@@ -20,6 +20,7 @@ struct Wf {
     dets: Vec<Det>, // for looking up det by index
     coeffs: Vec<f64>,
     diags: Vec<f64>, // diagonal elements of Hamiltonian (so new diagonal elements can be computed quickly)
+    energy: f64, // variational energy
 }
 
 // Orbital pair
@@ -44,6 +45,18 @@ impl Det {
     }
 }
 
+impl Wf {
+    fn print(&self) {
+        println!("Wavefunction has {} dets with energy {}", self.n, self.energy);
+        for (d, c) in self.dets.iter().zip(self.coeffs.iter()) {
+            println!("{} {} {}",
+            format!("{:b}", d.up),
+            format!("{:b}", d.dn),
+            c);
+        }
+    }
+}
+
 // Init wf to the HF det (only needs to be called once)
 fn init_wf() -> Wf {
     let mut wf: Wf = Wf::default();
@@ -56,6 +69,7 @@ fn init_wf() -> Wf {
     wf.coeffs.push(1.0);
     //TODO: compute diag elem (only time it ever needs to be calculated directly)
     wf.diags.push(1.0);
+    wf.energy = wf.diags[0];
     wf
 }
 
@@ -63,4 +77,5 @@ fn main() {
     let wf = init_wf();
     println!("n = {}", wf.n);
     wf.dets[0].print();
+    wf.print();
 }
