@@ -3,7 +3,7 @@ use std::collections::HashMap;
 // Global variables
 static NORB: u32 = 8;
 static NUP: u32 = 4;
-static NDN: u32 = 3;
+static NDN: u32 = 4;
 static EPS: f64 = 1e-6;
 
 // Determinant
@@ -96,6 +96,8 @@ fn init_wf() -> Wf {
 fn main() {
     let mut wf = init_wf();
     wf.print();
-    wf.add_det(Det { up: 23, dn: 25 });
+    wf.add_det(Det { up: 23, dn: 27 });
     wf.print();
+
+    println!("Reading input file")
 }
