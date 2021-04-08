@@ -1,0 +1,10 @@
+[package]
+name = "esp"
+version = "0.1.0"
+authors = ["Adam Holmes <aaholmes@vt.edu>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+lexical = "^5.1"
