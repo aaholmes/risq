@@ -33,11 +33,10 @@ impl Iterator for BitsIntoIterator {
     type Item = i32;
 
     fn next(&mut self) -> Option<i32> {
-        // If bits_left = 0, return None
         if self.bits_left == 0 {
             return None;
-        }
-        let res: i32 = self.bits_left.trailing_zeros() as i32; // Because orbs start with 1
+        };
+        let res: i32 = self.bits_left.trailing_zeros() as i32;
         self.bits_left &= !(1 << res);
         Some(res)
     }
