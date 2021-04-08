@@ -1,29 +1,35 @@
-pub struct SpinDet{
+// Spin determinant
+// Syntax: for i in bits(det): loops over the set bits in det
+pub fn bits(det: u128) -> impl Iterator<Item = i32> {
+   Bits::new(det).into_iter()
+}
+
+struct Bits{
     det: u128
 }
 
-impl SpinDet {
-    fn new(d: u128) -> SpinDet {
-        SpinDet {det: d}
+impl Bits {
+    fn new(d: u128) -> Bits {
+        Bits {det: d}
     }
 }
 
-impl IntoIterator for SpinDet {
+impl IntoIterator for Bits {
     type Item = i32;
-    type IntoIter = SpinDetIntoIterator;
+    type IntoIter = BitsIntoIterator;
 
     fn into_iter(self) -> Self::IntoIter {
-        SpinDetIntoIterator {
+        BitsIntoIterator {
             bits_left: self.det,
         }
     }
 }
 
-pub struct SpinDetIntoIterator {
+struct BitsIntoIterator {
     bits_left: u128,
 }
 
-impl Iterator for SpinDetIntoIterator {
+impl Iterator for BitsIntoIterator {
     type Item = i32;
 
     fn next(&mut self) -> Option<i32> {
@@ -35,10 +41,4 @@ impl Iterator for SpinDetIntoIterator {
         self.bits_left &= !(1 << res);
         Some(res)
     }
-}
-
-// Spin determinant
-// Syntax: for i in bits(det): loops over the set bits in det
-pub fn bits(det: u128) -> impl Iterator<Item = i32> {
-   SpinDet::new(det).into_iter()
 }
