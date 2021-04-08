@@ -1,16 +1,16 @@
 // Spin determinant
 // Syntax: for i in bits(det): loops over the set bits in det
 pub fn bits(det: u128) -> impl Iterator<Item = i32> {
-   Bits::new(det).into_iter()
+    Bits::new(det).into_iter()
 }
 
-struct Bits{
-    det: u128
+struct Bits {
+    det: u128,
 }
 
 impl Bits {
     fn new(d: u128) -> Bits {
-        Bits {det: d}
+        Bits { det: d }
     }
 }
 

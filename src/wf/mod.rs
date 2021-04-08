@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use super::global::{NORB, NUP, NDN, EPS};
+use super::global::{EPS, NDN, NORB, NUP};
 
 // Determinant
 pub struct Det {

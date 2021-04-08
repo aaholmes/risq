@@ -4,11 +4,10 @@ mod ham;
 use ham::Ham;
 
 mod wf;
-use wf::{Det, init_wf};
+use wf::{init_wf, Det};
 
 mod utils;
 use utils::bits::bits;
-
 
 fn main() {
     println!("Testing init wf and add a det");

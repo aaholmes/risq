@@ -2,8 +2,8 @@ extern crate lexical;
 
 use std::collections::HashMap;
 
-use super::global::{NORB, NUP, NDN, EPS};
-use super::utils::ints::{read_lines, combine_2, combine_4};
+use super::global::{EPS, NDN, NORB, NUP};
+use super::utils::ints::{combine_2, combine_4, read_lines};
 use super::wf::Det;
 
 // Orbital pair
@@ -17,7 +17,7 @@ pub struct Doub {
 
 #[derive(Default)]
 pub struct Ints {
-    nuc: f64, // Nuclear-nuclear integral
+    nuc: f64,           // Nuclear-nuclear integral
     one_body: Vec<f64>, // One-body integrals
     two_body: Vec<f64>, // Two-body integrals
 }

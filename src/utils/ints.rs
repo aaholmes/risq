@@ -3,7 +3,9 @@ use std::io::{self, BufRead};
 use std::path::Path;
 
 pub fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
-where P: AsRef<Path>, {
+where
+    P: AsRef<Path>,
+{
     let file = File::open(filename)?;
     Ok(io::BufReader::new(file).lines())
 }
@@ -30,5 +32,5 @@ fn combine_2_usize(i: usize, j: usize) -> usize {
 
 pub fn combine_4(p: i32, q: i32, r: i32, s: i32) -> usize {
     // Combine 4 indices in a unique way
-    combine_2_usize(combine_2(p, q), combine_2(r, s))   
+    combine_2_usize(combine_2(p, q), combine_2(r, s))
 }
