@@ -24,4 +24,7 @@ fn main() {
     for i in bits(27) {
         println!("{}", i);
     }
+    let d = Det { up: 63, dn: 63 };
+    let hf = ham.ham_diag(&d);
+    println!("Energy of det {} {} is {}", d.up, d.dn, hf);
 }

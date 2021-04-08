@@ -3,7 +3,8 @@ extern crate lexical;
 use std::collections::HashMap;
 
 use super::global::{EPS, NDN, NORB, NUP};
-use super::utils::ints::{combine_2, combine_4, read_lines};
+use super::utils::bits::{bits, det_bits};
+use super::utils::ints::{combine_2, combine_4, permute, permute_2, read_lines};
 use super::wf::Det;
 
 // Orbital pair
@@ -35,8 +36,9 @@ pub struct Ham {
 impl Ham {
     pub fn read_ints(&mut self, filename: &str) {
         // Read integrals, put them into self.ints
-        self.ints.one_body = vec![0.0; combine_2(NORB, NORB) + 1];
-        self.ints.two_body = vec![0.0; combine_4(NORB, NORB, NORB, NORB) + 1];
+        // Ints are stored starting with index 1 (following the FCIDUMP file they're read from)
+        self.ints.one_body = vec![0.0; combine_2(NORB + 1, NORB + 1)];
+        self.ints.two_body = vec![0.0; combine_4(NORB + 1, NORB + 1, NORB + 1, NORB + 1)];
         if let Ok(lines) = read_lines(filename) {
             // Consumes the iterator, returns an (Optional) String
             for line in lines {
@@ -72,10 +74,39 @@ impl Ham {
         }
     }
 
-    pub fn ham_diag(det: &Det) -> f64 {
+    pub fn ham_diag(self, det: &Det) -> f64 {
         // Get the diagonal element corresponding to this determinant
         // Should only be called once
-        todo!()
+        println!("Warning: Computing diagonal element (should only happen once!)");
+
+        // nuclear-nuclear component
+        let mut diag: f64 = self.ints.nuc;
+        //println!("nuclear energy= {}", diag);
+
+        // one-body component
+        for i in det_bits(det) {
+            //println!("Updating one-body part for orbital {}", i);
+            diag += self.get_int(i + 1, i + 1, 0, 0);
+        }
+
+        // two-body component
+        for i in bits(det.up) {
+            for j in bits(det.up) {
+                diag += self.get_int(i + 1, i + 1, j + 1, j + 1) - self.get_int(i + 1, j + 1, j + 1, i + 1);
+            }
+            for j in bits(det.dn) {
+                diag += self.get_int(i + 1, i + 1, j + 1, j + 1);
+            }
+        }
+        for i in bits(det.dn) {
+            for j in bits(det.dn) {
+                diag += self.get_int(i + 1, i + 1, j + 1, j + 1) - self.get_int(i + 1, j + 1, j + 1, i + 1);
+            }
+            for j in bits(det.up) {
+                diag += self.get_int(i + 1, i + 1, j + 1, j + 1);
+            }
+        }
+        diag
     }
 
     pub fn ham_sing(det1: &Det, det2: &Det) -> f64 {
@@ -84,18 +115,58 @@ impl Ham {
         todo!()
     }
 
-    pub fn ham_doub(det1: &Det, det2: &Det) -> f64 {
+    pub fn ham_doub(&self, det1: &Det, det2: &Det) -> f64 {
         // Get the double excitation matrix element corresponding to
         // the excitation from det1 to det2
         if det1.dn == det2.dn {
             // Same spin, up
-            todo!()
+            let mut ind: [i32; 4] = [0; 4];
+            let mut n = 0;
+            for i in bits(det1.up & !det2.up) {
+                ind[n] = i;
+                n += 1;
+            }
+            for i in bits(det2.up & !det1.up) {
+                ind[n] = i;
+                n += 1;
+            }
+            (permute_2(det1.up, ind) as f64) * (self.get_int(ind[0], ind[1], ind[2], ind[3]) - self.get_int(ind[0], ind[3], ind[2], ind[1]))
         } else if det1.up == det2.up {
             // Same spin, dn
-            todo!()
+            let mut ind: [i32; 4] = [0; 4];
+            let mut n = 0;
+            for i in bits(det1.dn & !det2.dn) {
+                ind[n] = i;
+                n += 1;
+            }
+            for i in bits(det2.dn & !det1.dn) {
+                ind[n] = i;
+                n += 1;
+            }
+            (permute_2(det1.dn, ind) as f64) * (self.get_int(ind[0], ind[1], ind[2], ind[3]) - self.get_int(ind[0], ind[3], ind[2], ind[1]))
         } else {
             // Opposite spin
-            todo!()
+            let mut ind1: [i32; 2] = [0; 2];
+            let mut n = 0;
+            for i in bits(det1.up & !det2.up) {
+                ind1[n] = i;
+                n += 1;
+            }
+            for i in bits(det2.up & !det1.up) {
+                ind1[n] = i;
+                n += 1;
+            }
+            let mut ind2: [i32; 2] = [0; 2];
+            let mut n = 0;
+            for i in bits(det1.dn & !det2.dn) {
+                ind2[n] = i;
+                n += 1;
+            }
+            for i in bits(det2.dn & !det1.dn) {
+                ind2[n] = i;
+                n += 1;
+            }
+            ((permute(det1.up, ind1) * permute(det1.dn, ind2)) as f64) * self.get_int(ind1[0], ind2[0], ind1[1], ind2[1])
         }
     }
 }
