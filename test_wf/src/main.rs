@@ -11,6 +11,51 @@ static NUP: i32 = 6;
 static NDN: i32 = 6;
 static EPS: f64 = 1e-6;
 
+pub struct SpinDet{
+    det: u128
+}
+
+impl SpinDet {
+    fn new(d: u128) -> SpinDet {
+        SpinDet {det: d}
+    }
+}
+
+impl IntoIterator for SpinDet {
+    type Item = i32;
+    type IntoIter = SpinDetIntoIterator;
+
+    fn into_iter(self) -> Self::IntoIter {
+        SpinDetIntoIterator {
+            bits_left: self.det,
+        }
+    }
+}
+
+pub struct SpinDetIntoIterator {
+    bits_left: u128,
+}
+
+impl Iterator for SpinDetIntoIterator {
+    type Item = i32;
+
+    fn next(&mut self) -> Option<i32> {
+        // If bits_left = 0, return None
+        if self.bits_left == 0 {
+            return None;
+        }
+        let res: i32 = self.bits_left.trailing_zeros() as i32; // Because orbs start with 1
+        self.bits_left &= !(1 << res);
+        Some(res)
+    }
+}
+
+// Spin determinant
+// Syntax: for i in bits(det): loops over the set bits in det
+pub fn bits(det: u128) -> impl Iterator<Item = i32> {
+   SpinDet::new(det).into_iter()
+}
+
 // Determinant
 struct Det {
     up: u128,
@@ -112,11 +157,17 @@ impl Ham {
         }
     }
 
-    fn get_int(p: i32, q: i32, r: i32, s: i32) -> f64 {
+    fn get_int(&self, p: i32, q: i32, r: i32, s: i32) -> f64 {
         // Get the integral corresponding to pqrs
         // incorporates symmetries p-q, r-s, pq-rs
         // Insensitive to whether indices are positive or negative (up or dn spin)
-        todo!()
+        if p == 0 && q == 0 && r == 0 && s == 0 {
+            self.ints.nuc
+        } else if r == 0 && s == 0 {
+            self.ints.one_body[combine_2(p, q)]
+        } else {
+            self.ints.two_body[combine_4(p, q, r, s)]
+        }
     }
 
     pub fn ham_diag(det: &Det) -> f64 {
@@ -134,7 +185,16 @@ impl Ham {
     pub fn ham_doub(det1: &Det, det2: &Det) -> f64 {
         // Get the double excitation matrix element corresponding to
         // the excitation from det1 to det2
-        todo!()
+        if det1.dn == det2.dn {
+            // Same spin, up
+            todo!()
+        } else if det1.up == det2.up {
+            // Same spin, dn
+            todo!()
+        } else {
+            // Opposite spin
+            todo!()
+        }
     }
 }
 
@@ -195,6 +255,7 @@ fn init_wf() -> Wf {
 }
 
 fn main() {
+    println!("Testing init wf and add a det");
     let mut wf = init_wf();
     wf.print();
     wf.add_det(Det { up: 23, dn: 27 });
@@ -207,5 +268,8 @@ fn main() {
     println!("1 1 term: {}", ham.ints.one_body[combine_2(1, 1)]);
     println!("1 3 term: {}", ham.ints.one_body[combine_2(1, 3)]);
     println!("1 2 3 4 term: {}", ham.ints.two_body[combine_4(1, 2, 3, 4)]);
-
+    println!("{} {} {}", ham.get_int(0, 0, 0, 0), ham.get_int(1, -1, 0, 0), ham.get_int(-4, 3, 2, 1));
+    for i in bits(27) {
+        println!("{}", i);
+    }
 }
