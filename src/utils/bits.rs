@@ -74,7 +74,16 @@ mod tests {
 
     #[test]
     fn test_parity() {
-        for i in vec![14, 15, 27, 1919, 4958202, 15<<64, 1<<127, (1<<126) + (1<<65)] {
+        for i in vec![
+            14,
+            15,
+            27,
+            1919,
+            4958202,
+            15 << 64,
+            1 << 127,
+            (1 << 126) + (1 << 65),
+        ] {
             println!("Parity({}) = {} = {}", i, parity(i), parity_brute_force(i));
             assert_eq!(parity(i), parity_brute_force(i));
         }

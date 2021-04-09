@@ -97,7 +97,8 @@ impl Ham {
         // two-body component
         for i in bits(det.up) {
             for j in bits(det.up) {
-                diag += self.get_int(i + 1, i + 1, j + 1, j + 1) - self.get_int(i + 1, j + 1, j + 1, i + 1);
+                diag += self.get_int(i + 1, i + 1, j + 1, j + 1)
+                    - self.get_int(i + 1, j + 1, j + 1, i + 1);
             }
             for j in bits(det.dn) {
                 diag += self.get_int(i + 1, i + 1, j + 1, j + 1);
@@ -105,7 +106,8 @@ impl Ham {
         }
         for i in bits(det.dn) {
             for j in bits(det.dn) {
-                diag += self.get_int(i + 1, i + 1, j + 1, j + 1) - self.get_int(i + 1, j + 1, j + 1, i + 1);
+                diag += self.get_int(i + 1, i + 1, j + 1, j + 1)
+                    - self.get_int(i + 1, j + 1, j + 1, i + 1);
             }
             for j in bits(det.up) {
                 diag += self.get_int(i + 1, i + 1, j + 1, j + 1);
@@ -125,7 +127,8 @@ impl Ham {
             out = (permute(det1.up, [i, j]) as f64) * self.get_int(i + 1, j + 1, 0, 0);
             // Two-body term
             for k in bits(det1.up) {
-                out += self.get_int(i + 1, j + 1, k + 1, k + 1) - self.get_int(i + 1, k + 1, k + 1, j + 1);
+                out += self.get_int(i + 1, j + 1, k + 1, k + 1)
+                    - self.get_int(i + 1, k + 1, k + 1, j + 1);
             }
             out *= permute(det1.up, [i, j]) as f64;
         } else {
@@ -135,7 +138,8 @@ impl Ham {
             out = (permute(det1.dn, [i, j]) as f64) * self.get_int(i + 1, j + 1, 0, 0);
             // Two-body term
             for k in bits(det1.dn) {
-                out += self.get_int(i + 1, j + 1, k + 1, k + 1) - self.get_int(i + 1, k + 1, k + 1, j + 1);
+                out += self.get_int(i + 1, j + 1, k + 1, k + 1)
+                    - self.get_int(i + 1, k + 1, k + 1, j + 1);
             }
             out *= permute(det1.dn, [i, j]) as f64;
         }
@@ -157,7 +161,9 @@ impl Ham {
                 ind[n] = i;
                 n += 1;
             }
-            (permute_2(det1.up, ind) as f64) * (self.get_int(ind[0], ind[1], ind[2], ind[3]) - self.get_int(ind[0], ind[3], ind[2], ind[1]))
+            (permute_2(det1.up, ind) as f64)
+                * (self.get_int(ind[0], ind[1], ind[2], ind[3])
+                    - self.get_int(ind[0], ind[3], ind[2], ind[1]))
         } else if det1.up == det2.up {
             // Same spin, dn
             let mut ind: [i32; 4] = [0; 4];
@@ -170,7 +176,9 @@ impl Ham {
                 ind[n] = i;
                 n += 1;
             }
-            (permute_2(det1.dn, ind) as f64) * (self.get_int(ind[0], ind[1], ind[2], ind[3]) - self.get_int(ind[0], ind[3], ind[2], ind[1]))
+            (permute_2(det1.dn, ind) as f64)
+                * (self.get_int(ind[0], ind[1], ind[2], ind[3])
+                    - self.get_int(ind[0], ind[3], ind[2], ind[1]))
         } else {
             // Opposite spin
             let mut ind1: [i32; 2] = [0; 2];
@@ -193,7 +201,8 @@ impl Ham {
                 ind2[n] = i;
                 n += 1;
             }
-            ((permute(det1.up, ind1) * permute(det1.dn, ind2)) as f64) * self.get_int(ind1[0], ind2[0], ind1[1], ind2[1])
+            ((permute(det1.up, ind1) * permute(det1.dn, ind2)) as f64)
+                * self.get_int(ind1[0], ind2[0], ind1[1], ind2[1])
         }
     }
 }

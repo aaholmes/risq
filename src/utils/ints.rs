@@ -45,6 +45,7 @@ pub fn permute(det: u128, v: [i32; 2]) -> i32 {
 
 pub fn permute_2(det: u128, v: [i32; 4]) -> i32 {
     // Expect Vec to be a 4-index vector
-    let diff: u128 = det & (((1 << v[0]) - 1) ^ ((1 << v[1]) - 1) ^ ((1 << v[2]) - 1) ^ ((1 << v[3]) - 1));
+    let diff: u128 =
+        det & (((1 << v[0]) - 1) ^ ((1 << v[1]) - 1) ^ ((1 << v[2]) - 1) ^ ((1 << v[3]) - 1));
     parity(diff)
 }
