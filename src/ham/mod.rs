@@ -32,6 +32,7 @@ pub struct Ham {
     doub_generator: HashMap<OPair, Vec<Doub>>,
     // Integrals are a one-index vector; to get any integral, use Ham.get_int(p, q, r, s)
     ints: Ints,
+    //int_order: Vec<i32>, // Indices of orbitals in one_body and two_body
 }
 
 impl Ham {
@@ -64,7 +65,16 @@ impl Ham {
                 }
             }
         }
+        //self.sort_ints();
     }
+
+//    fn sort_ints(self) -> () {
+//        // Sort the integrals in increasing order by orbital energy
+//        let self.int_order = vec![0];
+//        for i in 0..NORB {
+//            self.int_order.push(i);
+//        }
+//    }
 
     fn get_int(&self, p: i32, q: i32, r: i32, s: i32) -> f64 {
         // Get the integral corresponding to pqrs
@@ -74,8 +84,10 @@ impl Ham {
             self.ints.nuc
         } else if r == 0 && s == 0 {
             self.ints.one_body[combine_2(p, q)]
+            //self.ints.one_body[combine_2(self.int_order[p as usize], self.int_order[q as usize])]
         } else {
             self.ints.two_body[combine_4(p, q, r, s)]
+            //self.ints.two_body[combine_4(self.int_order[p as usize], self.int_order[q as usize], self.int_order[r as usize], self.int_order[s as usize])]
         }
     }
 
@@ -86,19 +98,19 @@ impl Ham {
 
         // nuclear-nuclear component
         let mut diag: f64 = self.ints.nuc;
-        //println!("nuclear energy= {}", diag);
 
         // one-body component
         for i in det_bits(det) {
-            //println!("Updating one-body part for orbital {}", i);
             diag += self.get_int(i + 1, i + 1, 0, 0);
         }
 
         // two-body component
         for i in bits(det.up) {
             for j in bits(det.up) {
-                diag += self.get_int(i + 1, i + 1, j + 1, j + 1)
-                    - self.get_int(i + 1, j + 1, j + 1, i + 1);
+                if i < j {
+                    diag += self.get_int(i + 1, i + 1, j + 1, j + 1)
+                        - self.get_int(i + 1, j + 1, j + 1, i + 1);
+                }
             }
             for j in bits(det.dn) {
                 diag += self.get_int(i + 1, i + 1, j + 1, j + 1);
@@ -106,11 +118,10 @@ impl Ham {
         }
         for i in bits(det.dn) {
             for j in bits(det.dn) {
-                diag += self.get_int(i + 1, i + 1, j + 1, j + 1)
-                    - self.get_int(i + 1, j + 1, j + 1, i + 1);
-            }
-            for j in bits(det.up) {
-                diag += self.get_int(i + 1, i + 1, j + 1, j + 1);
+                if i < j {
+                    diag += self.get_int(i + 1, i + 1, j + 1, j + 1)
+                        - self.get_int(i + 1, j + 1, j + 1, i + 1);
+                }
             }
         }
         diag
