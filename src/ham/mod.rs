@@ -1,4 +1,5 @@
 extern crate lexical;
+use lexical::parse;
 
 use std::collections::HashMap;
 
@@ -44,11 +45,15 @@ impl Ham {
             for line in lines {
                 if let Ok(read_str) = line {
                     let mut str_split = read_str.split_whitespace();
-                    let i: f64 = lexical::parse(str_split.next().unwrap()).unwrap();
-                    let p: i32 = lexical::parse(str_split.next().unwrap()).unwrap();
-                    let q: i32 = lexical::parse(str_split.next().unwrap()).unwrap();
-                    let r: i32 = lexical::parse(str_split.next().unwrap()).unwrap();
-                    let s: i32 = lexical::parse(str_split.next().unwrap()).unwrap();
+                    let mut i: f64 = 0.0;
+                    match parse(str_split.next().unwrap()) {
+                        Ok(v) => i = v,
+                        Err(_) => continue, // Skip header lines that don't begin with a float
+                    }
+                    let p: i32 = parse(str_split.next().unwrap()).unwrap();
+                    let q: i32 = parse(str_split.next().unwrap()).unwrap();
+                    let r: i32 = parse(str_split.next().unwrap()).unwrap();
+                    let s: i32 = parse(str_split.next().unwrap()).unwrap();
                     if p == 0 && q == 0 && r == 0 && s == 0 {
                         self.ints.nuc = i;
                     } else if r == 0 && s == 0 {
