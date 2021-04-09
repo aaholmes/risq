@@ -24,8 +24,9 @@ impl ExciteGenerator {
         todo!()
     }
 
-    pub fn double_excite(&self, det: Det) {
+    pub fn double_excite(&self, det: Det, eps: f64) {
         // Generate all double excitations from the given determinant
+        // larger in magnitude than eps
         todo!()
     }
 }
