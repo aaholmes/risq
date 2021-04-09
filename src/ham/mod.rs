@@ -109,10 +109,32 @@ impl Ham {
         diag
     }
 
-    pub fn ham_sing(det1: &Det, det2: &Det) -> f64 {
+    pub fn ham_sing(self, det1: &Det, det2: &Det) -> f64 {
         // Get the single excitation matrix element corresponding to
         // the excitation from det1 to det2
-        todo!()
+        let mut out: f64;
+        if det1.dn == det2.dn {
+            let i: i32 = (det1.up & !det2.up).trailing_zeros() as i32;
+            let j: i32 = (det2.up & !det1.up).trailing_zeros() as i32;
+            // One-body term
+            out = (permute(det1.up, [i, j]) as f64) * self.get_int(i + 1, j + 1, 0, 0);
+            // Two-body term
+            for k in bits(det1.up) {
+                out += self.get_int(i + 1, j + 1, k + 1, k + 1) - self.get_int(i + 1, k + 1, k + 1, j + 1);
+            }
+            out *= permute(det1.up, [i, j]) as f64;
+        } else {
+            let i: i32 = (det1.dn & !det2.dn).trailing_zeros() as i32;
+            let j: i32 = (det2.dn & !det1.dn).trailing_zeros() as i32;
+            // One-body term
+            out = (permute(det1.dn, [i, j]) as f64) * self.get_int(i + 1, j + 1, 0, 0);
+            // Two-body term
+            for k in bits(det1.dn) {
+                out += self.get_int(i + 1, j + 1, k + 1, k + 1) - self.get_int(i + 1, k + 1, k + 1, j + 1);
+            }
+            out *= permute(det1.dn, [i, j]) as f64;
+        }
+        out
     }
 
     pub fn ham_doub(&self, det1: &Det, det2: &Det) -> f64 {
