@@ -1,21 +1,10 @@
 extern crate lexical;
 use lexical::parse;
 
-use std::collections::HashMap;
-
-use super::global::{EPS, NDN, NORB, NUP};
 use super::utils::bits::{bits, det_bits};
 use super::utils::ints::{combine_2, combine_4, permute, permute_2, read_lines};
+use super::utils::read_input::Global;
 use super::wf::Det;
-
-// Orbital pair
-pub struct OPair(i32, i32);
-
-// Double excitation triplet (r, s, |H|)
-pub struct Doub {
-    target: OPair,
-    abs_h: f64,
-}
 
 #[derive(Default)]
 pub struct Ints {
@@ -27,20 +16,17 @@ pub struct Ints {
 // Hamiltonian, containing both integrals and heat-bath hashmap of double excitations
 #[derive(Default)]
 pub struct Ham {
-    // Heat-bath double excitation generator:
-    // each electron pair points to a sorted vector of double excitations
-    doub_generator: HashMap<OPair, Vec<Doub>>,
     // Integrals are a one-index vector; to get any integral, use Ham.get_int(p, q, r, s)
     ints: Ints,
     //int_order: Vec<i32>, // Indices of orbitals in one_body and two_body
 }
 
 impl Ham {
-    pub fn read_ints(&mut self, filename: &str) {
+    pub fn read_ints(&mut self, global: &Global, filename: &str) {
         // Read integrals, put them into self.ints
         // Ints are stored starting with index 1 (following the FCIDUMP file they're read from)
-        self.ints.one_body = vec![0.0; combine_2(NORB + 1, NORB + 1)];
-        self.ints.two_body = vec![0.0; combine_4(NORB + 1, NORB + 1, NORB + 1, NORB + 1)];
+        self.ints.one_body = vec![0.0; combine_2(global.norb + 1, global.norb + 1)];
+        self.ints.two_body = vec![0.0; combine_4(global.norb + 1, global.norb + 1, global.norb + 1, global.norb + 1)];
         if let Ok(lines) = read_lines(filename) {
             // Consumes the iterator, returns an (Optional) String
             for line in lines {
@@ -71,7 +57,7 @@ impl Ham {
 //    fn sort_ints(self) -> () {
 //        // Sort the integrals in increasing order by orbital energy
 //        let self.int_order = vec![0];
-//        for i in 0..NORB {
+//        for i in 0..global.norb {
 //            self.int_order.push(i);
 //        }
 //    }

@@ -16,7 +16,7 @@ pub fn combine_2(p: i32, q: i32) -> usize {
     // Combine 2 indices in a unique way
     let i = p.abs();
     let j = q.abs();
-    if i < j {
+    if i > j {
         ((i * (i - 1)) / 2 + j) as usize
     } else {
         ((j * (j - 1)) / 2 + i) as usize
@@ -25,7 +25,7 @@ pub fn combine_2(p: i32, q: i32) -> usize {
 
 fn combine_2_usize(i: usize, j: usize) -> usize {
     // Combine 2 indices in a unique way
-    if i < j {
+    if i > j {
         (i * (i - 1)) / 2 + j
     } else {
         (j * (j - 1)) / 2 + i

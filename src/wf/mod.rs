@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use super::global::{EPS, NDN, NORB, NUP};
+use super::utils::read_input::Global;
 
 // Determinant
 pub struct Det {
@@ -57,13 +57,13 @@ impl Wf {
 }
 
 // Init wf to the HF det (only needs to be called once)
-pub fn init_wf() -> Wf {
+pub fn init_wf(global: &Global) -> Wf {
     let mut wf: Wf = Wf::default();
     wf.n = 1;
     let one: u128 = 1;
     let hf = Det {
-        up: ((one << NUP) - 1),
-        dn: ((one << NDN) - 1),
+        up: ((one << global.nup) - 1),
+        dn: ((one << global.ndn) - 1),
     };
     //TODO: Implement Eq, Hash so that we can use this hashmap
     //wf.inds.insert(hf, 0);
