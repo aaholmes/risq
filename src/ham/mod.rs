@@ -77,7 +77,7 @@ impl Ham {
         }
     }
 
-    pub fn ham_diag(self, det: &Det) -> f64 {
+    pub fn ham_diag(&self, det: &Det) -> f64 {
         // Get the diagonal element corresponding to this determinant
         // Should only be called once
         println!("Warning: Computing diagonal element (should only happen once!)");

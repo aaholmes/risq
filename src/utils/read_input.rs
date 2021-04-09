@@ -14,6 +14,7 @@ pub struct Global {
     pub nup: i32,
     pub ndn: i32,
     pub eps: f64,
+    pub n_states: i32,
 }
 
 pub fn read_input<P: AsRef<Path>>(path: P) -> Result<Global> {
