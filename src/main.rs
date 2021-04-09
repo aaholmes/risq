@@ -3,6 +3,8 @@ mod global;
 mod ham;
 use ham::Ham;
 
+mod excite;
+
 mod wf;
 use wf::{init_wf, Det};
 
