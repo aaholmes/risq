@@ -7,12 +7,11 @@ use ham::Ham;
 mod excite;
 
 mod wf;
-use wf::{init_wf, Det};
+use wf::init_wf;
 
-//mod var;
+mod var;
 
 mod utils;
-use utils::bits::bits;
 use utils::read_input::{Global, read_input};
 
 fn main() {
