@@ -1,16 +1,15 @@
 src/
 ├── excite
 │   └── mod.rs
-├── global
-│   └── mod.rs
 ├── ham
 │   └── mod.rs
 ├── main.rs
 ├── utils
 │   ├── bits.rs
 │   ├── ints.rs
-│   └── mod.rs
+│   ├── mod.rs
+│   └── read_input.rs
 └── wf
     └── mod.rs
 
-5 directories, 8 files
+4 directories, 8 files
