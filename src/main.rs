@@ -11,6 +11,7 @@ mod wf;
 use wf::init_wf;
 
 mod var;
+use var::variational;
 
 mod utils;
 use utils::read_input::{Global, read_input};
@@ -35,5 +36,8 @@ fn main() {
     println!("Initializing wavefunction");
     let mut wf = init_wf(&global, &ham);
     wf.print();
+
+    println!("Computing variational wavefunction and energy");
+    variational(&global, &ham, &wf);
 
 }

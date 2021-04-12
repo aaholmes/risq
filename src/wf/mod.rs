@@ -12,12 +12,13 @@ pub struct Det {
 // Wavefunction
 #[derive(Default)]
 pub struct Wf {
-    n: u64,                  // number of dets
+    pub n: u64,                  // number of dets
+    pub energy: f64,     // variational energy
     inds: HashMap<Det, u64>, // hashtable : det -> u64 for looking up index by det
     dets: Vec<Det>,          // for looking up det by index
     coeffs: Vec<f64>,        // coefficients
     diags: Vec<f64>, // diagonal elements of Hamiltonian (so new diagonal elements can be computed quickly)
-    energy: f64,     // variational energy
+    pub eps_iter: Iterator<f64>, 
 }
 
 impl Det {
@@ -51,7 +52,7 @@ impl Wf {
         //wf.inds.insert(d, self.n);
         self.dets.push(d);
         self.coeffs.push(0.0);
-        //TODO: implement diag elems
+        //TODO: implement diag elem delta
         self.diags.push(1.0);
         //}
     }
@@ -73,5 +74,6 @@ pub fn init_wf(global: &Global, ham: &Ham) -> Wf {
     wf.coeffs.push(1.0);
     wf.diags.push(h);
     wf.energy = wf.diags[0];
+    //TODO: initialize eps iterator, which starts from largest doubles, and halves each time it's called until it reaches global.eps
     wf
 }
