@@ -2,9 +2,10 @@
 extern crate lazy_static;
 
 mod ham;
-use ham::Ham;
+use ham::{Ham, read_ints};
 
 mod excite;
+use excite::{ExciteGenerator, init_excite_generator};
 
 mod wf;
 use wf::init_wf;
@@ -22,10 +23,16 @@ fn main() {
     }
 
     println!("Reading integrals");
-    let mut ham: Ham = Ham::default();
-    ham.read_ints(&global, "FCIDUMP");
+    lazy_static! {
+        static ref ham: Ham = read_ints(&global, "FCIDUMP");
+    }
 
-    println!("Initializing wavfefuntion");
+    println!("Initializing excitation generator");
+    lazy_static! {
+        static ref excite_gen: ExciteGenerator = init_excite_generator(&global, &ham);
+    }
+
+    println!("Initializing wavefunction");
     let mut wf = init_wf(&global, &ham);
     wf.print();
 

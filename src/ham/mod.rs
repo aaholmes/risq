@@ -16,53 +16,46 @@ pub struct Ints {
 // Hamiltonian, containing both integrals and heat-bath hashmap of double excitations
 #[derive(Default)]
 pub struct Ham {
-    // Integrals are a one-index vector; to get any integral, use Ham.get_int(p, q, r, s)
+    // To get any integral, use Ham.get_int(p, q, r, s)
     ints: Ints,
-    //int_order: Vec<i32>, // Indices of orbitals in one_body and two_body
 }
 
-impl Ham {
-    pub fn read_ints(&mut self, global: &Global, filename: &str) {
-        // Read integrals, put them into self.ints
-        // Ints are stored starting with index 1 (following the FCIDUMP file they're read from)
-        self.ints.one_body = vec![0.0; combine_2(global.norb + 1, global.norb + 1)];
-        self.ints.two_body = vec![0.0; combine_4(global.norb + 1, global.norb + 1, global.norb + 1, global.norb + 1)];
-        if let Ok(lines) = read_lines(filename) {
-            // Consumes the iterator, returns an (Optional) String
-            for line in lines {
-                if let Ok(read_str) = line {
-                    let mut str_split = read_str.split_whitespace();
-                    let mut i: f64 = 0.0;
-                    match parse(str_split.next().unwrap()) {
-                        Ok(v) => i = v,
-                        Err(_) => continue, // Skip header lines that don't begin with a float
-                    }
-                    let p: i32 = parse(str_split.next().unwrap()).unwrap();
-                    let q: i32 = parse(str_split.next().unwrap()).unwrap();
-                    let r: i32 = parse(str_split.next().unwrap()).unwrap();
-                    let s: i32 = parse(str_split.next().unwrap()).unwrap();
-                    if p == 0 && q == 0 && r == 0 && s == 0 {
-                        self.ints.nuc = i;
-                    } else if r == 0 && s == 0 {
-                        self.ints.one_body[combine_2(p, q)] = i;
-                    } else {
-                        self.ints.two_body[combine_4(p, q, r, s)] = i;
-                    }
+pub fn read_ints(global: &Global, filename: &str) -> Ham {
+    // Read integrals, put them into self.ints
+    // Ints are stored starting with index 1 (following the FCIDUMP file they're read from)
+    let mut ham: Ham = Ham::default();
+    ham.ints.one_body = vec![0.0; combine_2(global.norb + 1, global.norb + 1)];
+    ham.ints.two_body = vec![0.0; combine_4(global.norb + 1, global.norb + 1, global.norb + 1, global.norb + 1)];
+    if let Ok(lines) = read_lines(filename) {
+        // Consumes the iterator, returns an (Optional) String
+        for line in lines {
+            if let Ok(read_str) = line {
+                let mut str_split = read_str.split_whitespace();
+                let mut i: f64 = 0.0;
+                match parse(str_split.next().unwrap()) {
+                    Ok(v) => i = v,
+                    Err(_) => continue, // Skip header lines that don't begin with a float
+                }
+                let p: i32 = parse(str_split.next().unwrap()).unwrap();
+                let q: i32 = parse(str_split.next().unwrap()).unwrap();
+                let r: i32 = parse(str_split.next().unwrap()).unwrap();
+                let s: i32 = parse(str_split.next().unwrap()).unwrap();
+                if p == 0 && q == 0 && r == 0 && s == 0 {
+                    ham.ints.nuc = i;
+                } else if r == 0 && s == 0 {
+                    ham.ints.one_body[combine_2(p, q)] = i;
+                } else {
+                    ham.ints.two_body[combine_4(p, q, r, s)] = i;
                 }
             }
         }
-        //self.sort_ints();
     }
+    ham
+}
 
-//    fn sort_ints(self) -> () {
-//        // Sort the integrals in increasing order by orbital energy
-//        let self.int_order = vec![0];
-//        for i in 0..global.norb {
-//            self.int_order.push(i);
-//        }
-//    }
+impl Ham {
 
-    fn get_int(&self, p: i32, q: i32, r: i32, s: i32) -> f64 {
+    pub fn get_int(&self, p: i32, q: i32, r: i32, s: i32) -> f64 {
         // Get the integral corresponding to pqrs
         // incorporates symmetries p-q, r-s, pq-rs
         // Insensitive to whether indices are positive or negative (up or dn spin)
@@ -202,4 +195,5 @@ impl Ham {
                 * self.get_int(ind1[0], ind2[0], ind1[1], ind2[1])
         }
     }
+
 }
