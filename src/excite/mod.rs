@@ -8,6 +8,8 @@ use super::utils::read_input::Global;
 
 use super::ham::Ham;
 
+use super::wf::Det;
+
 // Orbital pair
 pub struct OPair(i32, i32);
 
@@ -22,11 +24,12 @@ pub struct Doub {
 pub struct ExciteGenerator {
     same_spin_doub_generator: HashMap<usize, Vec<Doub>>,
     opp_spin_doub_generator: HashMap<OPair, Vec<Doub>>,
+    // TODO: Add singles generator
 }
 
 pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
     // Initialize by sorting double excitation element for all pairs
-    let mut excite_gen: ExciteGenerator;
+    let mut excite_gen: ExciteGenerator = ExciteGenerator { same_spin_doub_generator: Default::default(), opp_spin_doub_generator: Default::default() };
     let mut v: Vec<Doub>;
 
     // Opposite spin
@@ -85,48 +88,41 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
     }
 
     excite_gen
-
 }
 
 
 impl ExciteGenerator {
 
-    pub fn double_excite(&self, det: Det, eps: f64) {
-        // Generate all double excitations from the given determinant
-        // larger in magnitude than eps
+    pub fn iter(&self, det: Det) -> Vec<dyn Iterator<Type=Doub>> {
+        // Return a vector of iterators for this det's double excitations
+        // Can stay with the det, so future HCI iterations don't replicate
+        // excite generation effort (at least for the highest-weight dets,
+        // since storing it for all of them is probably too much)
+
+        let mut excite_vec: Vec<dyn Iterator<Type=Doub>> = vec![];
 
         // Opposite spin doubles
         for i in bits(det.up) {
-            for j in bits(det.up) {
-                for excite in self.opp_spin_doub_generator[OPair(i, j)] {
-                    if (excite.abs_h < eps) {
-                        break;
-                    }
-                    // Add this excitation here
-                }
+            for j in bits(det.dn) {
+                excite_vec.append(self.opp_spin_doub_generator[&OPair(i, j)].to_iter());
             }
         }
 
         // Same spin doubles
         for i in bits(det.up) {
             for j in bits(det.up) {
-                for excite in self.same_spin_doub_generator[combine_2(i, j)] {
-                    if (excite.abs_h < eps) {
-                        break;
-                    }
-                    // Add this excitation here
-                }
+                excite_vec.append(self.same_spin_doub_generator[&combine_2(i, j)].to_iter());
             }
         }
-        for i in bits(det.up) {
-            for j in bits(det.up) {
-                for excite in self.same_spin_doub_generator[combine_2(i, j)] {
-                    if (excite.abs_h < eps) {
-                        break;
-                    }
-                    // Add this excitation here
-                }
+        for i in bits(det.dn) {
+            for j in bits(det.dn) {
+                excite_vec.append(self.same_spin_doub_generator[&combine_2(i, j)].to_iter());
             }
         }
+
+        // TODO: Single excitations
+
+        excite_vec
     }
+
 }

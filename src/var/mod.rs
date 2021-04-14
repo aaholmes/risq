@@ -8,7 +8,7 @@ use super::wf::Wf;
 
 pub fn variational(global: &Global, ham: &Ham, wf: &Wf) {
     for (iter, eps) in wf.eps_iter.enumerate() {
-
+        println!("Starting variation {} with epsilon {}", iter, eps);
 
 
 
