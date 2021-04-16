@@ -2,12 +2,12 @@ use std::collections::HashMap;
 
 use super::ham::Ham;
 use super::utils::read_input::Global;
-use crate::excite::ExciteGenerator;
+use crate::excite::{ExciteGenerator, Doub, OPair};
 use crate::utils::bits::bits;
 use std::cmp::max;
 
 // Determinant
-#[derive(Copy)]
+#[derive(Clone, Copy, Eq, PartialEq, Hash)]
 pub struct Det {
     pub up: u128,
     pub dn: u128,
@@ -22,7 +22,8 @@ pub struct Wf {
     dets: Vec<Det>,                     // for looking up det by index
     coeffs: Vec<f64>,                   // coefficients
     diags: Vec<f64>, // diagonal elements of Hamiltonian (so new diagonal elements can be computed quickly)
-    pub eps_iter: Iterator<Item = f64>, // iterator that produces the variational epsilon for each HCI iteration
+    pub eps_iter: Eps, // iterator that produces the variational epsilon for each HCI iteration
+    //pub eps_iter: &'a dyn Iterator<Item=f64>, // iterator that produces the variational epsilon for each HCI iteration
 }
 
 impl Det {
@@ -48,37 +49,75 @@ impl Wf {
         }
     }
 
-    pub fn add_det(&mut self, d: Det) {
+    pub fn add_det(&mut self, d: Det, diag: f64) {
         if !self.inds.contains_key(&d) {
             self.n += 1;
             self.inds.insert(d, self.n);
             self.dets.push(d);
             self.coeffs.push(0.0);
-            //TODO: implement diag elem delta
-            self.diags.push(1.0);
+            self.diags.push(diag);
         }
     }
 
-    pub fn init_eps(&mut self, excite_gen: &ExciteGenerator) {
+    pub fn init_eps(&mut self, global: &Global, excite_gen: &ExciteGenerator) {
         // Initialize epsilon iterator
-        let mut max_doub: f64 = 0.0;
-        for det in self.dets {
-            for mut excite in excite_gen.iter(det) {
-                let this_doub: f64 = excite.next().unwrap().abs_h;
-                if this_doub > max_doub {
-                    max_doub = this_doub;
-                }
-            }
-        }
-        // max_doub is now the largest double excitation magnitude coming from the wavefunction
+        // max_doub is the largest double excitation magnitude coming from the wavefunction
+        // can't just use excite_gen.max_doub because we want to only consider
+        // excitations coming from current wf
+        let mut max_doub: f64 = 1.0;
+        // for det in self.dets {
+        //     for mut excite in excite_gen.iter(det) {
+        //         let this_doub: f64 = excite.next().unwrap().abs_h;
+        //         if this_doub > max_doub {
+        //             max_doub = this_doub;
+        //         }
+        //     }
+        // }
         self.eps_iter = Eps {
-            next: max_doub,
+            next: max_doub - 1e-8,
             target: global.eps,
         };
     }
+
+    // pub fn get_new_dets(&mut self, excite_gen: &ExciteGenerator) {
+    //     let eps: f64 = self.eps_iter.next().unwrap();
+    //     let local_eps: f64;
+    //     for (det, coeff) in self.dets.zip(self.coeffs) {
+    //         local_eps = eps / coeff.abs();
+    //         // Double excitations
+    //         for excite_list in excite_gen.iter(det) {
+    //             for excite in excite_list {
+    //                 println!("New excite to orbitals ({}, {}) with |H| = {}", excite.target.0, excite.target.1, excite.abs_h);
+    //                 if excite.abs_h < local_eps { continue; }
+    //                 // Apply this excitation to det
+    //                 // let excited_det: Det = excite_det(&det, &epair, &excite);
+    //                 // // See if resulting det is in wf
+    //                 // // If not, compute its diagonal element and add it to the wf
+    //                 // if !self.inds.contains(excited_det) {
+    //                 //     // Compute its diagonal element
+    //                 //     let diag: f64 = new_diag();
+    //                 //     // Add it to the wf
+    //                 //     self.add_det(excited_det, diag);
+    //                 // }
+    //             }
+    //         }
+    //         // TODO: Single excitations
+    //     }
+    // }
 }
 
-struct Eps {
+pub fn excite_det(det: &Det, epair: &OPair, excite: &Doub) -> Det {
+    // Create new det given by the excitation applied to the old det
+    todo!();
+}
+
+pub fn new_diag() {
+    // Compute new diagonal element given the old one
+    todo!();
+}
+
+#[derive(Clone, Copy)]
+pub struct Eps {
     next: f64,
     target: f64,
 }
@@ -88,8 +127,14 @@ impl Iterator for Eps {
 
     fn next(&mut self) -> Option<f64> {
         let curr: f64 = self.next;
-        self.next = max(self.next / 2.0, self.target);
+        self.next = if self.next / 2.0 > self.target { self.next / 2.0 } else { self.target };
         Some(curr)
+    }
+}
+
+impl Default for Eps {
+    fn default() -> Self {
+        Eps{ next: 0.0, target: 0.0}
     }
 }
 
@@ -109,6 +154,6 @@ pub fn init_wf(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator) -> Wf {
     wf.coeffs.push(1.0);
     wf.diags.push(h);
     wf.energy = wf.diags[0];
-    wf.init_eps(excite_gen);
+    wf.init_eps(global, excite_gen);
     wf
 }

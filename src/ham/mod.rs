@@ -120,6 +120,9 @@ impl Ham {
                 out += self.get_int(i + 1, j + 1, k + 1, k + 1)
                     - self.get_int(i + 1, k + 1, k + 1, j + 1);
             }
+            for k in bits(det1.dn) {
+                out += self.get_int(i + 1, j + 1, k + 1, k + 1);
+            }
             out *= permute(det1.up, [i, j]) as f64;
         } else {
             let i: i32 = (det1.dn & !det2.dn).trailing_zeros() as i32;
@@ -130,6 +133,9 @@ impl Ham {
             for k in bits(det1.dn) {
                 out += self.get_int(i + 1, j + 1, k + 1, k + 1)
                     - self.get_int(i + 1, k + 1, k + 1, j + 1);
+            }
+            for k in bits(det1.up) {
+                out += self.get_int(i + 1, j + 1, k + 1, k + 1);
             }
             out *= permute(det1.dn, [i, j]) as f64;
         }

@@ -34,10 +34,10 @@ fn main() {
     }
 
     println!("Initializing wavefunction");
-    let mut wf = init_wf(&global, &ham);
-    wf.print();
+    let mut wf = init_wf(&global, &ham, &excite_gen);
+    //wf.print();
 
     println!("Computing variational wavefunction and energy");
-    variational(&global, &ham, &wf);
+    variational(&global, &ham, &excite_gen, &mut wf);
 
 }
