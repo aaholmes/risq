@@ -98,7 +98,7 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
                 for s in 0..global.norb {
                     if  q == s { continue; };
                     // Compute H elem
-                    h = (ham.get_int(p + 1, q + 1, r + 1, s + 1)).abs();
+                    h = (ham.get_int(p + 1, r + 1, q + 1, s + 1)).abs();
                     if h > excite_gen.max_doub { excite_gen.max_doub = h; }
                     v.push(
                         Doub{
@@ -110,7 +110,7 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
             }
             // Sort v in decreasing order by abs_h
             v.sort_by(|a, b| b.abs_h.partial_cmp(&a.abs_h).unwrap_or(Equal));
-            println!("Exciting orbitals: {} {}", p, q);
+            println!("Opposite spin: Exciting orbitals: {} {}", p, q);
             for elem in &v {
                 println!("{} {} {}", elem.target.0, elem.target.1, elem.abs_h);
             }
@@ -127,8 +127,9 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
                 for s in r+1..global.norb {
                     if p == s || q == s { continue; };
                     // Compute H elem
-                    h = (ham.get_int(p + 1, q + 1, r + 1, s + 1)
-                        - ham.get_int(p + 1, q + 1, s + 1, r + 1)).abs();
+                    // prqs - psqr
+                    h = (ham.get_int(p + 1, r + 1, q + 1, s + 1)
+                        - ham.get_int(p + 1, s + 1, q + 1, r + 1)).abs();
                     if h > excite_gen.max_doub { excite_gen.max_doub = h; }
                     v.push(
                         Doub{
@@ -140,7 +141,7 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
             }
             // Sort v in decreasing order by abs_h
             v.sort_by(|a, b| b.abs_h.partial_cmp(&a.abs_h).unwrap_or(Equal));
-            println!("Exciting orbitals: {} {}", p, q);
+            println!("Same spin: Exciting orbitals: {} {}", p, q);
             for elem in &v {
                 println!("{} {} {}", elem.target.0, elem.target.1, elem.abs_h);
             }
