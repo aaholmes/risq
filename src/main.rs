@@ -8,7 +8,7 @@ mod excite;
 use excite::{ExciteGenerator, init_excite_generator};
 
 mod wf;
-use wf::init_wf;
+use wf::{Wf, init_wf};
 
 mod var;
 use var::variational;
@@ -34,10 +34,14 @@ fn main() {
     }
 
     println!("Initializing wavefunction");
-    let mut wf = init_wf(&global, &ham, &excite_gen);
-    //wf.print();
+    let mut wf: Wf = init_wf(&global, &ham, &excite_gen);
+    wf.print();
 
-    println!("Computing variational wavefunction and energy");
-    variational(&global, &ham, &excite_gen, &mut wf);
+    for i in 0..20 {
+        println!("Eps = {}", wf.eps_iter.next().unwrap());
+    }
+
+    // println!("Computing variational wavefunction and energy");
+    // variational(&global, &ham, &excite_gen, &mut wf);
 
 }

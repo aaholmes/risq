@@ -112,7 +112,7 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
             v.sort_by(|a, b| b.abs_h.partial_cmp(&a.abs_h).unwrap_or(Equal));
             println!("Opposite spin: Exciting orbitals: {} {}", p, q);
             for elem in &v {
-                println!("{} {} {}", elem.target.0, elem.target.1, elem.abs_h);
+                if elem.abs_h > 1e-6 { println!("{} {} {}", elem.target.0, elem.target.1, elem.abs_h); }
             }
             excite_gen.opp_spin_doub_generator.insert(OPair(p, q), v);
         }
@@ -143,7 +143,7 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
             v.sort_by(|a, b| b.abs_h.partial_cmp(&a.abs_h).unwrap_or(Equal));
             println!("Same spin: Exciting orbitals: {} {}", p, q);
             for elem in &v {
-                println!("{} {} {}", elem.target.0, elem.target.1, elem.abs_h);
+                if elem.abs_h > 1e-6 { println!("{} {} {}", elem.target.0, elem.target.1, elem.abs_h); }
             }
             excite_gen.same_spin_doub_generator.insert(OPair(p, q), v);
         }
@@ -188,8 +188,8 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
                 + v_same[ .. (global.nup - 1) as usize ].iter().sum::<f64>()
                 + v_opp[ .. global.ndn as usize ].iter().sum::<f64>();
             max2 = ham.get_int(p + 1, r + 1, 0, 0)
-                + v_same[ -(global.nup - 1) as usize .. ].iter().sum::<f64>()
-                + v_opp[ -global.ndn as usize .. ].iter().sum::<f64>();
+                + v_same[ v_same.len() - (global.nup - 1) as usize .. ].iter().sum::<f64>()
+                + v_opp[ v_same.len() - global.ndn as usize .. ].iter().sum::<f64>();
             v_sing.push(
                 Sing{
                     target: r,

@@ -64,7 +64,7 @@ impl Wf {
         // max_doub is the largest double excitation magnitude coming from the wavefunction
         // can't just use excite_gen.max_doub because we want to only consider
         // excitations coming from current wf
-        let mut max_doub: f64 = 1.0;
+        let mut max_doub: f64 = global.eps;
         // for det in self.dets {
         //     for mut excite in excite_gen.iter(det) {
         //         let this_doub: f64 = excite.next().unwrap().abs_h;
