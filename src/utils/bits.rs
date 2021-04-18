@@ -48,6 +48,18 @@ impl Iterator for BitsIntoIterator {
     }
 }
 
+pub fn ibset(n: u128, b: i32) -> u128 {
+    n | (1 << b)
+}
+
+pub fn ibclr(n: u128, b: i32) -> u128 {
+    n & !(1 << b)
+}
+
+pub fn btest(n: u128, b: i32) -> bool {
+    !(n & (1 << b) == 0)
+}
+
 pub fn parity(mut n: u128) -> i32 {
     // Returns 1 if even number of bits, -1 if odd number
     n ^= n >> 64;
