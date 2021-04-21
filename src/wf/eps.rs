@@ -10,6 +10,8 @@ use super::utils::read_input::Global;
 use crate::excite::{ExciteGenerator, Doub, OPair, Sing};
 use crate::utils::bits::{bits, btest, ibset, ibclr};
 use std::cmp::max;
+use crate::wf::Wf;
+use crate::utils::read_input::Global;
 
 
 #[derive(Clone, Copy)]
@@ -31,5 +33,57 @@ impl Iterator for Eps {
 impl Default for Eps {
     fn default() -> Self {
         Eps{ next: 0.0, target: 0.0}
+    }
+}
+
+impl Wf {
+    pub fn init_eps(&mut self, global: &Global, excite_gen: &ExciteGenerator) {
+        // Initialize epsilon iterator
+        // max_doub is the largest double excitation magnitude coming from the wavefunction
+        // Can't just use excite_gen.max_(same/opp)_spin_doub because we want to only consider
+        // excitations coming from current wf
+        let mut max_doub: f64 = global.eps;
+        let mut this_doub: f64 = 0.0;
+        for det in self.dets {
+            for i in bits(det.up) {
+                for j in bits(det.dn) {
+                    for excite in excite_gen.opp_spin_doub_generator.get(&OPair(i, j)) {
+                        this_doub: f64 = excite.next().unwrap().abs_h;
+                        if this_doub > max_doub {
+                            max_doub = this_doub;
+                        }
+                        break;
+                    }
+                }
+            }
+            for i in bits(det.up) {
+                for j in bits(det.up) {
+                    if i >= j { continue; }
+                    for excite in excite_gen.same_spin_doub_generator.get(&OPair(i, j)) {
+                        this_doub: f64 = excite.next().unwrap().abs_h;
+                        if this_doub > max_doub {
+                            max_doub = this_doub;
+                        }
+                        break;
+                    }
+                }
+            }
+            for i in bits(det.dn) {
+                for j in bits(det.dn) {
+                    if i >= j { continue; }
+                    for excite in excite_gen.opp_spin_doub_generator.get(&OPair(i, j)) {
+                        this_doub: f64 = excite.next().unwrap().abs_h;
+                        if this_doub > max_doub {
+                            max_doub = this_doub;
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+        self.eps_iter = Eps {
+            next: max_doub - 1e-9,
+            target: global.eps,
+        };
     }
 }

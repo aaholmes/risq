@@ -11,6 +11,7 @@ use super::ham::Ham;
 use crate::excite::{ExciteGenerator, Doub, OPair, Sing};
 use crate::utils::bits::{bits, btest, ibset, ibclr};
 use crate::wf::det::Det;
+use crate::wf::eps::Eps;
 
 #[derive(Default)]
 pub struct Wf {
@@ -23,12 +24,6 @@ pub struct Wf {
     dets: Vec<Det>,                     // for looking up det by index
     coeffs: Vec<f64>,                   // coefficients
     diags: Vec<f64>, // diagonal elements of Hamiltonian (so new diagonal elements can be computed quickly)
-}
-
-fn fmt_det(d: u128) -> String {
-    let mut s = format!("{:#10b}", d);
-    s = str::replace(&s, "0", "_");
-    str::replace(&s, "_b", "")
 }
 
 impl Wf {
@@ -50,56 +45,6 @@ impl Wf {
             self.coeffs.push(0.0);
             self.diags.push(diag);
         }
-    }
-
-    pub fn init_eps(&mut self, global: &Global, excite_gen: &ExciteGenerator) {
-        // Initialize epsilon iterator
-        // max_doub is the largest double excitation magnitude coming from the wavefunction
-        // Can't just use excite_gen.max_(same/opp)_spin_doub because we want to only consider
-        // excitations coming from current wf
-        let mut max_doub: f64 = global.eps;
-        let mut this_doub: f64 = 0.0;
-        for det in self.dets {
-            for i in bits(det.up) {
-                for j in bits(det.dn) {
-                    for excite in excite_gen.opp_spin_doub_generator.get(&OPair(i, j)) {
-                        this_doub: f64 = excite.next().unwrap().abs_h;
-                        if this_doub > max_doub {
-                            max_doub = this_doub;
-                        }
-                        break;
-                    }
-                }
-            }
-            for i in bits(det.up) {
-                for j in bits(det.up) {
-                    if i >= j { continue; }
-                    for excite in excite_gen.same_spin_doub_generator.get(&OPair(i, j)) {
-                        this_doub: f64 = excite.next().unwrap().abs_h;
-                        if this_doub > max_doub {
-                            max_doub = this_doub;
-                        }
-                        break;
-                    }
-                }
-            }
-            for i in bits(det.dn) {
-                for j in bits(det.dn) {
-                    if i >= j { continue; }
-                    for excite in excite_gen.opp_spin_doub_generator.get(&OPair(i, j)) {
-                        this_doub: f64 = excite.next().unwrap().abs_h;
-                        if this_doub > max_doub {
-                            max_doub = this_doub;
-                        }
-                        break;
-                    }
-                }
-            }
-        }
-        self.eps_iter = Eps {
-            next: max_doub - 1e-9,
-            target: global.eps,
-        };
     }
 
     pub fn get_new_dets(&mut self, excite_gen: &ExciteGenerator) {
@@ -209,11 +154,18 @@ impl Wf {
     }
 }
 
+fn fmt_det(d: u128) -> String {
+    let mut s = format!("{:#10b}", d);
+    s = str::replace(&s, "0", "_");
+    str::replace(&s, "_b", "")
+}
+
 // Init wf to the HF det (only needs to be called once)
 pub fn init_wf(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator) -> Wf {
     let mut wf: Wf = Wf::default();
     wf.n_states = global.n_states;
     wf.converged = false;
+    wf.init_eps(global, excite_gen);
     wf.n = 1;
     let one: u128 = 1;
     let hf = Det {
@@ -227,6 +179,5 @@ pub fn init_wf(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator) -> Wf {
     wf.coeffs.push(1.0);
     wf.diags.push(h);
     wf.energy = wf.diags[0];
-    wf.init_eps(global, excite_gen);
     wf
 }
