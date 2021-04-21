@@ -2,7 +2,7 @@
 // Bits(n) iterates over set bits in n, plus functions for computing parity and getting and
 // setting bits
 
-use super::super::wf::Det;
+use crate::wf::det::Det;
 
 // Spin determinant
 // Syntax: for i in bits(det: u128): loops over the set bits in det

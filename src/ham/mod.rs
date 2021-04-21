@@ -1,12 +1,12 @@
 // Hamiltonian matrix elements
 
-mod read_ints;
+pub mod read_ints;
 
 use super::utils::bits::{bits, det_bits};
 use super::utils::ints::{combine_2, combine_4, permute, permute_2};
 use super::utils::read_input::Global;
-use super::wf::Det;
-use crate::ham::read_ints::Ints;
+use crate::wf::det::Det;
+use read_ints::Ints;
 
 // Hamiltonian, containing both integrals and heat-bath hashmap of double excitations
 #[derive(Default)]

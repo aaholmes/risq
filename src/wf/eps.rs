@@ -25,6 +25,12 @@ impl Iterator for Eps {
     }
 }
 
+impl Default for Eps {
+    fn default() -> Eps {
+        Eps{next: 0.0, target: 0.0}
+    }
+}
+
 impl Wf {
     pub fn init_eps(&mut self, global: &Global, excite_gen: &ExciteGenerator) {
         // Initialize epsilon iterator
@@ -33,11 +39,11 @@ impl Wf {
         // excitations coming from initial wf (usually HF det)
         let mut max_doub: f64 = global.eps;
         let mut this_doub: f64 = 0.0;
-        for det in self.dets {
-            for i in bits(det.up) {
-                for j in bits(det.dn) {
-                    for excite in excite_gen.opp_spin_doub_generator.get(&OPair(i, j)) {
-                        this_doub: f64 = excite.next().unwrap().abs_h;
+        for det in &self.dets {
+            for i in bits(det.det.up) {
+                for j in bits(det.det.dn) {
+                    for excite in excite_gen.opp_spin_doub_generator.get(&OPair(i, j)).unwrap() {
+                        this_doub = excite.abs_h;
                         if this_doub > max_doub {
                             max_doub = this_doub;
                         }
@@ -45,11 +51,11 @@ impl Wf {
                     }
                 }
             }
-            for i in bits(det.up) {
-                for j in bits(det.up) {
+            for i in bits(det.det.up) {
+                for j in bits(det.det.up) {
                     if i >= j { continue; }
-                    for excite in excite_gen.same_spin_doub_generator.get(&OPair(i, j)) {
-                        this_doub: f64 = excite.next().unwrap().abs_h;
+                    for excite in excite_gen.same_spin_doub_generator.get(&OPair(i, j)).unwrap() {
+                        this_doub = excite.abs_h;
                         if this_doub > max_doub {
                             max_doub = this_doub;
                         }
@@ -57,11 +63,11 @@ impl Wf {
                     }
                 }
             }
-            for i in bits(det.dn) {
-                for j in bits(det.dn) {
+            for i in bits(det.det.dn) {
+                for j in bits(det.det.dn) {
                     if i >= j { continue; }
-                    for excite in excite_gen.same_spin_doub_generator.get(&OPair(i, j)) {
-                        this_doub: f64 = excite.next().unwrap().abs_h;
+                    for excite in excite_gen.same_spin_doub_generator.get(&OPair(i, j)).unwrap() {
+                        this_doub = excite.abs_h;
                         if this_doub > max_doub {
                             max_doub = this_doub;
                         }

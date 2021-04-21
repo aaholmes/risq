@@ -2,12 +2,13 @@
 extern crate lazy_static;
 
 mod ham;
-use ham::{Ham, read_ints};
+use ham::Ham;
+use ham::read_ints::read_ints;
 
 mod excite;
 use excite::{ExciteGenerator, init_excite_generator};
 
-mod wf;
+pub mod wf;
 use wf::{Wf, init_wf};
 
 mod var;

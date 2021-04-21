@@ -12,7 +12,7 @@ use super::utils::read_input::Global;
 
 use super::ham::Ham;
 
-use super::wf::Det;
+use crate::wf::det::Det;
 
 
 // Orbital pair
@@ -23,14 +23,14 @@ pub struct OPair(pub i32, pub i32);
 pub struct Doub {
     pub(crate) init: OPair, // For now, store the initial pair here too
     pub(crate) target: OPair,
-    abs_h: f64,
+    pub(crate) abs_h: f64,
 }
 
 // Single excitation doublet (r, max |H|)
 pub struct Sing {
     pub(crate) init: i32, // Store init as in Doub
     pub(crate) target: i32,
-    max_abs_h: f64,
+    pub(crate) max_abs_h: f64,
 }
 
 
@@ -87,10 +87,10 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
             }
             // Sort v in decreasing order by abs_h
             v.sort_by(|a, b| b.abs_h.partial_cmp(&a.abs_h).unwrap_or(Equal));
-            println!("Opposite spin: Exciting orbitals: {} {}", p, q);
-            for elem in &v {
-                if elem.abs_h > 1e-6 { println!("{} {} {}", elem.target.0, elem.target.1, elem.abs_h); }
-            }
+            // println!("Opposite spin: Exciting orbitals: {} {}", p, q);
+            // for elem in &v {
+            //     if elem.abs_h > 1e-6 { println!("{} {} {}", elem.target.0, elem.target.1, elem.abs_h); }
+            // }
             excite_gen.opp_spin_doub_generator.insert(OPair(p, q), v);
         }
     }
@@ -118,10 +118,10 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
             }
             // Sort v in decreasing order by abs_h
             v.sort_by(|a, b| b.abs_h.partial_cmp(&a.abs_h).unwrap_or(Equal));
-            println!("Same spin: Exciting orbitals: {} {}", p, q);
-            for elem in &v {
-                if elem.abs_h > 1e-6 { println!("{} {} {}", elem.target.0, elem.target.1, elem.abs_h); }
-            }
+            // println!("Same spin: Exciting orbitals: {} {}", p, q);
+            // for elem in &v {
+            //     if elem.abs_h > 1e-6 { println!("{} {} {}", elem.target.0, elem.target.1, elem.abs_h); }
+            // }
             excite_gen.same_spin_doub_generator.insert(OPair(p, q), v);
         }
     }
