@@ -17,7 +17,7 @@ use super::wf::Det;
 
 // Orbital pair
 #[derive(Debug, PartialEq, Eq, Hash)]
-pub struct OPair(i32, i32);
+pub struct OPair(pub i32, pub i32);
 
 // Double excitation triplet (r, s, |H|)
 pub struct Doub {

@@ -44,15 +44,7 @@ impl Det {
             if btest(self.up, doub.target.1) { return None; }
             Some(
                 Det::new(
-                    ibset(
-                        ibset(
-                            ibclr(
-                                ibclr(
-                                    self.up, init.0
-                                ), init.1
-                            ), target.0
-                        ), target.1
-                    ),
+                    ibset(ibset(ibclr(ibclr(self.up, init.0), init.1), target.0), target.1),
                     self.dn
                 )
             )
@@ -64,15 +56,7 @@ impl Det {
             Some(
                 Det::new(
                     self.up,
-                    ibset(
-                        ibset(
-                            ibclr(
-                                ibclr(
-                                    self.dn, init.0
-                                ), init.1
-                            ), target.0
-                        ), target.1
-                    )
+                    ibset(ibset(ibclr(ibclr(self.dn, init.0), init.1), target.0), target.1)
                 )
             )
         }
@@ -87,11 +71,7 @@ impl Det {
             if btest(self.up, sing.target) { return None; }
             Some(
                 Det::new(
-                    ibset(
-                        ibclr(
-                            self.up, init.0
-                        ), target.0
-                    ),
+                    ibset(ibclr(self.up, init.0), target.0),
                     self.dn
                 )
             )
@@ -101,20 +81,15 @@ impl Det {
             Some(
                 Det::new(
                     self.up,
-                    ibset(
-                        ibclr(
-                            self.dn, init.0
-                        ), target.0
-                    )
+                    ibset(ibclr(self.dn, init.0), target.0)
                 )
             )
         }
     }
 
-
-
     pub fn new_diag_opp(&self, ham: &Ham, old_diag: f64, &excite: Doub) -> f64 {
         // Compute new diagonal element given the old one
+
         // One-body part: E += h(r) + h(s) - h(p) - h(q)
         let mut new_diag: f64 = old_diag
             + ham.get_int(excite.target.0 + 1, excite.target.0 + 1, 0, 0)
@@ -126,7 +101,7 @@ impl Det {
         new_diag += ham.get_int(excite.target.0 + 1, excite.target.0 + 1, excite.target.1 + 1, excite.target.1 + 1)
             - ham.get_int(excite.init.0 + 1, excite.init.0 + 1, excite.init.1 + 1, excite.init.1 + 1);
 
-        // O(N) Two-body direct part: E += sum_{i in occ. but not in (r,s)} direct(i,r) + direct(i,s) - direct(i,p) - direct(i,q)
+        // O(N) Two-body direct part: E += sum_{i in occ. but not in (p,q)} direct(i,r) + direct(i,s) - direct(i,p) - direct(i,q)
         for i in bits(self.up) {
             if i == excite.init.0 { continue; }
             new_diag += ham.get_int(i + 1, i + 1, excite.target.0 + 1, excite.target.0 + 1)
@@ -137,14 +112,37 @@ impl Det {
             new_diag += ham.get_int(i + 1, i + 1, excite.target.1 + 1, excite.target.1 + 1)
                 - ham.get_int(i + 1, i + 1, excite.init.1 + 1, excite.init.1 + 1)
         }
+
         new_diag
     }
 
-    pub fn new_diag_same(&self, &excite: Doub, is_up: bool) {
+    pub fn new_diag_same(&self, ham: &Ham, old_diag: f64, &excite: Doub, is_up: bool) -> f64 {
         // Compute new diagonal element given the old one
     }
 
-    pub fn new_diag_sing(&self, &excite: Sing, is_up: bool) {
+    pub fn new_diag_sing(&self, ham: &Ham, old_diag: f64, &excite: Sing, is_up: bool) -> f64 {
         // Compute new diagonal element given the old one
+
+        // One-body part: E += h(r) - h(p)
+        let mut new_diag: f64 = old_diag
+            + ham.get_int(excite.target + 1, excite.target + 1, 0, 0)
+            - ham.get_int(excite.init + 1, excite.init + 1, 0, 0);
+
+        // O(N) Two-body direct part: E += sum_{i in occ. but not in p} direct(i,r) - direct(i,p)
+        if is_up {
+            for i in bits(self.up) {
+                if i == excite.init { continue; }
+                new_diag += ham.get_int(i + 1, i + 1, excite.target + 1, excite.target + 1)
+                    - ham.get_int(i + 1, i + 1, excite.init + 1, excite.init + 1);
+            }
+        } else {
+            for i in bits(self.dn) {
+                if i == excite.init { continue; }
+                new_diag += ham.get_int(i + 1, i + 1, excite.target + 1, excite.target + 1)
+                    - ham.get_int(i + 1, i + 1, excite.init + 1, excite.init + 1);
+            }
+        }
+
+        new_diag
     }
 }
