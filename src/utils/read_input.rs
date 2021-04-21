@@ -1,3 +1,5 @@
+// Read input file into Global variable data structure
+
 extern crate serde;
 extern crate serde_json;
 

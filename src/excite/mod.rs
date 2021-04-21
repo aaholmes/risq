@@ -1,4 +1,5 @@
-// Excitation generation module (includes usual heat-bath routines)
+// Excitation generation module:
+// Includes sorted excitations for heat-bath algorithm
 
 use std::cmp;
 use std::cmp::max;
@@ -27,8 +28,8 @@ pub struct Doub {
 
 // Single excitation doublet (r, max |H|)
 pub struct Sing {
-    init: i32, // Store init as in Doub
-    target: i32,
+    pub(crate) init: i32, // Store init as in Doub
+    pub(crate) target: i32,
     max_abs_h: f64,
 }
 

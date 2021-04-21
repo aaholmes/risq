@@ -1,3 +1,6 @@
+// Useful functions for working with integrals:
+// Reading, combining indices, computing permutation factors
+
 use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::Path;

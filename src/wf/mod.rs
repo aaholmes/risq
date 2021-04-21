@@ -1,4 +1,5 @@
-// Wavefunction
+// Wavefunction data structure:
+// Includes functions for initializing, printing, and adding new determinants
 
 mod det;
 mod eps;

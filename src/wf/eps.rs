@@ -1,4 +1,4 @@
-// Variational epsilon iterator (to attach to wf)
+// Variational epsilon iterator (to attach to wf):
 // Epsilon starts at the largest value that allows at least one double excitation from the initial
 // wf, then drops by a factor of 2 every iteration until it reaches the target value set in the
 // input file

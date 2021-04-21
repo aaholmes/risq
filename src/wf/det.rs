@@ -1,4 +1,6 @@
-// Determinant
+// Determinant data structure:
+// Includes functions to generate an excited det, and compute its diagonal element
+// quickly from the initial det's diagonal element
 
 use std::collections::HashMap;
 
@@ -112,11 +114,11 @@ impl Det {
         // Compute new diagonal element given the old one
     }
 
-    pub fn new_diag_same(&self, &excite: Doub) {
+    pub fn new_diag_same(&self, &excite: Doub, is_up: bool) {
         // Compute new diagonal element given the old one
     }
 
-    pub fn new_diag_sing(&self, &excite: Sing) {
+    pub fn new_diag_sing(&self, &excite: Sing, is_up: bool) {
         // Compute new diagonal element given the old one
     }
 }

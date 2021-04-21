@@ -1,3 +1,7 @@
+// Useful bitwise functions:
+// Bits(n) iterates over set bits in n, plus functions for computing parity and getting and
+// setting bits
+
 use super::super::wf::Det;
 
 // Spin determinant
