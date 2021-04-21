@@ -9,6 +9,7 @@ use super::utils::read_input::Global;
 use crate::excite::{ExciteGenerator, Doub, OPair, Sing};
 use crate::utils::bits::{bits, btest, ibset, ibclr};
 use std::cmp::max;
+use crate::ham::Ham;
 
 #[derive(Clone, Copy, Eq, PartialEq, Hash)]
 pub struct Det {
@@ -110,8 +111,33 @@ impl Det {
         }
     }
 
-    pub fn new_diag_opp(&self, &excite: Doub) {
+
+
+    pub fn new_diag_opp(&self, ham: &Ham, old_diag: f64, &excite: Doub) -> f64 {
         // Compute new diagonal element given the old one
+        // One-body part: E += h(r) + h(s) - h(p) - h(q)
+        let mut new_diag: f64 = old_diag
+            + ham.get_int(excite.target.0 + 1, excite.target.0 + 1, 0, 0)
+            + ham.get_int(excite.target.1 + 1, excite.target.1 + 1, 0, 0)
+            - ham.get_int(excite.init.0 + 1, excite.init.0 + 1, 0, 0)
+            - ham.get_int(excite.init.1 + 1, excite.init.1 + 1, 0, 0);
+
+        // O(1) Two-body direct part: E += direct(r,s) - direct(p,q)
+        new_diag += ham.get_int(excite.target.0 + 1, excite.target.0 + 1, excite.target.1 + 1, excite.target.1 + 1)
+            - ham.get_int(excite.init.0 + 1, excite.init.0 + 1, excite.init.1 + 1, excite.init.1 + 1);
+
+        // O(N) Two-body direct part: E += sum_{i in occ. but not in (r,s)} direct(i,r) + direct(i,s) - direct(i,p) - direct(i,q)
+        for i in bits(self.up) {
+            if i == excite.init.0 { continue; }
+            new_diag += ham.get_int(i + 1, i + 1, excite.target.0 + 1, excite.target.0 + 1)
+                - ham.get_int(i + 1, i + 1, excite.init.0 + 1, excite.init.0 + 1)
+        }
+        for i in bits(self.dn) {
+            if i == excite.init.1 { continue; }
+            new_diag += ham.get_int(i + 1, i + 1, excite.target.1 + 1, excite.target.1 + 1)
+                - ham.get_int(i + 1, i + 1, excite.init.1 + 1, excite.init.1 + 1)
+        }
+        new_diag
     }
 
     pub fn new_diag_same(&self, &excite: Doub, is_up: bool) {
