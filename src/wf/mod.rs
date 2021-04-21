@@ -12,7 +12,7 @@ use super::ham::Ham;
 use crate::excite::{ExciteGenerator, Doub, OPair, Sing};
 use crate::utils::bits::{bits, btest, ibset, ibclr};
 use det::{AugDet, Det};
-use eps::Eps;
+use eps::{Eps, init_eps};
 
 #[derive(Default)]
 pub struct Wf {
@@ -200,7 +200,6 @@ pub fn init_wf(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator) -> Wf {
     let mut wf: Wf = Wf::default();
     wf.n_states = global.n_states;
     wf.converged = false;
-    wf.init_eps(global, excite_gen);
     wf.n = 1;
     let one: u128 = 1;
     let mut hf = AugDet {
@@ -217,5 +216,6 @@ pub fn init_wf(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator) -> Wf {
     wf.inds.insert(hf.det, 0);
     wf.dets.push(hf);
     wf.energy = wf.dets[0].diag;
+    wf.eps_iter = init_eps(&wf, &global, &excite_gen);
     wf
 }

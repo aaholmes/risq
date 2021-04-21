@@ -26,10 +26,8 @@ impl Ham {
             self.ints.nuc
         } else if r == 0 && s == 0 {
             self.ints.one_body[combine_2(p, q)]
-            //self.ints.one_body[combine_2(self.int_order[p as usize], self.int_order[q as usize])]
         } else {
             self.ints.two_body[combine_4(p, q, r, s)]
-            //self.ints.two_body[combine_4(self.int_order[p as usize], self.int_order[q as usize], self.int_order[r as usize], self.int_order[s as usize])]
         }
     }
 
@@ -55,27 +53,29 @@ impl Ham {
 
         // nuclear-nuclear component
         let mut diag: f64 = self.ints.nuc;
+        println!("Nuc: {}", diag);
 
         // one-body component
         for i in det_bits(det) {
             diag += self.one_body(i, i);
         }
+        println!("One-body: {}", diag - self.ints.nuc);
 
         // two-body component
         for i in bits(det.up) {
             for j in bits(det.up) {
                 if i < j {
-                    diag += self.direct_plus_exchange(i, i, j, j);
+                    diag += self.direct_plus_exchange(i, j, i, j);
                 }
             }
             for j in bits(det.dn) {
-                diag += self.direct(i, i, j, j);
+                diag += self.direct(i, j, i, j);
             }
         }
         for i in bits(det.dn) {
             for j in bits(det.dn) {
                 if i < j {
-                    diag += self.direct_plus_exchange(i, i, j, j);
+                    diag += self.direct_plus_exchange(i, j, i, j);
                 }
             }
         }
