@@ -3,9 +3,6 @@
 // wf, then drops by a factor of 2 every iteration until it reaches the target value set in the
 // input file
 
-use std::cmp::max;
-use std::collections::HashMap;
-
 use crate::wf::Wf;
 use crate::utils::bits::bits;
 use crate::utils::read_input::Global;
@@ -25,12 +22,6 @@ impl Iterator for Eps {
         let curr: f64 = self.next;
         self.next = if self.next / 2.0 > self.target { self.next / 2.0 } else { self.target };
         Some(curr)
-    }
-}
-
-impl Default for Eps {
-    fn default() -> Self {
-        Eps{ next: 0.0, target: 0.0}
     }
 }
 
