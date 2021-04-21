@@ -37,11 +37,7 @@ fn main() {
     let mut wf: Wf = init_wf(&global, &ham, &excite_gen);
     wf.print();
 
-    for i in 0..20 {
-        println!("Eps = {}", wf.eps_iter.next().unwrap());
-    }
-
-    // println!("Computing variational wavefunction and energy");
-    // variational(&global, &ham, &excite_gen, &mut wf);
+    println!("Computing variational wavefunction and energy");
+    variational(&ham, &excite_gen, &mut wf);
 
 }

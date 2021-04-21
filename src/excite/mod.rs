@@ -145,7 +145,7 @@ pub struct ExciteGenerator {
     // target orbs and max possible values; unlike doubles, magnitudes must be
     // re-computed because these depend on other occupied orbitals
     pub max_sing: f64,
-    // max_sing_list: Vec<f64>,
+    max_sing_list: Vec<f64>,
     pub sing_generator: Vec<Vec<Sing>>,
 
 }
@@ -225,9 +225,9 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
     // For each, loop over all remaining q (of either spin), get all matrix elements
     // (with signs)
     // Then, compute the max excitation from p to r as follows:
-    // max(|f_pr + sum_q g_pqqr|, |f_pr + sum_q g_pqqr|),
+    // max(|f_pr + sum_{q in A} g_pqqr|, |f_pr + sum_{q in B} g_pqqr|),
     // where the sums on q are over the N-1 other orbitals
-    // that are either the largest or the smallest (true value, not abs)
+    // that are either the largest (A) or the smallest (B) - true value, not abs value
     // Compute v_same and v_opp vectors for each pr, which are the same-spin
     // and opposite-spin components: (g_prqq - g_pqqr) and g_prqq, respectively
     // Assumes that same number of up and dn spin electrons for now (easy to fix later,

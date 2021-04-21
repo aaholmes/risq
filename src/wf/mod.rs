@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use super::ham::Ham;
 use super::utils::read_input::Global;
-use crate::excite::{ExciteGenerator, Doub, OPair};
+use crate::excite::{ExciteGenerator, Doub, OPair, Sing};
 use crate::utils::bits::bits;
 use std::cmp::max;
 
@@ -16,20 +16,15 @@ pub struct Det {
 // Wavefunction
 #[derive(Default)]
 pub struct Wf {
+    pub n_states: i32, // number of states - same as in input file, but want it attached to the wf
+    pub converged: bool, // whether variational wf is converged. Update at end of each HCI iteration
+    pub eps_iter: Eps, // iterator that produces the variational epsilon for each HCI iteration
     pub n: u64,                         // number of dets
     pub energy: f64,                    // variational energy
     inds: HashMap<Det, u64>,            // hashtable : det -> u64 for looking up index by det
     dets: Vec<Det>,                     // for looking up det by index
     coeffs: Vec<f64>,                   // coefficients
     diags: Vec<f64>, // diagonal elements of Hamiltonian (so new diagonal elements can be computed quickly)
-    pub eps_iter: Eps, // iterator that produces the variational epsilon for each HCI iteration
-    //pub eps_iter: &'a dyn Iterator<Item=f64>, // iterator that produces the variational epsilon for each HCI iteration
-}
-
-impl Det {
-    fn print(&self) {
-        println!("{} {}", format!("{:b}", self.up), format!("{:b}", self.dn));
-    }
 }
 
 fn fmt_det(d: u128) -> String {
@@ -62,58 +57,172 @@ impl Wf {
     pub fn init_eps(&mut self, global: &Global, excite_gen: &ExciteGenerator) {
         // Initialize epsilon iterator
         // max_doub is the largest double excitation magnitude coming from the wavefunction
-        // can't just use excite_gen.max_doub because we want to only consider
+        // Can't just use excite_gen.max_(same/opp)_spin_doub because we want to only consider
         // excitations coming from current wf
         let mut max_doub: f64 = global.eps;
-        // for det in self.dets {
-        //     for mut excite in excite_gen.iter(det) {
-        //         let this_doub: f64 = excite.next().unwrap().abs_h;
-        //         if this_doub > max_doub {
-        //             max_doub = this_doub;
-        //         }
-        //     }
-        // }
+        let mut this_doub: f64 = 0.0;
+        for det in self.dets {
+            for i in bits(det.up) {
+                for j in bits(det.dn) {
+                    for excite in excite_gen.opp_spin_doub_generator.get(&OPair(i, j)) {
+                        this_doub: f64 = excite.next().unwrap().abs_h;
+                        if this_doub > max_doub {
+                            max_doub = this_doub;
+                        }
+                        break;
+                    }
+                }
+            }
+            for i in bits(det.up) {
+                for j in bits(det.up) {
+                    if i >= j { continue; }
+                    for excite in excite_gen.same_spin_doub_generator.get(&OPair(i, j)) {
+                        this_doub: f64 = excite.next().unwrap().abs_h;
+                        if this_doub > max_doub {
+                            max_doub = this_doub;
+                        }
+                        break;
+                    }
+                }
+            }
+            for i in bits(det.dn) {
+                for j in bits(det.dn) {
+                    if i >= j { continue; }
+                    for excite in excite_gen.opp_spin_doub_generator.get(&OPair(i, j)) {
+                        this_doub: f64 = excite.next().unwrap().abs_h;
+                        if this_doub > max_doub {
+                            max_doub = this_doub;
+                        }
+                        break;
+                    }
+                }
+            }
+        }
         self.eps_iter = Eps {
-            next: max_doub - 1e-8,
+            next: max_doub - 1e-9,
             target: global.eps,
         };
     }
 
-    // pub fn get_new_dets(&mut self, excite_gen: &ExciteGenerator) {
-    //     let eps: f64 = self.eps_iter.next().unwrap();
-    //     let local_eps: f64;
-    //     for (det, coeff) in self.dets.zip(self.coeffs) {
-    //         local_eps = eps / coeff.abs();
-    //         // Double excitations
-    //         for excite_list in excite_gen.iter(det) {
-    //             for excite in excite_list {
-    //                 println!("New excite to orbitals ({}, {}) with |H| = {}", excite.target.0, excite.target.1, excite.abs_h);
-    //                 if excite.abs_h < local_eps { continue; }
-    //                 // Apply this excitation to det
-    //                 // let excited_det: Det = excite_det(&det, &epair, &excite);
-    //                 // // See if resulting det is in wf
-    //                 // // If not, compute its diagonal element and add it to the wf
-    //                 // if !self.inds.contains(excited_det) {
-    //                 //     // Compute its diagonal element
-    //                 //     let diag: f64 = new_diag();
-    //                 //     // Add it to the wf
-    //                 //     self.add_det(excited_det, diag);
-    //                 // }
-    //             }
-    //         }
-    //         // TODO: Single excitations
-    //     }
-    // }
+    pub fn get_new_dets(&mut self, excite_gen: &ExciteGenerator) {
+        // Get new dets: iterate over all dets; for each, propose all excitations; for each, check if new;
+        // if new, add to wf
+        let eps: f64 = self.eps_iter.next().unwrap();
+        let mut local_eps: f64;
+        let mut new_det: Option<Det>;
+        for (det, coeff) in self.dets.zip(&self.coeffs) {
+            local_eps = eps / coeff.abs();
+            // Double excitations
+            // Opposite spin
+            if excite_gen.max_opp_spin_doub >= local_eps {
+                for i in bits(det.up) {
+                    for j in bits(det.dn) {
+                        for excite in excite_gen.opp_spin_doub_generator.get(&OPair(i, j)) {
+                            if excite.abs_h < local_eps { break; }
+                            new_det = det.excite_det_opp_doub(excite);
+                            match new_det {
+                                Some(d) => {
+                                    if !self.inds.contains_key(&d) {
+                                        self.add_det(d, det.new_diag_opp(excite))
+                                    }
+                                }
+                                None => break
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Same spin
+            if excite_gen.max_same_spin_doub >= local_eps {
+                // TODO: Make this a new iterator over pairs of set bits!
+                for i in bits(det.up) {
+                    for j in bits(det.up) {
+                        if i >= j { continue; }
+                        for excite in excite_gen.same_spin_doub_generator.get(&OPair(i, j)) {
+                            if excite.abs_h < local_eps { break; }
+                            new_det = det.excite_det_same_doub(excite, true);
+                            match new_det {
+                                Some(d) => {
+                                    if !self.inds.contains_key(&d) {
+                                        self.add_det(d, det.new_diag_same(excite, true))
+                                    }
+                                }
+                                None => break
+                            }
+                        }
+                    }
+                }
+                // TODO: Make this a new iterator over pairs of set bits!
+                for i in bits(det.dn) {
+                    for j in bits(det.dn) {
+                        if i >= j { continue; }
+                        for excite in excite_gen.same_spin_doub_generator.get(&OPair(i, j)) {
+                            if excite.abs_h < local_eps { break; }
+                            new_det = det.excite_det_same_doub(excite, false);
+                            match new_det {
+                                Some(d) => {
+                                    if !self.inds.contains_key(&d) {
+                                        self.add_det(d, det.new_diag_same(excite, false))
+                                    }
+                                }
+                                None => break
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Single excitations
+            if excite_gen.max_sing >= local_eps {
+                for i in bits(det.up) {
+                    for excite in excite_gen.sing_generator[i] {
+                        if excite.max_abs_h < local_eps { break; }
+                        // TODO: compute single excitation mat elem here, check if it exceeds eps
+                        new_det = det.excite_sing(excite, true);
+                        match new_det {
+                            Some(d) => {
+                                if !self.inds.contains_key(&d) {
+                                    self.add_det(d, det.new_diag_sing(excite, true))
+                                }
+                            }
+                            None => break
+                        }
+                    }
+                }
+                for i in bits(det.dn) {
+                    for excite in excite_gen.sing_generator[i] {
+                        if excite.max_abs_h < local_eps { break; }
+                        // TODO: compute single excitation mat elem here, check if it exceeds eps
+                        new_det = det.excite_sing(excite, false);
+                        match new_det {
+                            Some(d) => {
+                                if !self.inds.contains_key(&d) {
+                                    self.add_det(d, det.new_diag_sing(excite, false))
+                                }
+                            }
+                            None => break
+                        }
+                    }
+                }
+            }
+
+        } // for (det, coeff) in self.dets.zip(&self.coeffs)
+    }
 }
 
-pub fn excite_det(det: &Det, epair: &OPair, excite: &Doub) -> Det {
-    // Create new det given by the excitation applied to the old det
-    todo!();
-}
+impl Det {
+    pub fn new_diag_opp(&self, &excite: Doub) {
+        // Compute new diagonal element given the old one
+    }
 
-pub fn new_diag() {
-    // Compute new diagonal element given the old one
-    todo!();
+    pub fn new_diag_same(&self, &excite: Doub) {
+        // Compute new diagonal element given the old one
+    }
+
+    pub fn new_diag_sing(&self, &excite: Sing) {
+        // Compute new diagonal element given the old one
+    }
 }
 
 #[derive(Clone, Copy)]
@@ -141,6 +250,8 @@ impl Default for Eps {
 // Init wf to the HF det (only needs to be called once)
 pub fn init_wf(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator) -> Wf {
     let mut wf: Wf = Wf::default();
+    wf.n_states = global.n_states;
+    wf.converged = false;
     wf.n = 1;
     let one: u128 = 1;
     let hf = Det {
