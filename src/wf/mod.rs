@@ -52,6 +52,7 @@ impl Wf {
         // Get new dets: iterate over all dets; for each, propose all excitations; for each, check if new;
         // if new, add to wf
         let eps: f64 = self.eps_iter.next().unwrap();
+        println!("Getting new dets with epsilon = {}", eps);
         let mut local_eps: f64;
         let mut new_det: Option<Det>;
         for (det, coeff) in self.dets.zip(&self.coeffs) {

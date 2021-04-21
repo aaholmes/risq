@@ -74,7 +74,7 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
                 for s in 0..global.norb {
                     if  q == s { continue; };
                     // Compute H elem
-                    h = (ham.get_int(p + 1, r + 1, q + 1, s + 1)).abs();
+                    h = (ham.direct(p, q, r, s)).abs();
                     if h > excite_gen.max_opp_spin_doub { excite_gen.max_opp_spin_doub = h; }
                     v.push(
                         Doub{
@@ -105,8 +105,7 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
                     if p == s || q == s { continue; };
                     // Compute H elem
                     // prqs - psqr
-                    h = (ham.get_int(p + 1, r + 1, q + 1, s + 1)
-                        - ham.get_int(p + 1, s + 1, q + 1, r + 1)).abs();
+                    h = (ham.direct_plus_exchange(p, q, r, s)).abs();
                     if h > excite_gen.max_same_spin_doub { excite_gen.max_same_spin_doub = h; }
                     v.push(
                         Doub{
@@ -152,20 +151,15 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
             v_opp = vec![];
             for q in 0..global.norb {
                 if p==q || q==r { continue; }
-                v_same.push(
-                    ham.get_int(p + 1, r + 1, q + 1, q + 1)
-                        - ham.get_int(p + 1, q + 1, q + 1, r + 1)
-                );
-                v_opp.push(
-                    ham.get_int(p + 1, r + 1, q + 1, q + 1)
-                );
+                v_same.push(ham.direct_plus_exchange(p, r, q, q));
+                v_opp.push(ham.direct(p, r, q, q));
             }
             v_same.sort_by(|a, b| a.partial_cmp(&b).unwrap_or(Equal));
             v_opp.sort_by(|a, b| a.partial_cmp(&b).unwrap_or(Equal));
-            max1 = ham.get_int(p + 1, r + 1, 0, 0)
+            max1 = ham.one_body(p, r)
                 + v_same[ .. (global.nup - 1) as usize ].iter().sum::<f64>()
                 + v_opp[ .. global.ndn as usize ].iter().sum::<f64>();
-            max2 = ham.get_int(p + 1, r + 1, 0, 0)
+            max2 = ham.one_body(p, r)
                 + v_same[ v_same.len() - (global.nup - 1) as usize .. ].iter().sum::<f64>()
                 + v_opp[ v_same.len() - global.ndn as usize .. ].iter().sum::<f64>();
             v_sing.push(
