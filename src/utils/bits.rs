@@ -10,8 +10,43 @@ pub fn det_bits(det: &Det) -> impl Iterator<Item = i32> {
     bits(det.up).chain(bits(det.dn))
 }
 
+struct Bits {
+    det: u128,
+}
 
+impl Bits {
+    fn new(d: u128) -> Bits {
+        Bits { det: d }
+    }
+}
 
+impl IntoIterator for Bits {
+    type Item = i32;
+    type IntoIter = BitsIntoIterator;
+
+    fn into_iter(self) -> Self::IntoIter {
+        BitsIntoIterator {
+            bits_left: self.det,
+        }
+    }
+}
+
+struct BitsIntoIterator {
+    bits_left: u128,
+}
+
+impl Iterator for BitsIntoIterator {
+    type Item = i32;
+
+    fn next(&mut self) -> Option<i32> {
+        if self.bits_left == 0 {
+            return None;
+        };
+        let res: i32 = self.bits_left.trailing_zeros() as i32;
+        self.bits_left &= !(1 << res);
+        Some(res)
+    }
+}
 
 pub fn ibset(n: u128, b: i32) -> u128 {
     n | (1 << b)
