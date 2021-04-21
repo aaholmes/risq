@@ -1,19 +1,17 @@
-use std::collections::HashMap;
+// Wavefunction
 
-use super::ham::Ham;
-use super::utils::read_input::Global;
-use crate::excite::{ExciteGenerator, Doub, OPair, Sing};
-use crate::utils::bits::bits;
+mod det;
+mod eps;
+
+use std::collections::HashMap;
 use std::cmp::max;
 
-// Determinant
-#[derive(Clone, Copy, Eq, PartialEq, Hash)]
-pub struct Det {
-    pub up: u128,
-    pub dn: u128,
-}
+use super::utils::read_input::Global;
+use super::ham::Ham;
+use crate::excite::{ExciteGenerator, Doub, OPair, Sing};
+use crate::utils::bits::{bits, btest, ibset, ibclr};
+use crate::wf::det::Det;
 
-// Wavefunction
 #[derive(Default)]
 pub struct Wf {
     pub n_states: i32, // number of states - same as in input file, but want it attached to the wf
@@ -208,42 +206,6 @@ impl Wf {
             }
 
         } // for (det, coeff) in self.dets.zip(&self.coeffs)
-    }
-}
-
-impl Det {
-    pub fn new_diag_opp(&self, &excite: Doub) {
-        // Compute new diagonal element given the old one
-    }
-
-    pub fn new_diag_same(&self, &excite: Doub) {
-        // Compute new diagonal element given the old one
-    }
-
-    pub fn new_diag_sing(&self, &excite: Sing) {
-        // Compute new diagonal element given the old one
-    }
-}
-
-#[derive(Clone, Copy)]
-pub struct Eps {
-    next: f64,
-    target: f64,
-}
-
-impl Iterator for Eps {
-    type Item = f64;
-
-    fn next(&mut self) -> Option<f64> {
-        let curr: f64 = self.next;
-        self.next = if self.next / 2.0 > self.target { self.next / 2.0 } else { self.target };
-        Some(curr)
-    }
-}
-
-impl Default for Eps {
-    fn default() -> Self {
-        Eps{ next: 0.0, target: 0.0}
     }
 }
 

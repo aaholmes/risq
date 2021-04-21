@@ -20,8 +20,8 @@ pub struct OPair(i32, i32);
 
 // Double excitation triplet (r, s, |H|)
 pub struct Doub {
-    init: OPair, // For now, store the initial pair here too
-    target: OPair,
+    pub(crate) init: OPair, // For now, store the initial pair here too
+    pub(crate) target: OPair,
     abs_h: f64,
 }
 
@@ -32,100 +32,6 @@ pub struct Sing {
     max_abs_h: f64,
 }
 
-impl Det {
-    pub fn excite_det_opp_doub(&self, doub: Doub) -> Option(Det) {
-        // Excite det using double excitation
-        // Returns None if not possible
-        if !btest(self.up, doub.init.0) { return None; }
-        if !btest(self.dn, doub.init.1) { return None; }
-        if btest(self.up, doub.target.0) { return None; }
-        if btest(self.dn, doub.target.1) { return None; }
-        Some(
-            Det::new(
-                ibset(ibclr(self.up, init.0), target.0),
-                ibset(ibclr(self.dn, init.1), target.1)
-            )
-        )
-    }
-
-    pub fn excite_det_same_doub(&self, doub: Doub, is_up: bool) -> Option(Det) {
-        // Excite det using double excitation
-        // is_up is true if a same-spin up; false if a same-spin dn
-        // Returns None if not possible
-        if is_up {
-            if !btest(self.up, doub.init.0) { return None; }
-            if !btest(self.up, doub.init.1) { return None; }
-            if btest(self.up, doub.target.0) { return None; }
-            if btest(self.up, doub.target.1) { return None; }
-            Some(
-                Det::new(
-                    ibset(
-                        ibset(
-                            ibclr(
-                                ibclr(
-                                    self.up, init.0
-                                ), init.1
-                            ), target.0
-                        ), target.1
-                    ),
-                    self.dn
-                )
-            )
-        } else {
-            if !btest(self.dn, doub.init.0) { return None; }
-            if !btest(self.dn, doub.init.1) { return None; }
-            if btest(self.dn, doub.target.0) { return None; }
-            if btest(self.dn, doub.target.1) { return None; }
-            Some(
-                Det::new(
-                    self.up,
-                    ibset(
-                        ibset(
-                            ibclr(
-                                ibclr(
-                                    self.dn, init.0
-                                ), init.1
-                            ), target.0
-                        ), target.1
-                    )
-                )
-            )
-        }
-    }
-
-    pub fn excite_det_sing(&self, sing: Sing, is_up: bool) -> Option(Det) {
-        // Excite det using single excitation
-        // is_up is true if a single up; false if a single dn
-        // Returns None if not possible
-        if is_up {
-            if !btest(self.up, sing.init) { return None; }
-            if btest(self.up, sing.target) { return None; }
-            Some(
-                Det::new(
-                    ibset(
-                        ibclr(
-                            self.up, init.0
-                        ), target.0
-                    ),
-                    self.dn
-                )
-            )
-        } else {
-            if !btest(self.up, sing.init) { return None; }
-            if btest(self.up, sing.target) { return None; }
-            Some(
-                Det::new(
-                    self.up,
-                    ibset(
-                        ibclr(
-                            self.dn, init.0
-                        ), target.0
-                    )
-                )
-            )
-        }
-    }
-}
 
 // Heat-bath excitation generator
 pub struct ExciteGenerator {
@@ -287,40 +193,3 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
 
     excite_gen
 }
-
-
-// impl ExciteGenerator {
-//
-//     pub fn iter(&self, det: Det) -> Vec<dyn Iterator<Type = Doub>> {
-//         // Return a vector of iterators for this det's double excitations
-//         // Can stay with the det, so future HCI iterations don't replicate
-//         // excite generation effort (at least for the highest-weight dets,
-//         // since storing it for all of them is probably too much)
-//
-//         let mut excite_vec: Vec<dyn Iterator<Type=Doub>> = vec![];
-//
-//         // Opposite spin doubles
-//         for i in bits(det.up) {
-//             for j in bits(det.dn) {
-//                 excite_vec.append(self.opp_spin_doub_generator[&OPair(i, j)].to_iter());
-//             }
-//         }
-//
-//         // Same spin doubles
-//         for i in bits(det.up) {
-//             for j in bits(det.up) {
-//                 excite_vec.append(self.same_spin_doub_generator[&OPair(i, j)].to_iter());
-//             }
-//         }
-//         for i in bits(det.dn) {
-//             for j in bits(det.dn) {
-//                 excite_vec.append(self.same_spin_doub_generator[&OPair(i, j)].to_iter());
-//             }
-//         }
-//
-//         // TODO: Single excitations
-//
-//         excite_vec
-//     }
-//
-// }

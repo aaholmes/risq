@@ -14,11 +14,11 @@ pub fn variational(ham: &Ham, excite_gen: &ExciteGenerator, wf: &mut Wf) {
 
     while !wf.converged {
 
+        iter += 1;
+
         wf.add_new_dets(&ham, &excite_gen);
 
         wf.optimize(&ham, &excite_gen);
-
-        iter += 1;
 
         println!("End of iteration {}: Wavefunction has {} determinants with energy {}", iter, wf.n, wf.energy);
 
