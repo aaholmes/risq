@@ -3,15 +3,13 @@
 // wf, then drops by a factor of 2 every iteration until it reaches the target value set in the
 // input file
 
+use std::cmp::max;
 use std::collections::HashMap;
 
-use super::ham::Ham;
-use super::utils::read_input::Global;
-use crate::excite::{ExciteGenerator, Doub, OPair, Sing};
-use crate::utils::bits::{bits, btest, ibset, ibclr};
-use std::cmp::max;
 use crate::wf::Wf;
+use crate::utils::bits::bits;
 use crate::utils::read_input::Global;
+use crate::excite::{ExciteGenerator, OPair};
 
 
 #[derive(Clone, Copy)]
