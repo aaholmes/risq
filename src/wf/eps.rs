@@ -41,7 +41,7 @@ impl Wf {
         // Initialize epsilon iterator
         // max_doub is the largest double excitation magnitude coming from the wavefunction
         // Can't just use excite_gen.max_(same/opp)_spin_doub because we want to only consider
-        // excitations coming from current wf
+        // excitations coming from initial wf (usually HF det)
         let mut max_doub: f64 = global.eps;
         let mut this_doub: f64 = 0.0;
         for det in self.dets {
@@ -71,7 +71,7 @@ impl Wf {
             for i in bits(det.dn) {
                 for j in bits(det.dn) {
                     if i >= j { continue; }
-                    for excite in excite_gen.opp_spin_doub_generator.get(&OPair(i, j)) {
+                    for excite in excite_gen.same_spin_doub_generator.get(&OPair(i, j)) {
                         this_doub: f64 = excite.next().unwrap().abs_h;
                         if this_doub > max_doub {
                             max_doub = this_doub;
