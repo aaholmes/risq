@@ -4,11 +4,10 @@ pub mod read_ints;
 
 use super::utils::bits::{bits, det_bits};
 use super::utils::ints::{combine_2, combine_4, permute, permute_2};
-use super::utils::read_input::Global;
 use crate::wf::det::Det;
 use read_ints::Ints;
 
-// Hamiltonian, containing both integrals and heat-bath hashmap of double excitations
+// Hamiltonian, containing integrals and matrix element computing functions
 #[derive(Default)]
 pub struct Ham {
     ints: Ints,
@@ -22,18 +21,12 @@ impl Ham {
         // Insensitive to whether indices are positive or negative (up or dn spin)
         // NB: get_int starts at index 1 (since that's how FCIDUMP is defined), but
         // all of the ham element functions start at index 0 (since so does Rust)
-        if p == 0 && q == 0 && r == 0 && s == 0 {
-            self.ints.nuc
-        } else if r == 0 && s == 0 {
-            self.ints.one_body[combine_2(p, q)]
-        } else {
-            self.ints.two_body[combine_4(p, q, r, s)]
-        }
+        self.ints.two_body[combine_4(p, q, r, s)]
     }
 
     pub fn one_body(&self, p: i32, q: i32) -> f64 {
         // Get the one-body energy h_{pq}
-        self.get_int(p + 1, q + 1, 0, 0)
+        self.ints.one_body[combine_2(p + 1, q + 1)]
     }
 
     pub fn direct(&self, p: i32, q: i32, r: i32, s: i32) -> f64 {
@@ -53,13 +46,11 @@ impl Ham {
 
         // nuclear-nuclear component
         let mut diag: f64 = self.ints.nuc;
-        println!("Nuc: {}", diag);
 
         // one-body component
         for i in det_bits(det) {
             diag += self.one_body(i, i);
         }
-        println!("One-body: {}", diag - self.ints.nuc);
 
         // two-body component
         for i in bits(det.up) {
@@ -92,14 +83,14 @@ impl Ham {
             let j: i32 = (det2.up & !det1.up).trailing_zeros() as i32;
 
             // One-body term
-            out = (permute(det1.up, [i, j]) as f64) * self.one_body(i, j);
+            out = self.one_body(i, j);
 
             // Two-body term
             for k in bits(det1.up) {
-                out += self.direct_plus_exchange(i, j, k, k);
+                out += self.direct_plus_exchange(i, k, j, k);
             }
             for k in bits(det1.dn) {
-                out += self.direct(i, j, k, k);
+                out += self.direct(i, k, j, k);
             }
             out *= permute(det1.up, [i, j]) as f64;
 
@@ -109,14 +100,14 @@ impl Ham {
             let j: i32 = (det2.dn & !det1.dn).trailing_zeros() as i32;
 
             // One-body term
-            out = (permute(det1.dn, [i, j]) as f64) * self.one_body(i, j);
+            out = self.one_body(i, j);
 
             // Two-body term
             for k in bits(det1.dn) {
-                out += self.direct_plus_exchange(i, j, k, k);
+                out += self.direct_plus_exchange(i, k, j, k);
             }
             for k in bits(det1.up) {
-                out += self.direct(i, j, k, k);
+                out += self.direct(i, k, j, k);
             }
             out *= permute(det1.dn, [i, j]) as f64;
 

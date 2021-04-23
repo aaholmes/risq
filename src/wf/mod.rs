@@ -5,12 +5,11 @@ pub mod det;
 mod eps;
 
 use std::collections::HashMap;
-use std::cmp::max;
 
 use super::utils::read_input::Global;
 use super::ham::Ham;
-use crate::excite::{ExciteGenerator, Doub, OPair, Sing};
-use crate::utils::bits::{bits, btest, ibset, ibclr};
+use crate::excite::{ExciteGenerator, OPair};
+use crate::utils::bits::bits;
 use det::{AugDet, Det};
 use eps::{Eps, init_eps};
 
@@ -27,13 +26,12 @@ pub struct Wf {
 
 impl Wf {
     pub fn print(&self) {
-        println!(
-            "Wavefunction has {} dets with energy {}",
-            self.n, self.energy
-        );
+        println!("\nWavefunction has {} dets with energy {}", self.n, self.energy);
+        println!("Coeff   Det_up   Det_dn   <D|H|D>");
         for d in self.dets.iter() {
-            println!("{} {}   {}", fmt_det(d.det.up), fmt_det(d.det.dn), d.coeff);
+            println!("{}   {} {}   {}", d.coeff, fmt_det(d.det.up), fmt_det(d.det.dn), d.diag);
         }
+        println!("\n");
     }
 
     pub fn add_det(&mut self, d: AugDet) {
@@ -70,7 +68,7 @@ impl Wf {
                                             AugDet {
                                                 det: d,
                                                 coeff: 0.0,
-                                                diag: det.new_diag_opp(ham, det.diag, excite)
+                                                diag: det.new_diag_opp(ham, excite)
                                             }
                                         );
                                     }
@@ -98,7 +96,7 @@ impl Wf {
                                             AugDet {
                                                 det: d,
                                                 coeff: 0.0,
-                                                diag: det.new_diag_same(ham, det.diag, excite, true)
+                                                diag: det.new_diag_same(ham, excite, true)
                                             }
                                         );
                                     }
@@ -122,7 +120,7 @@ impl Wf {
                                             AugDet {
                                                 det: d,
                                                 coeff: 0.0,
-                                                diag: det.new_diag_same(ham, det.diag, excite, false)
+                                                diag: det.new_diag_same(ham, excite, false)
                                             }
                                         );
                                     }
@@ -139,18 +137,20 @@ impl Wf {
                 for i in bits(det.det.up) {
                     for excite in &excite_gen.sing_generator[i as usize] {
                         if excite.max_abs_h < local_eps { break; }
-                        // TODO: compute single excitation mat elem here, check if it exceeds eps
                         new_det = det.det.excite_det_sing(&excite, true);
                         match new_det {
                             Some(d) => {
                                 if !self.inds.contains_key(&d) {
-                                    new_dets.push(
-                                        AugDet {
-                                            det: d,
-                                            coeff: 0.0,
-                                            diag: det.new_diag_sing(ham, det.diag, &excite, true)
-                                        }
-                                    );
+                                    // Compute single excitation mat elem here, check if it exceeds eps
+                                    if (ham.ham_sing(&det.det, &d)).abs() >= local_eps {
+                                        new_dets.push(
+                                            AugDet {
+                                                det: d,
+                                                coeff: 0.0,
+                                                diag: det.new_diag_sing(ham, &excite, true)
+                                            }
+                                        );
+                                    }
                                 }
                             }
                             None => break
@@ -160,18 +160,20 @@ impl Wf {
                 for i in bits(det.det.dn) {
                     for excite in &excite_gen.sing_generator[i as usize] {
                         if excite.max_abs_h < local_eps { break; }
-                        // TODO: compute single excitation mat elem here, check if it exceeds eps
                         new_det = det.det.excite_det_sing(&excite, false);
                         match new_det {
                             Some(d) => {
                                 if !self.inds.contains_key(&d) {
-                                    new_dets.push(
-                                        AugDet {
-                                            det: d,
-                                            coeff: 0.0,
-                                            diag: det.new_diag_sing(ham, det.diag, &excite, false)
-                                        }
-                                    );
+                                    // Compute single excitation mat elem here, check if it exceeds eps
+                                    if (ham.ham_sing(&det.det, &d)).abs() >= local_eps {
+                                        new_dets.push(
+                                            AugDet {
+                                                det: d,
+                                                coeff: 0.0,
+                                                diag: det.new_diag_sing(ham, &excite, false)
+                                            }
+                                        );
+                                    }
                                 }
                             }
                             None => break
@@ -183,7 +185,13 @@ impl Wf {
         } // for det in self.dets
 
         // Finally, add all new dets to the wf
+        // let mut diag: f64;
         for det in new_dets {
+            // diag = ham.ham_diag(&det.det);
+            // if (det.diag - diag).abs() > 1e-9 {
+            //     println!("{} {}", fmt_det(det.det.up), fmt_det(det.det.dn));
+            //     println!("Warning! Diagonal element may be wrong! Expected {}, got {}", diag, det.diag);
+            // }
             self.add_det(det);
         }
     }

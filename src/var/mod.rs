@@ -1,6 +1,5 @@
 // Variational stage
 
-use super::utils::read_input::Global;
 use super::ham::Ham;
 use super::wf::Wf;
 use crate::excite::ExciteGenerator;
@@ -23,13 +22,13 @@ pub fn variational(ham: &Ham, excite_gen: &ExciteGenerator, wf: &mut Wf) {
 
         // TODO: wf.optimize(&ham, &excite_gen);
 
+        break;
         println!("End of iteration {}: Wavefunction has {} determinants with energy {}", iter, wf.n, wf.energy);
 
         if wf.n <= 20 {
             wf.print();
         }
 
-        break;
 
     }
 

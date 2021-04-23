@@ -45,7 +45,6 @@ pub fn init_eps(wf: &Wf, global: &Global, excite_gen: &ExciteGenerator) -> Eps {
                 excite = &excite_gen.opp_spin_doub_generator.get(&OPair(i, j)).unwrap()[0];
                 if !btest(det.det.up, excite.target.0) && !btest(det.det.dn, excite.target.1) {
                     this_doub = excite.abs_h;
-                    println!("Found new double: {}", this_doub);
                     if this_doub > max_doub {
                         max_doub = this_doub;
                     }
@@ -58,7 +57,6 @@ pub fn init_eps(wf: &Wf, global: &Global, excite_gen: &ExciteGenerator) -> Eps {
                 excite = &excite_gen.opp_spin_doub_generator.get(&OPair(i, j)).unwrap()[0];
                 if !btest(det.det.up, excite.target.0) && !btest(det.det.dn, excite.target.1) {
                     this_doub = excite.abs_h;
-                    println!("Found new double: {}", this_doub);
                     if this_doub > max_doub {
                         max_doub = this_doub;
                     }
@@ -71,7 +69,6 @@ pub fn init_eps(wf: &Wf, global: &Global, excite_gen: &ExciteGenerator) -> Eps {
                 excite = &excite_gen.opp_spin_doub_generator.get(&OPair(i, j)).unwrap()[0];
                 if !btest(det.det.up, excite.target.0) && !btest(det.det.dn, excite.target.1) {
                     this_doub = excite.abs_h;
-                    println!("Found new double: {}", this_doub);
                     if this_doub > max_doub {
                         max_doub = this_doub;
                     }

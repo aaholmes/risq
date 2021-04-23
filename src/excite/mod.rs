@@ -1,19 +1,13 @@
 // Excitation generation module:
 // Includes sorted excitations for heat-bath algorithm
 
-use std::cmp;
-use std::cmp::max;
 use std::cmp::Ordering::Equal;
 use std::collections::HashMap;
-use std::hash::{Hash, Hasher};
+use std::hash::Hash;
 
-use super::utils::bits::{bits, btest, ibclr, ibset};
 use super::utils::read_input::Global;
 
 use super::ham::Ham;
-
-use crate::wf::det::Det;
-
 
 // Orbital pair
 #[derive(Debug, PartialEq, Eq, Hash)]
