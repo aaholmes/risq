@@ -11,7 +11,7 @@ pub fn bits(det: u128) -> impl Iterator<Item = i32> {
 }
 
 // Iterate over pairs of set bits in a u128
-// Syntax: for i in bit_pairs(det: u128): loops over the unique pairs of set bits in det
+// Syntax: for (i, j) in bit_pairs(det: u128): loops over the unique pairs of set bits in det
 pub fn bit_pairs(det: u128) -> impl Iterator<Item = (i32, i32)> {
     BitPairs::new(det).into_iter()
 }
