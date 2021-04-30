@@ -18,22 +18,44 @@ use super::utils::read_input::Global;
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct OPair(pub i32, pub i32);
 
+
+// Excitations
+pub enum Excite {
+    Double(Doub),
+    Single(Sing)
+}
+
 // Double excitation triplet (r, s, |H|)
 pub struct Doub {
-    pub(crate) init: OPair, // For now, store the initial pair here too
-    pub(crate) target: OPair,
-    pub(crate) abs_h: f64,
+    pub init: OPair, // For now, store the initial pair here too
+    pub target: OPair,
+    pub abs_h: f64,
+    pub is_alpha: Option<bool>, // if None, then either opposite spin double or hasn't been set yet
 }
 
 // Single excitation doublet (r, max |H|)
 pub struct Sing {
-    pub(crate) init: i32, // Store init as in Doub
-    pub(crate) target: i32,
-    pub(crate) max_abs_h: f64,
+    pub init: i32, // Store init as in Doub
+    pub target: i32,
+    pub max_abs_h: f64,
+    pub is_alpha: Option<bool>, // if None, then either opposite spin double or hasn't been set yet
 }
 
-// Excitation (unifies single and double excitations into one enum)
-pub enum Excite {
-    Single(Sing),
-    Double(Doub),
+
+// Simplified excitations for storing in heat-bath tensor
+pub enum StoredExcite {
+    Double(StoredDoub),
+    Single(StoredSing)
+}
+
+// Double excitation triplet (r, s, |H|)
+pub struct StoredDoub {
+    pub target: OPair,
+    pub abs_h: f64,
+}
+
+// Single excitation doublet (r, max |H|)
+pub struct StoredSing {
+    pub target: i32,
+    pub max_abs_h: f64,
 }
