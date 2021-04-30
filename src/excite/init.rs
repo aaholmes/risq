@@ -4,7 +4,7 @@ use core::cmp::Ordering::Equal;
 use core::default::Default;
 use std::collections::HashMap;
 
-use crate::excite::{Excite, Orbs, StoredSing, StoredDoub, OPair};
+use crate::excite::{StoredSing, StoredDoub, OPair};
 use crate::utils::read_input::Global;
 use crate::ham::Ham;
 
@@ -87,7 +87,7 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
             }
             // Sort v in decreasing order by abs_h
             v.sort_by(|a, b| b.abs_h.partial_cmp(&a.abs_h).unwrap_or(Equal));
-            excite_gen.same_spin_doub_generator.insert(Orbs::Double((p, q)), v);
+            excite_gen.same_spin_doub_generator.insert(OPair(p, q), v);
         }
     }
 
@@ -138,7 +138,7 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
         // Sort the max excites coming from this p in decreasing order by magnitude
         v_sing.sort_by(|a, b| b.abs_h.partial_cmp(&a.abs_h).unwrap_or(Equal));
         // Finally, add this sorted vector to sing_generator
-        excite_gen.sing_generator.insert(Orbs::Single(p),v_sing);
+        excite_gen.sing_generator.push(v_sing);
     }
 
     // Now, for each p, get its largest-magnitude excite among all p->r excites from above

@@ -1,15 +1,18 @@
 #[macro_use]
 extern crate lazy_static;
 
+#[macro_use]
+extern crate itertools;
+
 mod ham;
 use ham::Ham;
 use ham::read_ints::read_ints;
 
 mod excite;
-use excite::{ExciteGenerator, init_excite_generator};
+use excite::init::{ExciteGenerator, init_excite_generator};
 
 pub mod wf;
-use wf::{Wf, init_wf};
+use wf::{Wf, init_var_wf};
 
 mod var;
 use var::variational;
@@ -18,6 +21,8 @@ mod utils;
 use utils::read_input::{Global, read_input};
 
 fn main() {
+
+    println!("ESP - Electronic Structure Package\nAdam A Holmes, 2021\n");
 
     println!("Reading input file");
     lazy_static! {
@@ -35,7 +40,7 @@ fn main() {
     }
 
     println!("Initializing wavefunction");
-    let mut wf: Wf = init_wf(&global, &ham, &excite_gen);
+    let mut wf: Wf = init_var_wf(&global, &ham, &excite_gen);
     wf.print();
 
     println!("Computing variational wavefunction and energy");

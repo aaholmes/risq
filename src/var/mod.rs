@@ -1,8 +1,10 @@
 // Variational stage
 
+// mod davidson;
+
 use super::ham::Ham;
 use super::wf::Wf;
-use crate::excite::ExciteGenerator;
+use crate::excite::init::ExciteGenerator;
 
 
 pub fn variational(ham: &Ham, excite_gen: &ExciteGenerator, wf: &mut Wf) {

@@ -27,16 +27,42 @@ impl MatrixOperations for SparseMat {
         }
         res
     }
-    fn matrix_matrix_prod(&self, mtx: DMatrixSlice<'_, f64>) -> DMatrix<f64> { todo!() }
+
+    fn matrix_matrix_prod(&self, mtx: DMatrixSlice<'_, f64>) -> DMatrix<f64> {
+        let mut res: DMatrix<f64> = mtx.clone().into();
+        for (in_col, out_col) in mtx.iter().zip(res.iter()) {
+            out_col = self.matrix_vector_prod(in_col);
+        }
+        res
+    }
+
     fn diagonal(&self) -> DVector<f64> { 
         let mut diag: DVector<f64> = DVector::zeros(self.ham.rows());
         for (row_ind, lvec) in self.ham.outer_iterator().enumerate() {
-            diag[row_ind] = lvec[row_ind];
+            for (ind, val) in lvec.iter() {
+                if ind == row_ind {
+                    diag[ind] = *val;
+                    break;
+                }
+            }
         }
         diag
      }
-    fn set_diagonal(&mut self, diag: &DVector<f64>) { todo!() }
+
+    fn set_diagonal(&mut self, diag: &DVector<f64>) {
+        for (row_ind, lvec) in self.ham.outer_iterator().enumerate() {
+            for (ind, _) in lvec.iter() {
+                if ind == row_ind {
+                    // TODO: Fix this!
+                    // self.diagonal()[ind] = *diag[ind];
+                    break;
+                }
+            }
+        }
+    }
+
     fn ncols(&self) -> usize { self.ham.cols() }
+
     fn nrows(&self) -> usize { self.ham.rows() }
 }
 
@@ -54,27 +80,27 @@ mod tests {
 
         // Compute the first 2 lowest eigenvalues/eigenvectors using the DPR method
         let eig = Davidson::new(sparse_ham, 2, DavidsonCorrection::DPR, SpectrumTarget::Lowest, tolerance).unwrap();
-        println!("eigenvalues:{}", eig.eigenvalues);
+        println!("eigenvalues:{}", eig.eigenvalues[0]);
         println!("eigenvectors:{}", eig.eigenvectors);
         assert_eq!(1, 1);
     }
 
     #[test]
     fn test_sparse_ham_davidson() {
-//        let sparse_ham = SparseMat { ham: CsMat::new((3, 3),
-//                        vec![0, 2, 4, 5],
-//                        vec![0, 1, 0, 2, 2],
-//                        vec![1., 2., 3., 4., 5.])};
-        let mut sparse_ham = SparseMat { ham: CsMat::eye(2)};
+        let sparse_ham = SparseMat { ham: CsMat::new((3, 3),
+                        vec![0, 2, 4, 5],
+                        vec![0, 1, 0, 2, 2],
+                        vec![1., 2., 3., 4., 5.])};
+//        let mut sparse_ham = SparseMat { ham: CsMat::eye(2)};
 
-        //sparse_ham.ham.set(0, 1, 0.005);
-        //sparse_ham.ham.set(1, 0, 0.005);
+//        sparse_ham.ham.set(0, 1, 0.005);
+//        sparse_ham.ham.set(1, 0, 0.005);
 
-        let tolerance = 1e-4;
+        let tolerance = 1e-9;
 
         // Compute the first 2 lowest eigenvalues/eigenvectors using the DPR method
         let eig = Davidson::new(sparse_ham, 1, DavidsonCorrection::DPR, SpectrumTarget::Lowest, tolerance).unwrap();
-        println!("eigenvalues:{}", eig.eigenvalues);
+        println!("eigenvalues:{}", eig.eigenvalues[0]);
         println!("eigenvectors:{}", eig.eigenvectors);
         assert_eq!(1, 1);
     }

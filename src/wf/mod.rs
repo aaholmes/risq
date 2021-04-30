@@ -8,9 +8,9 @@ use std::collections::HashMap;
 
 use super::utils::read_input::Global;
 use super::ham::Ham;
-use crate::excite::{ExciteGenerator, OPair};
-use crate::utils::bits::bits;
-use det::{AugDet, Det};
+use crate::excite::Excite;
+use crate::excite::init::ExciteGenerator;
+use det::{Det, Config};
 use eps::{Eps, init_eps};
 
 #[derive(Default)]
@@ -20,8 +20,8 @@ pub struct Wf {
     pub eps_iter: Eps, // iterator that produces the variational epsilon for each HCI iteration
     pub n: usize,                         // number of dets
     pub energy: f64,                    // variational energy
-    inds: HashMap<Det, usize>,            // hashtable : det -> u64 for looking up index by det
-    dets: Vec<AugDet>,                     // for looking up augmented det by index
+    inds: HashMap<Config, usize>,            // hashtable : det -> u64 for looking up index by det
+    dets: Vec<Det>,                     // for looking up augmented det by index
 }
 
 impl Wf {
@@ -29,172 +29,205 @@ impl Wf {
         println!("\nWavefunction has {} dets with energy {}", self.n, self.energy);
         println!("Coeff   Det_up   Det_dn   <D|H|D>");
         for d in self.dets.iter() {
-            println!("{}   {} {}   {}", d.coeff, fmt_det(d.det.up), fmt_det(d.det.dn), d.diag);
+            println!("{}   {} {}   {}", d.coeff, fmt_det(d.config.up), fmt_det(d.config.dn), d.diag);
         }
         println!("\n");
     }
 
-    pub fn add_det(&mut self, d: AugDet) {
-        if !self.inds.contains_key(&d.det) {
-            self.inds.insert(d.det, self.n);
+    pub fn push(&mut self, d: Det) {
+        // Just adds a new det to the wf
+        if !self.inds.contains_key(&d.config) {
+            self.inds.insert(d.config, self.n);
             self.n += 1;
             self.dets.push(d);
         }
     }
 
+    pub fn add_det_with_coeff(&mut self, exciting_det: Det, ham: &Ham, excite: &Excite, new_det: Config, coeff: f64) {
+        // Add det with its coefficient
+        // If det already exists in wf, add its coefficient to that det
+        // Also, computes diagonal element if necessary
+        let ind = self.inds.get(&new_det);
+        match ind {
+            Some(k) => self.dets[*k].coeff += coeff,
+            None => {
+                let diag = exciting_det.new_diag(ham, excite);
+                self.inds.insert(new_det, self.n);
+                self.n += 1;
+                self.dets.push(
+                    Det{
+                        config: new_det,
+                        coeff: coeff,
+                        diag: diag
+                    }
+                );
+            }
+        }
+    }
+
+    pub fn approx_matmul(&self, ham: &Ham, excite_gen: &ExciteGenerator) -> Vec<Det> {
+        todo!()
+    }
+
     pub fn get_new_dets(&mut self, ham: &Ham, excite_gen: &ExciteGenerator) {
         // Get new dets: iterate over all dets; for each, propose all excitations; for each, check if new;
         // if new, add to wf
+
         let eps: f64 = self.eps_iter.next().unwrap();
-        println!("Getting new dets with epsilon = {}", eps);
-        let mut local_eps: f64;
-        let mut new_det: Option<Det>;
-        // We can't just iterate over dets because we are adding new dets to the same dets data structure
-        let mut new_dets: Vec<AugDet> = vec![];
-        for det in &self.dets {
-            local_eps = eps / det.coeff.abs();
-            // Double excitations
-            // Opposite spin
-            if excite_gen.max_opp_spin_doub >= local_eps {
-                for i in bits(det.det.up) {
-                    for j in bits(det.det.dn) {
-                        for excite in excite_gen.opp_spin_doub_generator.get(&OPair(i, j)).unwrap() {
-                            if excite.abs_h < local_eps { break; }
-                            new_det = det.det.excite_det_opp_doub(excite);
-                            match new_det {
-                                Some(d) => {
-                                    if !self.inds.contains_key(&d) {
-                                        new_dets.push(
-                                            AugDet {
-                                                det: d,
-                                                coeff: 0.0,
-                                                diag: det.new_diag_opp(ham, excite)
-                                            }
-                                        );
-                                    }
-                                }
-                                None => break
-                            }
-                        }
-                    }
-                }
-            }
 
-            // Same spin
-            if excite_gen.max_same_spin_doub >= local_eps {
-                // TODO: Make this a new iterator over pairs of set bits!
-                for i in bits(det.det.up) {
-                    for j in bits(det.det.up) {
-                        if i >= j { continue; }
-                        for excite in excite_gen.same_spin_doub_generator.get(&OPair(i, j)).unwrap() {
-                            if excite.abs_h < local_eps { break; }
-                            new_det = det.det.excite_det_same_doub(excite, true);
-                            match new_det {
-                                Some(d) => {
-                                    if !self.inds.contains_key(&d) {
-                                        new_dets.push(
-                                            AugDet {
-                                                det: d,
-                                                coeff: 0.0,
-                                                diag: det.new_diag_same(ham, excite, true)
-                                            }
-                                        );
-                                    }
-                                }
-                                None => break
-                            }
-                        }
-                    }
-                }
-                // TODO: Make this a new iterator over pairs of set bits!
-                for i in bits(det.det.dn) {
-                    for j in bits(det.det.dn) {
-                        if i >= j { continue; }
-                        for excite in excite_gen.same_spin_doub_generator.get(&OPair(i, j)).unwrap() {
-                            if excite.abs_h < local_eps { break; }
-                            new_det = det.det.excite_det_same_doub(excite, false);
-                            match new_det {
-                                Some(d) => {
-                                    if !self.inds.contains_key(&d) {
-                                        new_dets.push(
-                                            AugDet {
-                                                det: d,
-                                                coeff: 0.0,
-                                                diag: det.new_diag_same(ham, excite, false)
-                                            }
-                                        );
-                                    }
-                                }
-                                None => break
-                            }
-                        }
-                    }
-                }
-            }
+        let new_dets: Wf = self.iterate_excites(ham, excite_gen, eps, true);
 
-            // Single excitations
-            if excite_gen.max_sing >= local_eps {
-                for i in bits(det.det.up) {
-                    for excite in &excite_gen.sing_generator[i as usize] {
-                        if excite.max_abs_h < local_eps { break; }
-                        new_det = det.det.excite_det_sing(&excite, true);
-                        match new_det {
-                            Some(d) => {
-                                if !self.inds.contains_key(&d) {
-                                    // Compute single excitation mat elem here, check if it exceeds eps
-                                    if (ham.ham_sing(&det.det, &d)).abs() >= local_eps {
-                                        new_dets.push(
-                                            AugDet {
-                                                det: d,
-                                                coeff: 0.0,
-                                                diag: det.new_diag_sing(ham, &excite, true)
-                                            }
-                                        );
-                                    }
-                                }
-                            }
-                            None => break
-                        }
-                    }
-                }
-                for i in bits(det.det.dn) {
-                    for excite in &excite_gen.sing_generator[i as usize] {
-                        if excite.max_abs_h < local_eps { break; }
-                        new_det = det.det.excite_det_sing(&excite, false);
-                        match new_det {
-                            Some(d) => {
-                                if !self.inds.contains_key(&d) {
-                                    // Compute single excitation mat elem here, check if it exceeds eps
-                                    if (ham.ham_sing(&det.det, &d)).abs() >= local_eps {
-                                        new_dets.push(
-                                            AugDet {
-                                                det: d,
-                                                coeff: 0.0,
-                                                diag: det.new_diag_sing(ham, &excite, false)
-                                            }
-                                        );
-                                    }
-                                }
-                            }
-                            None => break
-                        }
-                    }
-                }
-            }
-
-        } // for det in self.dets
-
-        // Finally, add all new dets to the wf
-        // let mut diag: f64;
-        for det in new_dets {
-            // diag = ham.ham_diag(&det.det);
-            // if (det.diag - diag).abs() > 1e-9 {
-            //     println!("{} {}", fmt_det(det.det.up), fmt_det(det.det.dn));
-            //     println!("Warning! Diagonal element may be wrong! Expected {}, got {}", diag, det.diag);
-            // }
-            self.add_det(det);
+        // Add all new dets to the wf
+        for det in new_dets.dets {
+            self.push(det);
         }
     }
+
+    // fn iterate_excites(&mut self, ham: &Ham, excite_gen: &ExciteGenerator, eps: f64, matmul: bool) -> Wf {
+    //     // Iterate over excitations using heat-bath cutoff eps
+    //     // Used internally by both approx_matmul and get_new_dets
+    //     // If matmul, then return H*psi; else, return a wf composed of new dets
+    //     println!("Getting new dets with epsilon = {}", eps);
+    //     let mut local_eps: f64;
+    //     let mut new_det: Option<Config>;
+    //     // We can't just iterate over dets because we are adding new dets to the same dets data structure
+    //     let mut out: Wf = Wf::default();
+    //     for det in &self.dets {
+    //         local_eps = eps / det.coeff.abs();
+    //         // Double excitations
+    //         // Opposite spin
+    //         if excite_gen.max_opp_spin_doub >= local_eps {
+    //             for i in bits(det.config.up) {
+    //                 for j in bits(det.config.dn) {
+    //                     for excite in excite_gen.opp_spin_doub_generator.get(&OPair(i, j)).unwrap() {
+    //                         //self.process_excite(det, ham, excite, ???)
+    //                         if excite.abs_h < local_eps { break; }
+    //                         new_det = det.config.excite_det(excite);
+    //                         match new_det {
+    //                             Some(d) => {
+    //                                 // Valid excite: either add to H*psi or add this det to out
+    //                                 if matmul {
+    //                                     // Compute matrix element and add to H*psi
+    //                                     let coeff: f64 = 0.0;
+    //                                     //out.add_det_with_coeff(det, ham, excite, d, coeff);
+    //                                 } else {
+    //                                     if !self.inds.contains_key(&d) {
+    //                                         out.push(
+    //                                             Det {
+    //                                                 config: d,
+    //                                                 coeff: 0.0,
+    //                                                 diag: det.new_diag_opp(ham, excite)
+    //                                             }
+    //                                         );
+    //                                     }
+    //                                 }
+    //                             }
+    //                             None => break
+    //                         }
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //
+    //         // Same spin
+    //         if excite_gen.max_same_spin_doub >= local_eps {
+    //             for (i, j) in bit_pairs(det.config.up) {
+    //                 for excite in excite_gen.same_spin_doub_generator.get(&OPair(i, j)).unwrap() {
+    //                     if excite.abs_h < local_eps { break; }
+    //                     new_det = det.config.excite_det_same_doub(excite, true);
+    //                     match new_det {
+    //                         Some(d) => {
+    //                             if !self.inds.contains_key(&d) {
+    //                                 out.push(
+    //                                     Det {
+    //                                         config: d,
+    //                                         coeff: 0.0,
+    //                                         diag: det.new_diag_same(ham, excite, true)
+    //                                     }
+    //                                 );
+    //                             }
+    //                         }
+    //                         None => break
+    //                     }
+    //                 }
+    //             }
+    //             for (i, j) in bit_pairs(det.config.dn) {
+    //                 for excite in excite_gen.same_spin_doub_generator.get(&OPair(i, j)).unwrap() {
+    //                     if excite.abs_h < local_eps { break; }
+    //                     new_det = det.config.excite_det_same_doub(excite, false);
+    //                     match new_det {
+    //                         Some(d) => {
+    //                             if !self.inds.contains_key(&d) {
+    //                                 out.push(
+    //                                     Det {
+    //                                         config: d,
+    //                                         coeff: 0.0,
+    //                                         diag: det.new_diag_same(ham, excite, false)
+    //                                     }
+    //                                 );
+    //                             }
+    //                         }
+    //                         None => break
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //
+    //         // Single excitations
+    //         if excite_gen.max_sing >= local_eps {
+    //             for i in bits(det.config.up) {
+    //                 for excite in &excite_gen.sing_generator[i as usize] {
+    //                     if excite.max_abs_h < local_eps { break; }
+    //                     new_det = det.config.excite_det_sing(&excite, true);
+    //                     match new_det {
+    //                         Some(d) => {
+    //                             if !self.inds.contains_key(&d) {
+    //                                 // Compute single excitation mat elem here, check if it exceeds eps
+    //                                 if (ham.ham_sing(&det.config, &d)).abs() >= local_eps {
+    //                                     out.push(
+    //                                         Det {
+    //                                             config: d,
+    //                                             coeff: 0.0,
+    //                                             diag: det.new_diag_sing(ham, &excite, true)
+    //                                         }
+    //                                     );
+    //                                 }
+    //                             }
+    //                         }
+    //                         None => break
+    //                     }
+    //                 }
+    //             }
+    //             for i in bits(det.config.dn) {
+    //                 for excite in &excite_gen.sing_generator[i as usize] {
+    //                     if excite.max_abs_h < local_eps { break; }
+    //                     new_det = det.config.excite_det_sing(&excite, false);
+    //                     match new_det {
+    //                         Some(d) => {
+    //                             if !self.inds.contains_key(&d) {
+    //                                 // Compute single excitation mat elem here, check if it exceeds eps
+    //                                 if (ham.ham_sing(&det.config, &d)).abs() >= local_eps {
+    //                                     out.push(
+    //                                         Det {
+    //                                             config: d,
+    //                                             coeff: 0.0,
+    //                                             diag: det.new_diag_sing(ham, &excite, false)
+    //                                         }
+    //                                     );
+    //                                 }
+    //                             }
+    //                         }
+    //                         None => break
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //
+    //     } // for det in self.dets
+    //
+    //     out
+    //
+    // }
 }
 
 fn fmt_det(d: u128) -> String {
@@ -203,25 +236,25 @@ fn fmt_det(d: u128) -> String {
     str::replace(&s, "_b", "")
 }
 
-// Init wf to the HF det (only needs to be called once)
-pub fn init_wf(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator) -> Wf {
+// Initialize variational wf to the HF det (only needs to be called once)
+pub fn init_var_wf(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator) -> Wf {
     let mut wf: Wf = Wf::default();
     wf.n_states = global.n_states;
     wf.converged = false;
     wf.n = 1;
     let one: u128 = 1;
-    let mut hf = AugDet {
-        det: Det {
+    let mut hf = Det {
+        config: Config {
             up: ((one << global.nup) - 1),
             dn: ((one << global.ndn) - 1),
         },
         coeff: 1.0,
         diag: 0.0,
     };
-    let h: f64 = ham.ham_diag(&hf.det);
+    let h: f64 = ham.ham_diag(&hf.config);
     hf.diag = h;
     wf.inds = HashMap::new();
-    wf.inds.insert(hf.det, 0);
+    wf.inds.insert(hf.config, 0);
     wf.dets.push(hf);
     wf.energy = wf.dets[0].diag;
     wf.eps_iter = init_eps(&wf, &global, &excite_gen);

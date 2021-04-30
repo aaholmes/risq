@@ -4,7 +4,7 @@
 
 use crate::ham::Ham;
 use crate::utils::bits::{bits, btest, ibset, ibclr};
-use crate::excite::{Doub, Sing, Excite, Orbs};
+use crate::excite::{Doub, Sing, Excite};
 
 // Configuration: up and dn spin occupation bitstrings
 #[derive(Clone, Copy, Eq, PartialEq, Hash)]
@@ -35,7 +35,7 @@ impl Config {
                 }
             },
             Excite::Single(sing) => {
-                self.is_valid_sing(sing, sing.is_alpha.unwrap())
+                self.is_valid_sing(sing, sing.is_alpha)
             }
         }
     }
@@ -50,7 +50,7 @@ impl Config {
                 }
             },
             Excite::Single(sing) => {
-                self.excite_det_sing(sing, sing.is_alpha.unwrap())
+                self.excite_det_sing(sing, sing.is_alpha)
             }
         }
     }
@@ -75,7 +75,7 @@ impl Det {
                 }
             },
             Excite::Single(sing) => {
-                self.new_diag_sing(&ham, sing, sing.is_alpha.unwrap())
+                self.new_diag_sing(&ham, sing, sing.is_alpha)
             }
         }
     }
@@ -94,7 +94,7 @@ impl Config {
     }
 
     fn is_valid_same(&self, doub: &Doub, is_alpha: bool) -> bool {
-        if (is_alpha) {
+        if is_alpha {
             if btest(self.up, doub.target.0) { return false; }
             if btest(self.up, doub.target.1) { return false; }
         } else {
@@ -105,7 +105,7 @@ impl Config {
     }
 
     fn is_valid_sing(&self, sing: &Sing, is_alpha: bool) -> bool {
-        if (is_alpha) {
+        if is_alpha {
             if btest(self.up, &sing.target as i32) { return false; }
         } else {
             if btest(self.dn, &sing.target as i32) { return false; }
@@ -121,10 +121,10 @@ impl Config {
         }
     }
 
-    fn excite_det_same(&self, doub: &Doub, is_up: bool) -> Config {
+    fn excite_det_same(&self, doub: &Doub, is_alpha: bool) -> Config {
         // Excite det using double excitation
-        // is_up is true if a same-spin up; false if a same-spin dn
-        if is_up {
+        // is_alpha is true if a same-spin up; false if a same-spin dn
+        if is_alpha {
             Config {
                 up: ibset(ibset(ibclr(ibclr(self.up, doub.init.0), doub.init.1), doub.target.0), doub.target.1),
                 dn: self.dn
@@ -137,10 +137,10 @@ impl Config {
         }
     }
 
-    fn excite_det_sing(&self, sing: &Sing, is_up: bool) -> Config {
+    fn excite_det_sing(&self, sing: &Sing, is_alpha: bool) -> Config {
         // Excite det using single excitation
-        // is_up is true if a single up; false if a single dn
-        if is_up {
+        // is_alpha is true if a single up; false if a single dn
+        if is_alpha {
             Config {
                 up: ibset(ibclr(self.up, sing.init), sing.target),
                 dn: self.dn
@@ -188,7 +188,7 @@ impl Det {
         new_diag
     }
 
-    fn new_diag_same(&self, ham: &Ham, doub: &Doub, is_up: bool) -> f64 {
+    fn new_diag_same(&self, ham: &Ham, doub: &Doub, is_alpha: bool) -> f64 {
         // Compute new diagonal element given the old one
 
         // O(1) One-body part: E += h(r) + h(s) - h(p) - h(q)
@@ -203,7 +203,7 @@ impl Det {
             - ham.direct_plus_exchange(doub.init.0, doub.init.1, doub.init.0, doub.init.1);
 
         // O(N) Two-body direct_and_exchange part: E += sum_{i in occ. but not in (p,q)} direct_and_exchange(i,r) + direct_and_exchange(i,s) - direct_and_exchange(i,p) - direct_and_exchange(i,q)
-        if is_up {
+        if is_alpha {
             for i in bits(self.config.up) {
                 if i == doub.init.0 || i == doub.init.1 { continue; }
                 new_diag += ham.direct_plus_exchange(i, doub.target.0, i, doub.target.0)
@@ -236,7 +236,7 @@ impl Det {
         new_diag
     }
 
-    fn new_diag_sing(&self, ham: &Ham, sing: &Sing, is_up: bool) -> f64 {
+    fn new_diag_sing(&self, ham: &Ham, sing: &Sing, is_alpha: bool) -> f64 {
         // Compute new diagonal element given the old one
 
         // O(1) One-body part: E += h(r) - h(p)
@@ -245,7 +245,7 @@ impl Det {
             - ham.one_body(sing.init, sing.init);
 
         // O(N) Two-body direct part: E += sum_{i in occ. but not in p} direct(i,r) - direct(i,p)
-        if is_up {
+        if is_alpha {
             for i in bits(self.config.up) {
                 if i == sing.init { continue; }
                 new_diag += ham.direct_plus_exchange(i, sing.target, i, sing.target)

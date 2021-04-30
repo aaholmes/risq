@@ -4,8 +4,9 @@ pub mod read_ints;
 
 use super::utils::bits::{bits, det_bits};
 use super::utils::ints::{combine_2, combine_4, permute, permute_2};
-use crate::wf::det::Det;
+use crate::wf::det::Config;
 use read_ints::Ints;
+use crate::utils::bits::bit_pairs;
 
 // Hamiltonian, containing integrals and matrix element computing functions
 #[derive(Default)]
@@ -39,7 +40,7 @@ impl Ham {
         self.get_int(p + 1, r + 1, q + 1, s + 1) - self.get_int(p + 1, s + 1, q + 1, r + 1)
     }
 
-    pub fn ham_diag(&self, det: &Det) -> f64 {
+    pub fn ham_diag(&self, det: &Config) -> f64 {
         // Get the diagonal element corresponding to this determinant
         // Should only be called once
         println!("Warning: Computing diagonal element (should only happen once!)");
@@ -53,27 +54,24 @@ impl Ham {
         }
 
         // two-body component
+        // opposite-spin
         for i in bits(det.up) {
-            for j in bits(det.up) {
-                if i < j {
-                    diag += self.direct_plus_exchange(i, j, i, j);
-                }
-            }
             for j in bits(det.dn) {
                 diag += self.direct(i, j, i, j);
             }
         }
-        for i in bits(det.dn) {
-            for j in bits(det.dn) {
-                if i < j {
-                    diag += self.direct_plus_exchange(i, j, i, j);
-                }
-            }
+        // same-spin, up
+        for (i, j) in bit_pairs(det.up) {
+            diag += self.direct_plus_exchange(i, j, i, j);
+        }
+        // same-spin, dn
+        for (i, j) in bit_pairs(det.dn) {
+            diag += self.direct_plus_exchange(i, j, i, j);
         }
         diag
     }
 
-    pub fn ham_sing(&self, det1: &Det, det2: &Det) -> f64 {
+    pub fn ham_sing(&self, det1: &Config, det2: &Config) -> f64 {
         // Get the single excitation matrix element corresponding to
         // the excitation from det1 to det2
         let mut out: f64;
@@ -116,7 +114,7 @@ impl Ham {
         out
     }
 
-    pub fn ham_doub(&self, det1: &Det, det2: &Det) -> f64 {
+    pub fn ham_doub(&self, det1: &Config, det2: &Config) -> f64 {
         // Get the double excitation matrix element corresponding to
         // the excitation from det1 to det2
 
