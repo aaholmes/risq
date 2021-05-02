@@ -106,9 +106,9 @@ impl Config {
 
     fn is_valid_sing(&self, sing: &Sing, is_alpha: bool) -> bool {
         if is_alpha {
-            if btest(self.up, &sing.target as i32) { return false; }
+            if btest(self.up, sing.target) { return false; }
         } else {
-            if btest(self.dn, &sing.target as i32) { return false; }
+            if btest(self.dn, sing.target) { return false; }
         }
         true
     }

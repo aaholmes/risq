@@ -136,7 +136,7 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
             );
         }
         // Sort the max excites coming from this p in decreasing order by magnitude
-        v_sing.sort_by(|a, b| b.abs_h.partial_cmp(&a.abs_h).unwrap_or(Equal));
+        v_sing.sort_by(|a, b| b.max_abs_h.partial_cmp(&a.max_abs_h).unwrap_or(Equal));
         // Finally, add this sorted vector to sing_generator
         excite_gen.sing_generator.push(v_sing);
     }
@@ -144,7 +144,7 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
     // Now, for each p, get its largest-magnitude excite among all p->r excites from above
     // (The first element in sing_generator[p] since it's already sorted in decreasing order)
     for p in 0..global.norb {
-        max_sing_list.push(excite_gen.sing_generator[p as usize][0].abs_h);
+        max_sing_list.push(excite_gen.sing_generator[p as usize][0].max_abs_h);
     }
 
     // Finally, get the global max_sing by taking max_p over the above
