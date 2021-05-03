@@ -6,16 +6,13 @@
 // where singles are candidates whose matrix elements must be computed separately
 // (because we want to check if they're new first before computing their matrix element)
 
+use std::slice::Iter;
 use std::collections::HashMap;
-use std::iter::{empty, Chain};
-use std::marker::PhantomData;
-use alloc::vec::IntoIter;
 
 use crate::excite::init::ExciteGenerator;
 use crate::excite::{Doub, Excite, OPair, Sing, StoredDoub, StoredSing};
 use crate::utils::bits::{bit_pairs, bits};
 use crate::wf::det::{Config, Det};
-use std::slice::Iter;
 
 impl ExciteGenerator {
     pub fn truncated_excites(
@@ -28,30 +25,15 @@ impl ExciteGenerator {
         // and all *candidate* single excitations that *may* exceed eps
         // The single excitation matrix elements must still be compared to eps
         let local_eps = eps / det.coeff.abs();
-        {
-            // Opposite spin double
-            if self.max_opp_spin_doub >= local_eps {
-                new_opp(det.config, &self.opp_spin_doub_generator, local_eps)
-            } else {
-                vec![].into_iter()
-            }
-        }
-        .chain({
-            // Same spin double
-            if self.max_same_spin_doub >= local_eps {
-                new_same(det.config, &self.same_spin_doub_generator, local_eps)
-            } else {
-                vec![].into_iter()
-            }
-        })
-        .chain({
+        // Opposite spin double excitations
+        new_opp(det.config, self.max_opp_spin_doub, &self.opp_spin_doub_generator, local_eps)
+        .chain(
+            // Same spin double excitations
+            new_same(det.config, self.max_same_spin_doub, &self.same_spin_doub_generator, local_eps)
+        ).chain(
             // Single excitations
-            if self.max_sing >= local_eps {
-                new_sing(det.config, &self.sing_generator, local_eps)
-            } else {
-                vec![].into_iter()
-            }
-        })
+            new_sing(det.config, self.max_sing, &self.sing_generator, local_eps)
+        )
     }
 }
 
@@ -59,11 +41,15 @@ impl ExciteGenerator {
 
 fn new_opp(
     det: Config,
+    max_opp_spin_doub: f64,
     excite_gen: &'static HashMap<OPair, Vec<StoredDoub>>,
     eps: f64,
 ) -> impl Iterator<Item=Excite> {
     // Generate iterators over all valid opposite-spin excitations
-    let mut excite_iter: impl Iterator<Item=Excite> = vec![].iter();
+    if max_opp_spin_doub < eps {
+        return None.iter();
+    }
+    let mut excite_iter: dyn Iterator<Item=Excite> = vec![].iter();
     for i in bits(det.up) {
         for j in bits(det.dn) {
             excite_iter = excite_iter.chain(
@@ -83,20 +69,24 @@ fn new_opp(
 
 fn new_same(
     det: Config,
+    max_same_spin_doub: f64,
     excite_gen: &'static HashMap<OPair, Vec<StoredDoub>>,
     eps: f64,
 ) -> impl Iterator<Item=Excite> {
     // Generate iterators over all valid same-spin double excitations
-    let mut excite_iter: impl Iterator<Item=Excite> = vec![].iter();
-    for (config, is_alpha) in [(det.up, true), (det.dn, false)] {
-        for (i, j) in bit_pairs(config) {
+    if max_same_spin_doub < eps {
+        return None.iter();
+    }
+    let mut excite_iter: dyn Iterator<Item=Excite> = vec![].iter();
+    for (config, is_alpha) in [(det.up, true), (det.dn, false)].iter() {
+        for (i, j) in bit_pairs(*config) {
             excite_iter = excite_iter.chain(
                 DoubTruncator {
                     det: det,
                     init: OPair(i, j),
                     excite_iter: excite_gen.get(&OPair(i, j)).unwrap().iter(),
                     eps: eps,
-                    is_alpha: Some(is_alpha),
+                    is_alpha: Some(*is_alpha),
                 }
                 .into_iter(),
             );
@@ -107,20 +97,24 @@ fn new_same(
 
 fn new_sing(
     det: Config,
+    max_sing: f64,
     excite_gen: &'static Vec<Vec<StoredSing>>,
     eps: f64,
 ) -> impl Iterator<Item=Excite> {
     // Generate iterators over all potential single excitations
-    let mut excite_iter: impl Iterator<Item=Excite> = vec![].iter();
-    for (config, is_alpha) in [(det.up, true), (det.dn, false)] {
-        for i in bits(config) {
+    if max_sing < eps {
+        return None.iter();
+    }
+    let mut excite_iter: dyn Iterator<Item=Excite> = vec![].iter();
+    for (config, is_alpha) in [(det.up, true), (det.dn, false)].iter() {
+        for i in bits(*config) {
             excite_iter = excite_iter.chain(
                 SingTruncator {
                     det: det,
                     init: i,
                     excite_iter: excite_gen[i as usize].iter(),
                     eps: eps,
-                    is_alpha: is_alpha,
+                    is_alpha: *is_alpha,
                 }
                 .into_iter(),
             );
@@ -141,7 +135,7 @@ impl IntoIterator for DoubTruncator {
     type Item = Excite;
     type IntoIter = DoubTruncatorIntoIterator;
 
-    fn into_iter(self) -> Self::Iter {
+    fn into_iter(self) -> Self::IntoIter {
         DoubTruncatorIntoIterator {
             det: self.det,
             init: self.init,
@@ -280,13 +274,19 @@ mod tests {
     #[test]
     fn test_iter() {
         println!("Reading input file");
-        let ref global: Global = read_input("in.json").unwrap();
-
+        lazy_static! {
+            static ref GLOBAL: Global = read_input("in.json").unwrap();
+        }
+    
         println!("Reading integrals");
-        let ham: Ham = read_ints(&global, "FCIDUMP");
-
+        lazy_static! {
+            static ref HAM: Ham = read_ints(&GLOBAL, "FCIDUMP");
+        }
+    
         println!("Initializing excitation generator");
-        let excite_gen: ExciteGenerator = init_excite_generator(&global, &ham);
+        lazy_static! {
+            static ref EXCITE_GEN: ExciteGenerator = init_excite_generator(&GLOBAL, &HAM);
+        }
 
         let det = Det {
             config: Config { up: 3, dn: 3 },
@@ -295,7 +295,8 @@ mod tests {
         };
 
         let eps = 0.1;
-        for excite in truncated_excites(det, &excite_gen, eps) {
+        println!("About to iterate!");
+        for excite in EXCITE_GEN.truncated_excites(det, eps) {
             println!("Got here");
         }
     }
