@@ -4,6 +4,8 @@ extern crate lazy_static;
 #[macro_use]
 extern crate itertools;
 
+extern crate alloc;
+
 mod ham;
 use ham::Ham;
 use ham::read_ints::read_ints;
@@ -26,24 +28,24 @@ fn main() {
 
     println!("Reading input file");
     lazy_static! {
-        static ref global: Global = read_input("in.json").unwrap();
+        static ref GLOBAL: Global = read_input("in.json").unwrap();
     }
 
     println!("Reading integrals");
     lazy_static! {
-        static ref ham: Ham = read_ints(&global, "FCIDUMP");
+        static ref HAM: Ham = read_ints(&GLOBAL, "FCIDUMP");
     }
 
     println!("Initializing excitation generator");
     lazy_static! {
-        static ref excite_gen: ExciteGenerator = init_excite_generator(&global, &ham);
+        static ref EXCITE_GEN: ExciteGenerator = init_excite_generator(&GLOBAL, &HAM);
     }
 
     println!("Initializing wavefunction");
-    let mut wf: Wf = init_var_wf(&global, &ham, &excite_gen);
+    let mut wf: Wf = init_var_wf(&GLOBAL, &HAM, &EXCITE_GEN);
     wf.print();
 
     println!("Computing variational wavefunction and energy");
-    variational(&ham, &excite_gen, &mut wf);
+    variational(&HAM, &EXCITE_GEN, &mut wf);
 
 }

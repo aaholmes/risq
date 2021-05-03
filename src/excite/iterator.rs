@@ -1,71 +1,77 @@
 // Iterator over excitations
 
 // Eventually want something like
-// for excite in truncated_excites(det, excite_gen, eps) {}
+// for excite in EXCITE_GEN.truncated_excites(det, eps) {}
 // which should return an iterator of Excites (singles and doubles)
 // where singles are candidates whose matrix elements must be computed separately
 // (because we want to check if they're new first before computing their matrix element)
 
-// use itertools::Itertools;
 use std::collections::HashMap;
-use std::iter::empty;
+use std::iter::{empty, Chain};
+use std::marker::PhantomData;
+use alloc::vec::IntoIter;
 
 use crate::excite::init::ExciteGenerator;
 use crate::excite::{Doub, Excite, OPair, Sing, StoredDoub, StoredSing};
 use crate::utils::bits::{bit_pairs, bits};
 use crate::wf::det::{Config, Det};
+use std::slice::Iter;
 
-pub fn truncated_excites(
-    det: Det,
-    excite_gen: &ExciteGenerator,
-    eps: f64,
-) -> impl Iterator<Item = Excite> {
-    // Returns an iterator over all double excitations that exceed eps
-    // and all *candidate* single excitations that *may* exceed eps
-    // The single excitation matrix elements must still be compared to eps
-    let local_eps = eps / det.coeff.abs();
-    {
-        // Opposite spin double
-        if excite_gen.max_opp_spin_doub >= local_eps {
-            new_opp(det.config, &excite_gen.opp_spin_doub_generator, local_eps).into_iter()
-        } else {
-            empty()
+impl ExciteGenerator {
+    pub fn truncated_excites(
+        &'static self,
+        det: Det,
+        //excite_gen: &ExciteGenerator,
+        eps: f64,
+    ) -> impl Iterator<Item=Excite> {
+        // Returns an iterator over all double excitations that exceed eps
+        // and all *candidate* single excitations that *may* exceed eps
+        // The single excitation matrix elements must still be compared to eps
+        let local_eps = eps / det.coeff.abs();
+        {
+            // Opposite spin double
+            if self.max_opp_spin_doub >= local_eps {
+                new_opp(det.config, &self.opp_spin_doub_generator, local_eps)
+            } else {
+                vec![].into_iter()
+            }
         }
+        .chain({
+            // Same spin double
+            if self.max_same_spin_doub >= local_eps {
+                new_same(det.config, &self.same_spin_doub_generator, local_eps)
+            } else {
+                vec![].into_iter()
+            }
+        })
+        .chain({
+            // Single excitations
+            if self.max_sing >= local_eps {
+                new_sing(det.config, &self.sing_generator, local_eps)
+            } else {
+                vec![].into_iter()
+            }
+        })
     }
-    .chain({
-        // Same spin double
-        if excite_gen.max_same_spin_doub >= local_eps {
-            new_same(det.config, &excite_gen.same_spin_doub_generator, local_eps).into_iter()
-        } else {
-            empty()
-        }
-    })
-    .chain({
-        // Single excitations
-        if excite_gen.max_sing >= local_eps {
-            new_sing(det.config, &excite_gen.sing_generator, local_eps).into_iter()
-        } else {
-            empty()
-        }
-    })
 }
 
-// Backend for truncated_excites
+// Backend for EXCITE_GEN.truncated_excites()
 
 fn new_opp(
     det: Config,
-    excite_gen: &HashMap<OPair, Vec<StoredDoub>>,
+    excite_gen: &'static HashMap<OPair, Vec<StoredDoub>>,
     eps: f64,
-) -> impl Iterator<Item = Excite> {
+) -> IntoIter<Excite> {
     // Generate iterators over all valid opposite-spin excitations
-    let mut excite_iter: dyn Iterator = empty();
-    for i in bits(det.config.up) {
-        for j in bits(det.config.dn) {
+    let mut excite_iter: Iter<'static, Excite> = vec![].iter();
+    //let mut excite_iter: dyn Iterator<Item = Excite> = empty();
+    for i in bits(det.up) {
+        for j in bits(det.dn) {
             excite_iter = excite_iter.chain(
                 DoubTruncator {
                     det: det,
                     init: OPair(i, j),
-                    excite_iter: excite_gen.get(&OPair(i, j)).unwrap(),
+                    excite_iter: excite_gen.get(&OPair(i, j)).unwrap().iter(),
                     eps: eps,
                     is_alpha: None,
                 }
@@ -78,18 +84,18 @@ fn new_opp(
 
 fn new_same(
     det: Config,
-    excite_gen: &HashMap<OPair, Vec<StoredDoub>>,
+    excite_gen: &'static HashMap<OPair, Vec<StoredDoub>>,
     eps: f64,
-) -> impl Iterator<Item = Excite> {
+) -> Iter<Excite> {
     // Generate iterators over all valid same-spin double excitations
-    let mut excite_iter: dyn Iterator = empty();
-    for (config, is_alpha) in [(det.config.up, true), (det.config.dn, false)] {
+    let mut excite_iter: Iter<'static, Excite> = vec![].iter();
+    for (config, is_alpha) in [(det.up, true), (det.dn, false)] {
         for (i, j) in bit_pairs(config) {
             excite_iter = excite_iter.chain(
                 DoubTruncator {
                     det: det,
                     init: OPair(i, j),
-                    excite_iter: excite_gen.get(&OPair(i, j)).unwrap(),
+                    excite_iter: excite_gen.get(&OPair(i, j)).unwrap().iter(),
                     eps: eps,
                     is_alpha: Some(is_alpha),
                 }
@@ -102,18 +108,20 @@ fn new_same(
 
 fn new_sing(
     det: Config,
-    excite_gen: &Vec<Vec<StoredSing>>,
+    excite_gen: &'static Vec<Vec<StoredSing>>,
     eps: f64,
-) -> impl Iterator<Item = Excite> {
+) -> Iter<Excite> {
     // Generate iterators over all potential single excitations
-    let mut excite_iter: dyn Iterator = empty();
-    for (config, is_alpha) in [(det.config.up, true), (det.config.dn, false)] {
+    //let mut excite_iter: dyn Iterator<Item = Excite> = EmptyIterator::new();
+    let mut excite_iter: Iter<Excite> = vec![].iter();
+    //let mut excite_iter: Box<dyn Iterator<Item = Excite>> = Box::new(EmptyIterator::new());
+    for (config, is_alpha) in [(det.up, true), (det.dn, false)] {
         for i in bits(config) {
             excite_iter = excite_iter.chain(
                 SingTruncator {
                     det: det,
                     init: i,
-                    excite_iter: excite_gen[i],
+                    excite_iter: excite_gen[i as usize].iter(),
                     eps: eps,
                     is_alpha: is_alpha,
                 }
@@ -127,7 +135,7 @@ fn new_sing(
 struct DoubTruncator {
     det: Config,               // Needed to check if excitation is valid
     init: OPair,               // Exciting electron pair
-    excite_iter: Box<dyn Iterator<Item=StoredDoub>>, // Iterates over stored excitations
+    excite_iter: Iter<'static, StoredDoub>, // Iterates over stored excitation
     eps: f64,
     is_alpha: Option<bool>,
 }
@@ -136,10 +144,10 @@ impl IntoIterator for DoubTruncator {
     type Item = Excite;
     type IntoIter = DoubTruncatorIntoIterator;
 
-    fn into_iter(self) -> Self::IntoIter {
+    fn into_iter(self) -> Self::Iter {
         DoubTruncatorIntoIterator {
             det: self.det,
-            init: OPair,
+            init: self.init,
             excite_iter: self.excite_iter,
             eps: self.eps,
             is_alpha: self.is_alpha,
@@ -150,7 +158,7 @@ impl IntoIterator for DoubTruncator {
 struct DoubTruncatorIntoIterator {
     det: Config,               // Needed to check if excitation is valid
     init: OPair,               // Exciting electron pair
-    excite_iter: Box<dyn Iterator<Item=StoredSing>>, // Iterates over stored excitations
+    excite_iter: Iter<'static, StoredDoub>, // Iterates over stored excitations
     eps: f64,
     is_alpha: Option<bool>,
 }
@@ -159,9 +167,9 @@ impl Iterator for DoubTruncatorIntoIterator {
     type Item = Excite;
 
     fn next(&mut self) -> Option<Excite> {
-        let excite: Option<StoredDoub>;
+        let excite: Option<&StoredDoub>;
         loop {
-            excite = self.sorted_excites.next();
+            excite = self.excite_iter.next();
             match excite {
                 None => {
                     // No more excitations left; go to next electron pair
@@ -173,7 +181,7 @@ impl Iterator for DoubTruncatorIntoIterator {
                         // Only return this excitation if it is a valid excite for this det
                         let out_exc = Excite::Double {
                             0: Doub {
-                                init: self.init.copy(),
+                                init: self.init.clone(),
                                 target: exc.target,
                                 abs_h: exc.abs_h,
                                 is_alpha: self.is_alpha,
@@ -196,7 +204,7 @@ impl Iterator for DoubTruncatorIntoIterator {
 struct SingTruncator {
     det: Config,               // Needed to check if excitation is valid
     init: i32,                 // Exciting electron pair
-    excite_iter: Box<dyn Iterator<Item=StoredSing>>, // Iterates over stored excitations
+    excite_iter: Iter<'static, StoredSing>, // Iterates over stored excitations
     eps: f64,
     is_alpha: bool,
 }
@@ -219,7 +227,7 @@ impl IntoIterator for SingTruncator {
 struct SingTruncatorIntoIterator {
     det: Config,               // Needed to check if excitation is valid
     init: i32,                 // Exciting electron pair
-    excite_iter: Box<dyn Iterator<Item=StoredSing>>, // Iterates over stored excitations
+    excite_iter: Iter<'static, StoredSing>, // Iterates over stored excitations
     eps: f64,
     is_alpha: bool,
 }
@@ -228,9 +236,9 @@ impl Iterator for SingTruncatorIntoIterator {
     type Item = Excite;
 
     fn next(&mut self) -> Option<Excite> {
-        let excite: Option<StoredSing>;
+        let excite: Option<&StoredSing>;
         loop {
-            excite = self.sorted_excites.next();
+            excite = self.excite_iter.next();
             match excite {
                 None => {
                     // No more excitations left; go to next electron pair
@@ -238,11 +246,11 @@ impl Iterator for SingTruncatorIntoIterator {
                 }
                 Some(exc) => {
                     // Check whether it meets threshold; if not, quit this sorted excitations list
-                    if exc.abs_h >= self.eps {
+                    if exc.max_abs_h >= self.eps {
                         // Only return this excitation if it is a valid excite for this det
                         let out_exc = Excite::Single {
                             0: Sing {
-                                init: self.init.copy(),
+                                init: self.init,
                                 target: exc.target,
                                 max_abs_h: exc.max_abs_h,
                                 is_alpha: self.is_alpha,
@@ -259,6 +267,24 @@ impl Iterator for SingTruncatorIntoIterator {
                 }
             }
         }
+    }
+}
+
+// A generic iterator that always returns None serving as a base case for fold
+struct EmptyIterator<T> {
+    t: PhantomData<T>
+}
+
+impl<T> EmptyIterator<T> {
+    fn new() -> EmptyIterator<T> {
+        EmptyIterator{ t: PhantomData }
+    }
+}
+
+impl<T> Iterator for EmptyIterator<T> {
+    type Item = T;
+    fn next(&mut self) -> Option<T>{
+        None
     }
 }
 

@@ -7,7 +7,7 @@ pub mod iterator;
 use std::hash::Hash;
 
 // Orbital pair
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq, Hash, Copy, Clone)]
 pub struct OPair(pub i32, pub i32);
 
 

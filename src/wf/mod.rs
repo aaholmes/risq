@@ -75,12 +75,12 @@ impl Wf {
 
         let eps: f64 = self.eps_iter.next().unwrap();
 
-        let new_dets: Wf = self.iterate_excites(ham, excite_gen, eps, true);
-
-        // Add all new dets to the wf
-        for det in new_dets.dets {
-            self.push(det);
-        }
+        // let new_dets: Wf = self.iterate_excites(ham, excite_gen, eps, true);
+        //
+        // // Add all new dets to the wf
+        // for det in new_dets.dets {
+        //     self.push(det);
+        // }
     }
 
     // fn iterate_excites(&mut self, ham: &Ham, excite_gen: &ExciteGenerator, eps: f64, matmul: bool) -> Wf {
