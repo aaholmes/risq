@@ -4,7 +4,7 @@ use core::cmp::Ordering::Equal;
 use core::default::Default;
 use std::collections::HashMap;
 
-use crate::excite::{StoredSing, StoredDoub, OPair};
+use crate::excite::{StoredExcite, Orbs};
 use crate::utils::read_input::Global;
 use crate::ham::Ham;
 
@@ -16,8 +16,8 @@ pub struct ExciteGenerator {
     // each orbital pair maps onto a sorted list of target orbital pairs
     pub max_same_spin_doub: f64,
     pub max_opp_spin_doub: f64,
-    pub same_spin_doub_generator: HashMap<OPair, Vec<StoredDoub>>,
-    pub opp_spin_doub_generator: HashMap<OPair, Vec<StoredDoub>>,
+    pub same_spin_doub_generator: HashMap<Orbs, Vec<StoredExcite>>,
+    pub opp_spin_doub_generator: HashMap<Orbs, Vec<StoredExcite>>,
 
     // Singles:
     // max_sing is the global largest-magnitude single,
@@ -25,7 +25,7 @@ pub struct ExciteGenerator {
     // target orbs and max possible values; unlike doubles, magnitudes must be
     // re-computed because these depend on other occupied orbitals
     pub max_sing: f64,
-    pub sing_generator: Vec<Vec<StoredSing>>,
+    pub sing_generator: HashMap<Orbs, Vec<StoredSing>>,
 
 }
 
@@ -36,7 +36,7 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
         opp_spin_doub_generator: Default::default(), max_sing: 0.0, sing_generator: Default:: default()
     };
 
-    let mut v: Vec<StoredDoub>;
+    let mut v: Vec<StoredExcite>;
     let mut h: f64;
 
     // Opposite spin
@@ -52,8 +52,8 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
                     h = (ham.direct(p, q, r, s)).abs();
                     if h > excite_gen.max_opp_spin_doub { excite_gen.max_opp_spin_doub = h; }
                     v.push(
-                        StoredDoub {
-                            target: OPair(r, s),
+                        StoredExcite {
+                            target: Orbs::Double((r, s)),
                             abs_h: h,
                         }
                     );
@@ -61,7 +61,7 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
             }
             // Sort v in decreasing order by abs_h
             v.sort_by(|a, b| b.abs_h.partial_cmp(&a.abs_h).unwrap_or(Equal));
-            excite_gen.opp_spin_doub_generator.insert(OPair(p, q), v);
+            excite_gen.opp_spin_doub_generator.insert(Orbs::Double((p, q)), v);
         }
     }
 
@@ -78,8 +78,8 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
                     h = (ham.direct_plus_exchange(p, q, r, s)).abs();
                     if h > excite_gen.max_same_spin_doub { excite_gen.max_same_spin_doub = h; }
                     v.push(
-                        StoredDoub {
-                            target: OPair(r, s),
+                        StoredExcite {
+                            target: Orbs::Double((r, s)),
                             abs_h: h,
                         }
                     );
@@ -87,7 +87,7 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
             }
             // Sort v in decreasing order by abs_h
             v.sort_by(|a, b| b.abs_h.partial_cmp(&a.abs_h).unwrap_or(Equal));
-            excite_gen.same_spin_doub_generator.insert(OPair(p, q), v);
+            excite_gen.same_spin_doub_generator.insert(Orbs::Double((p, q)), v);
         }
     }
 
@@ -104,7 +104,7 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
     // Assumes that same number of up and dn spin electrons for now (easy to fix later,
     // but for now just does the up spin part)
     let mut max_sing_list: Vec<f64> = vec![];
-    let mut v_sing: Vec<StoredSing>;
+    let mut v_sing: Vec<StoredExcite>;
     let mut v_same: Vec<f64>;
     let mut v_opp: Vec<f64>;
     let mut max1: f64 = 0.0;
@@ -129,22 +129,22 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
                 + v_same[ v_same.len() - (global.nup - 1) as usize .. ].iter().sum::<f64>()
                 + v_opp[ v_same.len() - global.ndn as usize .. ].iter().sum::<f64>();
             v_sing.push(
-                StoredSing {
-                    target: r,
-                    max_abs_h: {if max1.abs() > max2.abs() { max1.abs() } else { max2.abs() } },
+                StoredExcite {
+                    target: Orbs::Single(r),
+                    abs_h: {if max1.abs() > max2.abs() { max1.abs() } else { max2.abs() } },
                 }
             );
         }
         // Sort the max excites coming from this p in decreasing order by magnitude
-        v_sing.sort_by(|a, b| b.max_abs_h.partial_cmp(&a.max_abs_h).unwrap_or(Equal));
+        v_sing.sort_by(|a, b| b.abs_h.partial_cmp(&a.abs_h).unwrap_or(Equal));
         // Finally, add this sorted vector to sing_generator
-        excite_gen.sing_generator.push(v_sing);
+        excite_gen.sing_generator.insert(Orbs::Single(p), v_sing);
     }
 
     // Now, for each p, get its largest-magnitude excite among all p->r excites from above
     // (The first element in sing_generator[p] since it's already sorted in decreasing order)
     for p in 0..global.norb {
-        max_sing_list.push(excite_gen.sing_generator[p as usize][0].max_abs_h);
+        max_sing_list.push(excite_gen.sing_generator[p as usize][0].abs_h);
     }
 
     // Finally, get the global max_sing by taking max_p over the above

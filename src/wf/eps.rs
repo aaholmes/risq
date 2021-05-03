@@ -6,7 +6,7 @@
 use crate::wf::Wf;
 use crate::utils::bits::{bits, btest};
 use crate::utils::read_input::Global;
-use crate::excite::{OPair, StoredDoub};
+use crate::excite::{Orbs, StoredDoub};
 use crate::excite::init::ExciteGenerator;
 
 

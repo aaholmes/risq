@@ -3,6 +3,7 @@
 // plus functions for computing parity and getting and setting bits
 
 use crate::wf::det::Config;
+use crate::excite::Orbs;
 
 // Iterate over set bits in a u128
 // Syntax: for i in bits(det: u128): loops over the set bits in det
@@ -19,6 +20,13 @@ pub fn bit_pairs(det: u128) -> impl Iterator<Item = (i32, i32)> {
 // Iterate over set bits in a Config
 pub fn det_bits(det: &Config) -> impl Iterator<Item = i32> {
     bits(det.up).chain(bits(det.dn))
+}
+
+// Iterate over all bits and bit pairs in a Config
+// Output is (orbs, is_alpha), where orbs can be either one or two orbs, and is_alpha is either
+// None (for opposite doubles) or Some(p), where p is true for alpha, false for beta
+pub fn bits_and_bit_pairs(det: &Config) -> impl Iterator<Item = (Orbs, Option<bool>)> {
+    BitsAndBitPairs::new(det).into_iter()
 }
 
 // Bit operations named after Fortran intrinsics...
@@ -145,6 +153,74 @@ impl Iterator for BitPairsIntoIterator {
 }
 
 
+// Backend for bit_and_bit_pairs()
+
+struct BitsAndBitPairs {
+    det: &'static Config
+}
+
+impl BitsAndBitPairs {
+    fn new(det: &Config) -> BitsAndBitPairs {
+        BitsAndBitPairs{
+            det: det
+        }
+    }
+}
+
+impl IntoIterator for BitsAndBitPairs {
+    type Item = i32;
+    type IntoIter = BitsAndBitPairsIntoIterator;
+
+    fn into_iter(self) -> Self::IntoIter {
+        let mut into_iter = ();
+        into_iter.iters = vec![
+            (iproduct!(bits(self.up), bits(self.dn)), None), // Opposite spin double
+            (bit_pairs(self.up).iter(), Some(true)), // Same spin, up
+            (bit_pairs(self.dn).iter(), Some(false)), // Same spin, dn
+            (bits(self.up).iter(), Some(true)), // Single, up
+            (bits(self.dn).iter(), Some(false)) // Single, dn
+        ].iter();
+        into_iter.curr = into_iter.iters.next();
+        into_iter
+    }
+}
+
+struct BitsAndBitPairsIntoIterator {
+    iters: dyn Iterator,
+    curr: dyn Iterator,
+}
+
+impl Iterator for BitsAndBitPairsIntoIterator {
+    type Item = i32;
+
+    fn next(&mut self) -> Option<(Orbs, Option<bool>)> {
+        loop {
+            match self.curr.next() {
+                None => {
+                    // Go to next iter
+                    match self.into_iter.next() {
+                        None => {
+                            // Done with all iters
+                            return None;
+                        },
+                        Some(i) => self.curr = i
+                    }
+                },
+                Some(i) => {
+                    // Return this one in a unified form
+                    match i.0 {
+                        Orbs::Double(pq) => return Some((Orbs::Double(pq), i.1)),
+                        Orbs::Single(p) => return Some((Orbs::Single(p), i.1))
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -152,11 +228,42 @@ mod tests {
     #[test]
     fn test_iters() {
         let det: u128 = 19273;
+        println!("Bits:");
         for i in bits(det) {
             println!("{}", i);
         }
+        println!("Bit pairs:");
         for (i, j) in bit_pairs(det) {
             println!("{} {}", i, j);
+        }
+        println!("Bits and bit pairs:");
+        for bbp in bits_and_bit_pairs(&Config{up: det, dn: det}) {
+            match bbp.1 {
+                None => {
+                    match bbp.0 {
+                        Orbs::Double((p, q)) => println!("Opposite spin: ({}, {})", p, q),
+                        Orbs::Single(p) => println!("Should not happen")
+                    }
+                },
+                Some(is_alpha) => {
+                    match bbp.0 {
+                        Orbs::Double((p, q)) => {
+                            if is_alpha {
+                                println!("Same spin, up: ({}, {})", p, q);
+                            } else {
+                                println!("Same spin, dn: ({}, {})", p, q);
+                            }
+                        },
+                        Orbs::Single(p) => {
+                            if is_alpha {
+                                println!("Single, up: {}", p);
+                            } else {
+                                println!("Single, dn: {}", p);
+                            }
+                        }
+                    }
+                }
+            }
         }
         assert_eq!(1, 1);
     }

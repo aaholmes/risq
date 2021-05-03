@@ -10,9 +10,10 @@ use std::slice::Iter;
 use std::collections::HashMap;
 
 use crate::excite::init::ExciteGenerator;
-use crate::excite::{Doub, Excite, OPair, Sing, StoredDoub, StoredSing};
-use crate::utils::bits::{bit_pairs, bits};
+use crate::excite::{Excite, Orbs, StoredExcite};
+use crate::utils::bits::{bit_pairs, bits, bits_and_bit_pairs};
 use crate::wf::det::{Config, Det};
+use crate::utils::iter::empty;
 
 impl ExciteGenerator {
     pub fn truncated_excites(
@@ -39,132 +40,59 @@ impl ExciteGenerator {
 
 // Backend for EXCITE_GEN.truncated_excites()
 
-fn new_opp(
-    det: Config,
-    max_opp_spin_doub: f64,
-    excite_gen: &'static HashMap<OPair, Vec<StoredDoub>>,
-    eps: f64,
-) -> impl Iterator<Item=Excite> {
-    // Generate iterators over all valid opposite-spin excitations
-    if max_opp_spin_doub < eps {
-        return None.iter();
-    }
-    let mut excite_iter: dyn Iterator<Item=Excite> = vec![].iter();
-    for i in bits(det.up) {
-        for j in bits(det.dn) {
-            excite_iter = excite_iter.chain(
-                DoubTruncator {
-                    det: det,
-                    init: OPair(i, j),
-                    excite_iter: excite_gen.get(&OPair(i, j)).unwrap().iter(),
-                    eps: eps,
-                    is_alpha: None,
-                }
-                .into_iter(),
-            );
-        }
-    }
-    excite_iter
-}
-
-fn new_same(
-    det: Config,
-    max_same_spin_doub: f64,
-    excite_gen: &'static HashMap<OPair, Vec<StoredDoub>>,
-    eps: f64,
-) -> impl Iterator<Item=Excite> {
-    // Generate iterators over all valid same-spin double excitations
-    if max_same_spin_doub < eps {
-        return None.iter();
-    }
-    let mut excite_iter: dyn Iterator<Item=Excite> = vec![].iter();
-    for (config, is_alpha) in [(det.up, true), (det.dn, false)].iter() {
-        for (i, j) in bit_pairs(*config) {
-            excite_iter = excite_iter.chain(
-                DoubTruncator {
-                    det: det,
-                    init: OPair(i, j),
-                    excite_iter: excite_gen.get(&OPair(i, j)).unwrap().iter(),
-                    eps: eps,
-                    is_alpha: Some(*is_alpha),
-                }
-                .into_iter(),
-            );
-        }
-    }
-    excite_iter
-}
-
-fn new_sing(
-    det: Config,
-    max_sing: f64,
-    excite_gen: &'static Vec<Vec<StoredSing>>,
-    eps: f64,
-) -> impl Iterator<Item=Excite> {
-    // Generate iterators over all potential single excitations
-    if max_sing < eps {
-        return None.iter();
-    }
-    let mut excite_iter: dyn Iterator<Item=Excite> = vec![].iter();
-    for (config, is_alpha) in [(det.up, true), (det.dn, false)].iter() {
-        for i in bits(*config) {
-            excite_iter = excite_iter.chain(
-                SingTruncator {
-                    det: det,
-                    init: i,
-                    excite_iter: excite_gen[i as usize].iter(),
-                    eps: eps,
-                    is_alpha: *is_alpha,
-                }
-                .into_iter(),
-            );
-        }
-    }
-    excite_iter
-}
-
-struct DoubTruncator {
+struct Exciter {
     det: Config,               // Needed to check if excitation is valid
-    init: OPair,               // Exciting electron pair
-    excite_iter: Iter<'static, StoredDoub>, // Iterates over stored excitation
+    init: Orbs,               // Exciting electron pair
+    excite_iter: Iter<'static, StoredExcite>, // Iterates over stored excitation
     eps: f64,
     is_alpha: Option<bool>,
 }
 
-impl IntoIterator for DoubTruncator {
+impl IntoIterator for Exciter {
     type Item = Excite;
-    type IntoIter = DoubTruncatorIntoIterator;
+    type IntoIter = ExciterIntoIterator;
 
     fn into_iter(self) -> Self::IntoIter {
-        DoubTruncatorIntoIterator {
-            det: self.det,
-            init: self.init,
-            excite_iter: self.excite_iter,
-            eps: self.eps,
-            is_alpha: self.is_alpha,
-        }
+        let mut out = ();
+        out.det = self.det;
+        out.excite_gen = self.excite_gen;
+        out.epair_iter = bits_and_bit_pairs(&self.det);
+        out.epair = self.epair_iter.next();
+        out.target_iter = self.excite_gen.get(&out.epair);
+        out.eps = self.eps;
+        out
     }
 }
 
-struct DoubTruncatorIntoIterator {
+struct ExciterIntoIterator {
     det: Config,               // Needed to check if excitation is valid
-    init: OPair,               // Exciting electron pair
-    excite_iter: Iter<'static, StoredDoub>, // Iterates over stored excitations
+    excite_gen: HashMap<Orbs, Vec<StoredExcite>>, // Lookup table of all sorted excites
+    epair_iter: dyn Iterator<Item=Orbs>, // Iterator over pairs of electrons in det to excite
+    epair: Orbs,               // Current exciting electron pair
+    target_iter: Iter<'static, StoredExcite>, // Iterates over sorted target orbs to excite to
     eps: f64,
-    is_alpha: Option<bool>,
 }
 
-impl Iterator for DoubTruncatorIntoIterator {
+impl Iterator for ExciterIntoIterator {
     type Item = Excite;
 
     fn next(&mut self) -> Option<Excite> {
-        let excite: Option<&StoredDoub>;
+        let excite: Option<&StoredExcite>;
         loop {
-            excite = self.excite_iter.next();
+            excite = self.target_iter.next();
             match excite {
                 None => {
-                    // No more excitations left; go to next electron pair
-                    return None;
+                    // No more excitations left; done with this electron pair
+                    let epair = self.epair_iter.next();
+                    match epair {
+                        // If no more electron pairs left to excite from, return None
+                        None => return None,
+                        // Otherwise, go to next epair
+                        Some(e) => {
+                            self.epair = e;
+                            self.target_iter = self.excite_gen.get(&self.epair).unwrap().iter();
+                        }
+                    }
                 }
                 Some(exc) => {
                     // Check whether it meets threshold; if not, quit this sorted excitations list
@@ -172,7 +100,7 @@ impl Iterator for DoubTruncatorIntoIterator {
                         // Only return this excitation if it is a valid excite for this det
                         let out_exc = Excite::Double {
                             0: Doub {
-                                init: self.init.clone(),
+                                init: self.epair.clone(),
                                 target: exc.target,
                                 abs_h: exc.abs_h,
                                 is_alpha: self.is_alpha,
@@ -181,79 +109,19 @@ impl Iterator for DoubTruncatorIntoIterator {
                         if self.det.is_valid(&out_exc) {
                             // Found valid excitation; return it
                             return Some(out_exc);
-                        } // Else, this excitation was not valid; go to next excitation
+                        } // Else, this excitation was not valid; go to next excitation (i.e., continue loop)
                     } else {
-                        // Remaining excitations are smaller than eps; go to next electron pair
-                        return None;
-                    }
-                }
-            }
-        }
-    }
-}
-
-struct SingTruncator {
-    det: Config,               // Needed to check if excitation is valid
-    init: i32,                 // Exciting electron pair
-    excite_iter: Iter<'static, StoredSing>, // Iterates over stored excitations
-    eps: f64,
-    is_alpha: bool,
-}
-
-impl IntoIterator for SingTruncator {
-    type Item = Excite;
-    type IntoIter = SingTruncatorIntoIterator;
-
-    fn into_iter(self) -> Self::IntoIter {
-        SingTruncatorIntoIterator {
-            det: self.det,
-            init: self.init,
-            excite_iter: self.excite_iter,
-            eps: self.eps,
-            is_alpha: self.is_alpha,
-        }
-    }
-}
-
-struct SingTruncatorIntoIterator {
-    det: Config,               // Needed to check if excitation is valid
-    init: i32,                 // Exciting electron pair
-    excite_iter: Iter<'static, StoredSing>, // Iterates over stored excitations
-    eps: f64,
-    is_alpha: bool,
-}
-
-impl Iterator for SingTruncatorIntoIterator {
-    type Item = Excite;
-
-    fn next(&mut self) -> Option<Excite> {
-        let excite: Option<&StoredSing>;
-        loop {
-            excite = self.excite_iter.next();
-            match excite {
-                None => {
-                    // No more excitations left; go to next electron pair
-                    return None;
-                }
-                Some(exc) => {
-                    // Check whether it meets threshold; if not, quit this sorted excitations list
-                    if exc.max_abs_h >= self.eps {
-                        // Only return this excitation if it is a valid excite for this det
-                        let out_exc = Excite::Single {
-                            0: Sing {
-                                init: self.init,
-                                target: exc.target,
-                                max_abs_h: exc.max_abs_h,
-                                is_alpha: self.is_alpha,
-                            },
-                        };
-                        if self.det.is_valid(&out_exc) {
-                            // Found valid excitation; return it
-                            return Some(out_exc);
-                        } // Else, this excitation was not valid; go to next excitation
-                    } else {
-                        // Remaining excitations are smaller than eps; go to next electron pair
-                        return None;
+                        // Remaining excitations are smaller than eps; done with this electron pair
+                        let epair = self.epair_iter.next();
+                        match epair {
+                            // If no more electron pairs left to excite from, return None
+                            None => return None,
+                            // Otherwise, go to next epair
+                            Some(e) => {
+                                self.epair = e;
+                                self.target_iter = self.excite_gen.get(&self.epair).unwrap().iter();
+                            }
+                        }
                     }
                 }
             }

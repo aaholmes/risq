@@ -4,7 +4,7 @@
 
 use crate::ham::Ham;
 use crate::utils::bits::{bits, btest, ibset, ibclr};
-use crate::excite::{Doub, Sing, Excite};
+use crate::excite::{Excite, Orbs};
 
 // Configuration: up and dn spin occupation bitstrings
 #[derive(Clone, Copy, Eq, PartialEq, Hash)]
@@ -25,33 +25,73 @@ pub struct Det {
 
 impl Config {
     pub fn is_valid(&self, excite: &Excite) -> bool {
-        // Returns whether this excitation is a valid excite from this det
-        // Assumes init electrons are already filled
-        match excite {
-            Excite::Double(doub) => {
-                match doub.is_alpha {
-                    None => self.is_valid_opp(doub),
-                    Some(is_alpha) => self.is_valid_same(doub, is_alpha)
+        match excite.target {
+            Orbs::Double((r, s)) => {
+                match excite.is_alpha {
+                    None => {
+                        if btest(self.up, r) { return false; }
+                        !btest(self.dn, s)
+                    }
+                    Some(is_alpha) => {
+                        if is_alpha {
+                            if btest(self.up, r) { return false; }
+                            !btest(self.up, s)
+                        } else {
+                            if btest(self.dn, r) { return false; }
+                            !btest(self.dn, s)
+                        }
+                    }
                 }
             },
-            Excite::Single(sing) => {
-                self.is_valid_sing(sing, sing.is_alpha)
+            Orbs::Single(r) => {
+                if excite.is_alpha.unwrap() {
+                    !btest(self.up, r)
+                } else {
+                    !btest(self.dn, r)
+                }
             }
         }
     }
 
     pub fn excite_det(&self, excite: &Excite) -> Config {
-        // Applies excite to det, assuming it's a valid excite
-        match excite {
-            Excite::Double(doub) => {
-                match doub.is_alpha {
-                    None => self.excite_det_opp(doub),
-                    Some(is_alpha) => self.excite_det_same(doub, is_alpha)
+        match (excite.init, excite.target) {
+            (Orbs::Double((p, q)), Orbs::Double((r, s))) => {
+                match excite.is_alpha {
+                    None => {
+                        Config {
+                            up: ibset(ibclr(self.up, p), r),
+                            dn: ibset(ibclr(self.dn, q), s)
+                        }
+                    },
+                    Some(is_alpha) => {
+                        if is_alpha {
+                            Config {
+                                up: ibset(ibset(ibclr(ibclr(self.up, p), q), r), s),
+                                dn: self.dn
+                            }
+                        } else {
+                            Config {
+                                up: self.up,
+                                dn: ibset(ibset(ibclr(ibclr(self.dn, p), q), r), s)
+                            }
+                        }
+                    }
                 }
             },
-            Excite::Single(sing) => {
-                self.excite_det_sing(sing, sing.is_alpha)
-            }
+            (Orbs::Single(p), Orbs::Single(r)) => {
+                if excite.is_alpha.unwrap() {
+                    Config {
+                        up: ibset(ibclr(self.up, p), r),
+                        dn: self.dn
+                    }
+                } else {
+                    Config {
+                        up: self.up,
+                        dn: ibset(ibclr(self.dn, p), r)
+                    }
+                }
+            },
+            _ => {} // Because could be (single, double), etc
         }
     }
 
@@ -67,203 +107,136 @@ impl Config {
 
 impl Det {
     pub fn new_diag(&self, ham: &Ham, excite: &Excite) -> f64 {
-        match excite {
-            Excite::Double(doub) => {
-                match doub.is_alpha {
-                    None => self.new_diag_opp(&ham, doub),
-                    Some(is_alpha) => self.new_diag_same(&ham, doub, is_alpha)
+        match (excite.init, excite.target) {
+            (Orbs::Double((p, q)), Orbs::Double((r, s))) => {
+                match excite.is_alpha {
+                    None => {
+                        self.new_diag_opp(&Ham, (p, q), (r, s))
+                    },
+                    Some(is_alpha) => {
+                        self.new_diag_same(&Ham, (p, q), (r, s), is_alpha)
+                    }
                 }
             },
-            Excite::Single(sing) => {
-                self.new_diag_sing(&ham, sing, sing.is_alpha)
-            }
+            (Orbs::Single(p), Orbs::Single(r)) => {
+                self.new_diag_sing(&Ham, p, r, is_alpha)
+            },
+            _ => {} // Because could be (single, double), etc
         }
     }
-}
 
 
 // Backend
 
-impl Config {
-    fn is_valid_opp(&self, doub: &Doub) -> bool {
-        // Returns whether this double excitation is a valid doub from this det
-        // Assumes that init electrons are filled
-        if btest(self.up, doub.target.0) { return false; }
-        if btest(self.dn, doub.target.1) { return false; }
-        true
-    }
-
-    fn is_valid_same(&self, doub: &Doub, is_alpha: bool) -> bool {
-        if is_alpha {
-            if btest(self.up, doub.target.0) { return false; }
-            if btest(self.up, doub.target.1) { return false; }
-        } else {
-            if btest(self.dn, doub.target.0) { return false; }
-            if btest(self.dn, doub.target.1) { return false; }
-        }
-        true
-    }
-
-    fn is_valid_sing(&self, sing: &Sing, is_alpha: bool) -> bool {
-        if is_alpha {
-            if btest(self.up, sing.target) { return false; }
-        } else {
-            if btest(self.dn, sing.target) { return false; }
-        }
-        true
-    }
-
-    fn excite_det_opp(&self, doub: &Doub) -> Config {
-        // Excite det using double excitation
-        Config {
-            up: ibset(ibclr(self.up, doub.init.0), doub.target.0),
-            dn: ibset(ibclr(self.dn, doub.init.1), doub.target.1)
-        }
-    }
-
-    fn excite_det_same(&self, doub: &Doub, is_alpha: bool) -> Config {
-        // Excite det using double excitation
-        // is_alpha is true if a same-spin up; false if a same-spin dn
-        if is_alpha {
-            Config {
-                up: ibset(ibset(ibclr(ibclr(self.up, doub.init.0), doub.init.1), doub.target.0), doub.target.1),
-                dn: self.dn
-            }
-        } else {
-            Config {
-                up: self.up,
-                dn: ibset(ibset(ibclr(ibclr(self.dn, doub.init.0), doub.init.1), doub.target.0), doub.target.1)
-            }
-        }
-    }
-
-    fn excite_det_sing(&self, sing: &Sing, is_alpha: bool) -> Config {
-        // Excite det using single excitation
-        // is_alpha is true if a single up; false if a single dn
-        if is_alpha {
-            Config {
-                up: ibset(ibclr(self.up, sing.init), sing.target),
-                dn: self.dn
-            }
-        } else {
-            Config {
-                up: self.up,
-                dn: ibset(ibclr(self.dn, sing.init), sing.target)
-            }
-        }
-    }
-}
-
-impl Det {
-    fn new_diag_opp(&self, ham: &Ham, doub: &Doub) -> f64 {
+    fn new_diag_opp(&self, ham: &Ham, init: (i32, i32), target: (i32, i32)) -> f64 {
         // Compute new diagonal element given the old one
 
         // O(1) One-body part: E += h(r) + h(s) - h(p) - h(q)
         let mut new_diag: f64 = self.diag
-            + ham.one_body(doub.target.0, doub.target.0)
-            + ham.one_body(doub.target.1, doub.target.1)
-            - ham.one_body(doub.init.0, doub.init.0)
-            - ham.one_body(doub.init.1, doub.init.1);
+            + ham.one_body(target.0, target.0)
+            + ham.one_body(target.1, target.1)
+            - ham.one_body(init.0, init.0)
+            - ham.one_body(init.1, init.1);
 
         // O(1) Two-body direct part: E += direct(r,s) - direct(p,q)
-        new_diag += ham.direct(doub.target.0, doub.target.1, doub.target.0, doub.target.1)
-            - ham.direct(doub.init.0, doub.init.1, doub.init.0, doub.init.1);
+        new_diag += ham.direct(target.0, target.1, target.0, target.1)
+            - ham.direct(init.0, init.1, init.0, init.1);
 
         // O(N) Two-body direct part: E += sum_{i in occ. but not in (p,q)} direct(i,r) + direct(i,s) - direct(i,p) - direct(i,q)
         for i in bits(self.config.up) {
-            if i == doub.init.0 { continue; }
-            new_diag += ham.direct_plus_exchange(i, doub.target.0, i, doub.target.0)
-                - ham.direct_plus_exchange(i, doub.init.0, i, doub.init.0);
-            new_diag += ham.direct(i, doub.target.1, i, doub.target.1)
-                - ham.direct(i, doub.init.1, i, doub.init.1);
+            if i == init.0 { continue; }
+            new_diag += ham.direct_plus_exchange(i, target.0, i, target.0)
+                - ham.direct_plus_exchange(i, init.0, i, init.0);
+            new_diag += ham.direct(i, target.1, i, target.1)
+                - ham.direct(i, init.1, i, init.1);
         }
         for i in bits(self.config.dn) {
-            if i == doub.init.1 { continue; }
-            new_diag += ham.direct_plus_exchange(i, doub.target.1, i, doub.target.1)
-                - ham.direct_plus_exchange(i, doub.init.1, i, doub.init.1);
-            new_diag += ham.direct(i, doub.target.0, i, doub.target.0)
-                - ham.direct(i, doub.init.0, i, doub.init.0);
+            if i == init.1 { continue; }
+            new_diag += ham.direct_plus_exchange(i, target.1, i, target.1)
+                - ham.direct_plus_exchange(i, init.1, i, init.1);
+            new_diag += ham.direct(i, target.0, i, target.0)
+                - ham.direct(i, init.0, i, init.0);
         }
 
         new_diag
     }
 
-    fn new_diag_same(&self, ham: &Ham, doub: &Doub, is_alpha: bool) -> f64 {
+    fn new_diag_same(&self, ham: &Ham, init: (i32, i32), target: (i32, i32), is_alpha: bool) -> f64 {
         // Compute new diagonal element given the old one
 
         // O(1) One-body part: E += h(r) + h(s) - h(p) - h(q)
         let mut new_diag: f64 = self.diag
-            + ham.one_body(doub.target.0, doub.target.0)
-            + ham.one_body(doub.target.1, doub.target.1)
-            - ham.one_body(doub.init.0, doub.init.0)
-            - ham.one_body(doub.init.1, doub.init.1);
+            + ham.one_body(target.0, target.0)
+            + ham.one_body(target.1, target.1)
+            - ham.one_body(init.0, init.0)
+            - ham.one_body(init.1, init.1);
 
         // O(1) Two-body direct_and_exchange part: E += direct_and_exchange(r,s) - direct_and_exchange(p,q)
-        new_diag += ham.direct_plus_exchange(doub.target.0, doub.target.1, doub.target.0, doub.target.1)
-            - ham.direct_plus_exchange(doub.init.0, doub.init.1, doub.init.0, doub.init.1);
+        new_diag += ham.direct_plus_exchange(target.0, target.1, target.0, target.1)
+            - ham.direct_plus_exchange(init.0, init.1, init.0, init.1);
 
         // O(N) Two-body direct_and_exchange part: E += sum_{i in occ. but not in (p,q)} direct_and_exchange(i,r) + direct_and_exchange(i,s) - direct_and_exchange(i,p) - direct_and_exchange(i,q)
         if is_alpha {
             for i in bits(self.config.up) {
-                if i == doub.init.0 || i == doub.init.1 { continue; }
-                new_diag += ham.direct_plus_exchange(i, doub.target.0, i, doub.target.0)
-                    + ham.direct_plus_exchange(i, doub.target.1, i, doub.target.1)
-                    - ham.direct_plus_exchange(i, doub.init.0, i, doub.init.0)
-                    - ham.direct_plus_exchange(i, doub.init.1, i, doub.init.1);
+                if i == init.0 || i == init.1 { continue; }
+                new_diag += ham.direct_plus_exchange(i, target.0, i, target.0)
+                    + ham.direct_plus_exchange(i, target.1, i, target.1)
+                    - ham.direct_plus_exchange(i, init.0, i, init.0)
+                    - ham.direct_plus_exchange(i, init.1, i, init.1);
             }
             for i in bits(self.config.dn) {
-                new_diag += ham.direct(i, doub.target.0, i, doub.target.0)
-                    + ham.direct(i, doub.target.1, i, doub.target.1)
-                    - ham.direct(i, doub.init.0, i, doub.init.0)
-                    - ham.direct(i, doub.init.1, i, doub.init.1);
+                new_diag += ham.direct(i, target.0, i, target.0)
+                    + ham.direct(i, target.1, i, target.1)
+                    - ham.direct(i, init.0, i, init.0)
+                    - ham.direct(i, init.1, i, init.1);
             }
         } else {
             for i in bits(self.config.dn) {
-                if i == doub.init.0 || i == doub.init.1 { continue; }
-                new_diag += ham.direct_plus_exchange(i, doub.target.0, i, doub.target.0)
-                    + ham.direct_plus_exchange(i, doub.target.1, i, doub.target.1)
-                    - ham.direct_plus_exchange(i, doub.init.0, i, doub.init.0)
-                    - ham.direct_plus_exchange(i, doub.init.1, i, doub.init.1);
+                if i == init.0 || i == init.1 { continue; }
+                new_diag += ham.direct_plus_exchange(i, target.0, i, target.0)
+                    + ham.direct_plus_exchange(i, target.1, i, target.1)
+                    - ham.direct_plus_exchange(i, init.0, i, init.0)
+                    - ham.direct_plus_exchange(i, init.1, i, init.1);
             }
             for i in bits(self.config.up) {
-                new_diag += ham.direct(i, doub.target.0, i, doub.target.0)
-                    + ham.direct(i, doub.target.1, i, doub.target.1)
-                    - ham.direct(i, doub.init.0, i, doub.init.0)
-                    - ham.direct(i, doub.init.1, i, doub.init.1);
+                new_diag += ham.direct(i, target.0, i, target.0)
+                    + ham.direct(i, target.1, i, target.1)
+                    - ham.direct(i, init.0, i, init.0)
+                    - ham.direct(i, init.1, i, init.1);
             }
         }
 
         new_diag
     }
 
-    fn new_diag_sing(&self, ham: &Ham, sing: &Sing, is_alpha: bool) -> f64 {
+    fn new_diag_sing(&self, ham: &Ham, init: i32, target: i32, is_alpha: bool) -> f64 {
         // Compute new diagonal element given the old one
 
         // O(1) One-body part: E += h(r) - h(p)
         let mut new_diag: f64 = self.diag
-            + ham.one_body(sing.target, sing.target)
-            - ham.one_body(sing.init, sing.init);
+            + ham.one_body(target, target)
+            - ham.one_body(init, init);
 
         // O(N) Two-body direct part: E += sum_{i in occ. but not in p} direct(i,r) - direct(i,p)
         if is_alpha {
             for i in bits(self.config.up) {
-                if i == sing.init { continue; }
-                new_diag += ham.direct_plus_exchange(i, sing.target, i, sing.target)
-                    - ham.direct_plus_exchange(i, sing.init, i, sing.init);
+                if i == init { continue; }
+                new_diag += ham.direct_plus_exchange(i, target, i, target)
+                    - ham.direct_plus_exchange(i, init, i, init);
             }
             for i in bits(self.config.dn) {
-                new_diag += ham.direct(i, sing.target, i, sing.target)
-                    - ham.direct(i, sing.init, i, sing.init);
+                new_diag += ham.direct(i, target, i, target)
+                    - ham.direct(i, init, i, init);
             }
         } else {
             for i in bits(self.config.dn) {
-                if i == sing.init { continue; }
-                new_diag += ham.direct_plus_exchange(i, sing.target, i, sing.target)
-                    - ham.direct_plus_exchange(i, sing.init, i, sing.init);
+                if i == init { continue; }
+                new_diag += ham.direct_plus_exchange(i, target, i, target)
+                    - ham.direct_plus_exchange(i, init, i, init);
             }
             for i in bits(self.config.up) {
-                new_diag += ham.direct(i, sing.target, i, sing.target)
-                    - ham.direct(i, sing.init, i, sing.init);
+                new_diag += ham.direct(i, target, i, target)
+                    - ham.direct(i, init, i, init);
             }
         }
 
