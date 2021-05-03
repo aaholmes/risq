@@ -61,10 +61,9 @@ fn new_opp(
     det: Config,
     excite_gen: &'static HashMap<OPair, Vec<StoredDoub>>,
     eps: f64,
-) -> IntoIter<Excite> {
+) -> impl Iterator<Item=Excite> {
     // Generate iterators over all valid opposite-spin excitations
-    let mut excite_iter: Iter<'static, Excite> = vec![].iter();
-    //let mut excite_iter: dyn Iterator<Item = Excite> = empty();
+    let mut excite_iter: impl Iterator<Item=Excite> = vec![].iter();
     for i in bits(det.up) {
         for j in bits(det.dn) {
             excite_iter = excite_iter.chain(
@@ -86,9 +85,9 @@ fn new_same(
     det: Config,
     excite_gen: &'static HashMap<OPair, Vec<StoredDoub>>,
     eps: f64,
-) -> Iter<Excite> {
+) -> impl Iterator<Item=Excite> {
     // Generate iterators over all valid same-spin double excitations
-    let mut excite_iter: Iter<'static, Excite> = vec![].iter();
+    let mut excite_iter: impl Iterator<Item=Excite> = vec![].iter();
     for (config, is_alpha) in [(det.up, true), (det.dn, false)] {
         for (i, j) in bit_pairs(config) {
             excite_iter = excite_iter.chain(
@@ -110,11 +109,9 @@ fn new_sing(
     det: Config,
     excite_gen: &'static Vec<Vec<StoredSing>>,
     eps: f64,
-) -> Iter<Excite> {
+) -> impl Iterator<Item=Excite> {
     // Generate iterators over all potential single excitations
-    //let mut excite_iter: dyn Iterator<Item = Excite> = EmptyIterator::new();
-    let mut excite_iter: Iter<Excite> = vec![].iter();
-    //let mut excite_iter: Box<dyn Iterator<Item = Excite>> = Box::new(EmptyIterator::new());
+    let mut excite_iter: impl Iterator<Item=Excite> = vec![].iter();
     for (config, is_alpha) in [(det.up, true), (det.dn, false)] {
         for i in bits(config) {
             excite_iter = excite_iter.chain(
@@ -270,23 +267,6 @@ impl Iterator for SingTruncatorIntoIterator {
     }
 }
 
-// A generic iterator that always returns None serving as a base case for fold
-struct EmptyIterator<T> {
-    t: PhantomData<T>
-}
-
-impl<T> EmptyIterator<T> {
-    fn new() -> EmptyIterator<T> {
-        EmptyIterator{ t: PhantomData }
-    }
-}
-
-impl<T> Iterator for EmptyIterator<T> {
-    type Item = T;
-    fn next(&mut self) -> Option<T>{
-        None
-    }
-}
 
 #[cfg(test)]
 mod tests {
