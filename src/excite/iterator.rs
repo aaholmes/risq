@@ -6,46 +6,77 @@
 // where singles are candidates whose matrix elements must be computed separately
 // (because we want to check if they're new first before computing their matrix element)
 
-use std::slice::Iter;
+// use std::slice::Iter;
 use std::collections::HashMap;
 
 use crate::excite::init::ExciteGenerator;
 use crate::excite::{Excite, Orbs, StoredExcite};
-use crate::utils::bits::{bit_pairs, bits, bits_and_bit_pairs};
+use crate::utils::bits::{opp_iter, same_iter, sing_iter};
 use crate::wf::det::{Config, Det};
-use crate::utils::iter::empty;
+// use crate::utils::iter::empty;
 
 impl ExciteGenerator {
     pub fn truncated_excites(
         &'static self,
         det: Det,
-        //excite_gen: &ExciteGenerator,
         eps: f64,
     ) -> impl Iterator<Item=Excite> {
         // Returns an iterator over all double excitations that exceed eps
         // and all *candidate* single excitations that *may* exceed eps
         // The single excitation matrix elements must still be compared to eps
-        let local_eps = eps / det.coeff.abs();
-        // Opposite spin double excitations
-        new_opp(det.config, self.max_opp_spin_doub, &self.opp_spin_doub_generator, local_eps)
-        .chain(
-            // Same spin double excitations
-            new_same(det.config, self.max_same_spin_doub, &self.same_spin_doub_generator, local_eps)
+        // TODO: Put in max_doub, etc
+        let local_eps: f64 = eps / det.coeff.abs();
+        Exciter {
+            det: &det.config,
+            epair_iter: opp_iter(&det.config),
+            sorted_excites: &self.opp_doub_generator,
+            eps: local_eps,
+            is_alpha: None
+        }.into_iter().chain(
+            Exciter {
+                det: &det.config,
+                epair_iter: same_iter(det.config.up),
+                sorted_excites: &self.same_doub_generator,
+                eps: local_eps,
+                is_alpha: Some(true)
+            }.into_iter()
         ).chain(
-            // Single excitations
-            new_sing(det.config, self.max_sing, &self.sing_generator, local_eps)
+            Exciter {
+                det: &det.config,
+                epair_iter: same_iter(det.config.dn),
+                sorted_excites: &self.same_doub_generator,
+                eps: local_eps,
+                is_alpha: Some(false)
+            }.into_iter()
+        ).chain(
+            Exciter {
+                det: &det.config,
+                epair_iter: sing_iter(det.config.up),
+                sorted_excites: &self.sing_generator,
+                eps: local_eps,
+                is_alpha: Some(true)
+            }.into_iter()
+        ).chain(
+            Exciter {
+                det: &det.config,
+                epair_iter: sing_iter(det.config.dn),
+                sorted_excites: &self.sing_generator,
+                eps: local_eps,
+                is_alpha: Some(false)
+            }.into_iter()
         )
     }
 }
 
 // Backend for EXCITE_GEN.truncated_excites()
 
+#[derive(Default)]
 struct Exciter {
-    det: Config,               // Needed to check if excitation is valid
-    init: Orbs,               // Exciting electron pair
-    excite_iter: Iter<'static, StoredExcite>, // Iterates over stored excitation
+    det: &'static Config,               // Needed to check if excitation is valid
+    epair_iter: Box<dyn Iterator<Item=Orbs>>,
+    sorted_excites: &'static HashMap<Orbs, Vec<StoredExcite>>,
     eps: f64,
-    is_alpha: Option<bool>,
+    is_alpha: Option<bool>
 }
 
 impl IntoIterator for Exciter {
@@ -53,31 +84,34 @@ impl IntoIterator for Exciter {
     type IntoIter = ExciterIntoIterator;
 
     fn into_iter(self) -> Self::IntoIter {
-        let mut out = ();
+        let mut out = ExciterIntoIterator::default();
         out.det = self.det;
-        out.excite_gen = self.excite_gen;
-        out.epair_iter = bits_and_bit_pairs(&self.det);
-        out.epair = self.epair_iter.next();
-        out.target_iter = self.excite_gen.get(&out.epair);
+        out.epair_iter = self.epair_iter;
+        // Initialize to first electron or pair
+        out.epair = out.epair_iter.next().unwrap();
+        out.sorted_excites = self.sorted_excites;
+        out.target_iter = out.sorted_excites.get_key(&self.epair).unwrap().iter();
         out.eps = self.eps;
+        out.is_alpha = self.is_alpha;
         out
     }
 }
 
 struct ExciterIntoIterator {
-    det: Config,               // Needed to check if excitation is valid
-    excite_gen: HashMap<Orbs, Vec<StoredExcite>>, // Lookup table of all sorted excites
-    epair_iter: dyn Iterator<Item=Orbs>, // Iterator over pairs of electrons in det to excite
+    det: &'static Config,               // Needed to check if excitation is valid
+    epair_iter: Box<dyn Iterator<Item=Orbs>>, // Iterator over electrons or pairs of electrons in det to excite
     epair: Orbs,               // Current exciting electron pair
-    target_iter: Iter<'static, StoredExcite>, // Iterates over sorted target orbs to excite to
+    sorted_excites: &'static HashMap<Orbs, Vec<StoredExcite>>,
+    target_iter: Box<dyn Iterator<Item=StoredExcite>>,
     eps: f64,
+    is_alpha: Option<bool>
 }
 
 impl Iterator for ExciterIntoIterator {
     type Item = Excite;
 
     fn next(&mut self) -> Option<Excite> {
-        let excite: Option<&StoredExcite>;
+        let excite: Option<StoredExcite>;
         loop {
             excite = self.target_iter.next();
             match excite {
@@ -98,17 +132,30 @@ impl Iterator for ExciterIntoIterator {
                     // Check whether it meets threshold; if not, quit this sorted excitations list
                     if exc.abs_h >= self.eps {
                         // Only return this excitation if it is a valid excite for this det
-                        let out_exc = Excite::Double {
-                            0: Doub {
-                                init: self.epair.clone(),
-                                target: exc.target,
-                                abs_h: exc.abs_h,
-                                is_alpha: self.is_alpha,
-                            },
-                        };
-                        if self.det.is_valid(&out_exc) {
+                        if self.det.is_valid_stored(&exc) {
                             // Found valid excitation; return it
-                            return Some(out_exc);
+                            match exc.target {
+                                Orbs::Double(target) => {
+                                    return Some(
+                                        Excite::Double {
+                                            init: self.epair.clone(),
+                                            target,
+                                            abs_h: exc.abs_h,
+                                            is_alpha: self.is_alpha
+                                        }
+                                    );
+                                },
+                                Orbs::Single(target) => {
+                                    return Some(
+                                        Excite::Single {
+                                            init: self.epair,
+                                            target,
+                                            abs_h: exc.abs_h,
+                                            is_alpha: self.is_alpha
+                                        }
+                                    );
+                                }
+                            }
                         } // Else, this excitation was not valid; go to next excitation (i.e., continue loop)
                     } else {
                         // Remaining excitations are smaller than eps; done with this electron pair
@@ -128,6 +175,8 @@ impl Iterator for ExciterIntoIterator {
         }
     }
 }
+
+// pub fn chain_iters(iters: &[dyn Iterator]) {}
 
 
 #[cfg(test)]

@@ -4,7 +4,7 @@
 
 use crate::ham::Ham;
 use crate::utils::bits::{bits, btest, ibset, ibclr};
-use crate::excite::{Excite, Orbs};
+use crate::excite::{Excite, Orbs, StoredExcite};
 
 // Configuration: up and dn spin occupation bitstrings
 #[derive(Clone, Copy, Eq, PartialEq, Hash)]
@@ -25,6 +25,35 @@ pub struct Det {
 
 impl Config {
     pub fn is_valid(&self, excite: &Excite) -> bool {
+        match excite.target {
+            Orbs::Double((r, s)) => {
+                match excite.is_alpha {
+                    None => {
+                        if btest(self.up, r) { return false; }
+                        !btest(self.dn, s)
+                    }
+                    Some(is_alpha) => {
+                        if is_alpha {
+                            if btest(self.up, r) { return false; }
+                            !btest(self.up, s)
+                        } else {
+                            if btest(self.dn, r) { return false; }
+                            !btest(self.dn, s)
+                        }
+                    }
+                }
+            },
+            Orbs::Single(r) => {
+                if excite.is_alpha.unwrap() {
+                    !btest(self.up, r)
+                } else {
+                    !btest(self.dn, r)
+                }
+            }
+        }
+    }
+
+    pub fn is_valid_stored(&self, excite: &StoredExcite) -> bool {
         match excite.target {
             Orbs::Double((r, s)) => {
                 match excite.is_alpha {
@@ -111,15 +140,15 @@ impl Det {
             (Orbs::Double((p, q)), Orbs::Double((r, s))) => {
                 match excite.is_alpha {
                     None => {
-                        self.new_diag_opp(&Ham, (p, q), (r, s))
+                        self.new_diag_opp(&ham, (p, q), (r, s))
                     },
                     Some(is_alpha) => {
-                        self.new_diag_same(&Ham, (p, q), (r, s), is_alpha)
+                        self.new_diag_same(&ham, (p, q), (r, s), is_alpha)
                     }
                 }
             },
             (Orbs::Single(p), Orbs::Single(r)) => {
-                self.new_diag_sing(&Ham, p, r, is_alpha)
+                self.new_diag_sing(&ham, p, r, excite.is_alpha.unwrap())
             },
             _ => {} // Because could be (single, double), etc
         }

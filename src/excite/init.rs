@@ -14,10 +14,10 @@ pub struct ExciteGenerator {
     // Doubles:
     // max_(same/opp)_spin_doub is the global largest-magnitude double
     // each orbital pair maps onto a sorted list of target orbital pairs
-    pub max_same_spin_doub: f64,
-    pub max_opp_spin_doub: f64,
-    pub same_spin_doub_generator: HashMap<Orbs, Vec<StoredExcite>>,
-    pub opp_spin_doub_generator: HashMap<Orbs, Vec<StoredExcite>>,
+    pub max_opp_doub: f64,
+    pub opp_doub_generator: HashMap<Orbs, Vec<StoredExcite>>,
+    pub max_same_doub: f64,
+    pub same_doub_generator: HashMap<Orbs, Vec<StoredExcite>>,
 
     // Singles:
     // max_sing is the global largest-magnitude single,
@@ -25,15 +25,15 @@ pub struct ExciteGenerator {
     // target orbs and max possible values; unlike doubles, magnitudes must be
     // re-computed because these depend on other occupied orbitals
     pub max_sing: f64,
-    pub sing_generator: HashMap<Orbs, Vec<StoredSing>>,
+    pub sing_generator: HashMap<Orbs, Vec<StoredExcite>>,
 
 }
 
 pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
     // Initialize by sorting double excitation element for all pairs
     let mut excite_gen: ExciteGenerator = ExciteGenerator {
-        max_same_spin_doub: 0.0, max_opp_spin_doub: 0.0, same_spin_doub_generator: Default::default(),
-        opp_spin_doub_generator: Default::default(), max_sing: 0.0, sing_generator: Default:: default()
+        max_same_doub: 0.0, max_opp_doub: 0.0, same_doub_generator: Default::default(),
+        opp_doub_generator: Default::default(), max_sing: 0.0, sing_generator: Default:: default()
     };
 
     let mut v: Vec<StoredExcite>;
@@ -50,7 +50,7 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
                     if  q == s { continue; };
                     // Compute H elem
                     h = (ham.direct(p, q, r, s)).abs();
-                    if h > excite_gen.max_opp_spin_doub { excite_gen.max_opp_spin_doub = h; }
+                    if h > excite_gen.max_opp_doub { excite_gen.max_opp_doub = h; }
                     v.push(
                         StoredExcite {
                             target: Orbs::Double((r, s)),
@@ -61,7 +61,7 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
             }
             // Sort v in decreasing order by abs_h
             v.sort_by(|a, b| b.abs_h.partial_cmp(&a.abs_h).unwrap_or(Equal));
-            excite_gen.opp_spin_doub_generator.insert(Orbs::Double((p, q)), v);
+            excite_gen.opp_doub_generator.insert(Orbs::Double((p, q)), v);
         }
     }
 
@@ -76,7 +76,7 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
                     // Compute H elem
                     // prqs - psqr
                     h = (ham.direct_plus_exchange(p, q, r, s)).abs();
-                    if h > excite_gen.max_same_spin_doub { excite_gen.max_same_spin_doub = h; }
+                    if h > excite_gen.max_same_doub { excite_gen.max_same_doub = h; }
                     v.push(
                         StoredExcite {
                             target: Orbs::Double((r, s)),
@@ -87,7 +87,7 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
             }
             // Sort v in decreasing order by abs_h
             v.sort_by(|a, b| b.abs_h.partial_cmp(&a.abs_h).unwrap_or(Equal));
-            excite_gen.same_spin_doub_generator.insert(Orbs::Double((p, q)), v);
+            excite_gen.same_doub_generator.insert(Orbs::Double((p, q)), v);
         }
     }
 

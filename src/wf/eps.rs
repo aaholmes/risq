@@ -6,7 +6,7 @@
 use crate::wf::Wf;
 use crate::utils::bits::{bits, btest};
 use crate::utils::read_input::Global;
-use crate::excite::{Orbs, StoredDoub};
+use crate::excite::{Orbs, StoredExcite};
 use crate::excite::init::ExciteGenerator;
 
 
@@ -37,13 +37,13 @@ pub fn init_eps(wf: &Wf, global: &Global, excite_gen: &ExciteGenerator) -> Eps {
     // max_doub is the largest double excitation magnitude coming from the wavefunction
     // Can't just use excite_gen.max_(same/opp)_spin_doub because we want to only consider
     // excitations coming from initial wf (usually HF det)
-    let mut excite: &StoredDoub;
+    let mut excite: &StoredExcite;
     let mut max_doub: f64 = global.eps;
     let mut this_doub: f64 = 0.0;
     for det in &wf.dets {
         for i in bits(det.config.up) {
             for j in bits(det.config.dn) {
-                excite = &excite_gen.opp_spin_doub_generator.get(&OPair(i, j)).unwrap()[0];
+                excite = &excite_gen.opp_doub_generator.get(&Orbs::Double((i, j))).unwrap()[0];
                 if !btest(det.config.up, excite.target.0) && !btest(det.config.dn, excite.target.1) {
                     this_doub = excite.abs_h;
                     if this_doub > max_doub {
@@ -55,7 +55,7 @@ pub fn init_eps(wf: &Wf, global: &Global, excite_gen: &ExciteGenerator) -> Eps {
         for i in bits(det.config.up) {
             for j in bits(det.config.up) {
                 if i >= j { continue; }
-                excite = &excite_gen.same_spin_doub_generator.get(&OPair(i, j)).unwrap()[0];
+                excite = &excite_gen.same_doub_generator.get(&Orbs::Double((i, j))).unwrap()[0];
                 if !btest(det.config.up, excite.target.0) && !btest(det.config.up, excite.target.1) {
                     this_doub = excite.abs_h;
                     if this_doub > max_doub {
@@ -67,7 +67,7 @@ pub fn init_eps(wf: &Wf, global: &Global, excite_gen: &ExciteGenerator) -> Eps {
         for i in bits(det.config.dn) {
             for j in bits(det.config.dn) {
                 if i >= j { continue; }
-                excite = &excite_gen.same_spin_doub_generator.get(&OPair(i, j)).unwrap()[0];
+                excite = &excite_gen.same_doub_generator.get(&Orbs::Double((i, j))).unwrap()[0];
                 if !btest(det.config.dn, excite.target.0) && !btest(det.config.dn, excite.target.1) {
                     this_doub = excite.abs_h;
                     if this_doub > max_doub {
@@ -80,7 +80,7 @@ pub fn init_eps(wf: &Wf, global: &Global, excite_gen: &ExciteGenerator) -> Eps {
 
     println!("Setting initial eps = {}", max_doub);
     Eps {
-        next: max_doub - 1e-9,
+        next: max_doub - 1e-9, // Slightly less than max_doub in case there are two or more elements that are off by machine precision
         target: global.eps,
     }
 }
