@@ -65,7 +65,7 @@ impl Wf {
         }
     }
 
-    pub fn approx_matmul(&self, ham: &Ham, excite_gen: &ExciteGenerator) -> Vec<Det> {
+    pub fn approx_matmul(&self, ham: &Ham, excite_gen: &ExciteGenerator) -> Wf {
         todo!()
     }
 
@@ -74,7 +74,6 @@ impl Wf {
         // if new, add to wf
 
         let eps: f64 = self.eps_iter.next().unwrap();
-        println!("Getting new dets with eps = {}", eps);
 
         let new_dets: Wf = self.iterate_excites(ham, excite_gen, eps, false);
 
@@ -156,7 +155,7 @@ impl Wf {
                                 init: Orbs::Double((i, j)),
                                 target: stored_excite.target,
                                 abs_h: stored_excite.abs_h,
-                                is_alpha: None
+                                is_alpha: Some(*is_alpha)
                             };
                             new_det = det.config.safe_excite_det(&excite);
                             match new_det {
@@ -203,7 +202,7 @@ impl Wf {
                                 init: Orbs::Single(i),
                                 target: stored_excite.target,
                                 abs_h: stored_excite.abs_h,
-                                is_alpha: None
+                                is_alpha: Some(*is_alpha)
                             };
                             new_det = det.config.safe_excite_det(&excite);
                             match new_det {
@@ -219,13 +218,16 @@ impl Wf {
                                             if !out.inds.contains_key(&d) {
                                                 match excite.target {
                                                     Orbs::Single(r) => {
-                                                        out.push(
-                                                            Det {
-                                                                config: d,
-                                                                coeff: 0.0,
-                                                                diag: det.new_diag_sing(ham, i, r, *is_alpha)
-                                                            }
-                                                        );
+                                                        // Compute whether single excitation actually exceeds eps!
+                                                        if ham.ham_sing(&det.config, &d).abs() > local_eps {
+                                                            out.push(
+                                                                Det {
+                                                                    config: d,
+                                                                    coeff: 0.0,
+                                                                    diag: det.new_diag_sing(ham, i, r, *is_alpha)
+                                                                }
+                                                            );
+                                                        }
                                                     }
                                                     _ => {}
                                                 }
