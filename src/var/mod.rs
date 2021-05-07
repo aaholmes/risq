@@ -25,11 +25,11 @@ pub fn variational(ham: &Ham, excite_gen: &ExciteGenerator, wf: &mut Wf) {
         // TODO: wf.optimize(&ham, &excite_gen);
 
         break;
-        println!("End of iteration {}: Wavefunction has {} determinants with energy {}", iter, wf.n, wf.energy);
-
-        if wf.n <= 20 {
-            wf.print();
-        }
+        // println!("End of iteration {}: Wavefunction has {} determinants with energy {}", iter, wf.n, wf.energy);
+        //
+        // if wf.n <= 20 {
+        //     wf.print();
+        // }
 
 
     }

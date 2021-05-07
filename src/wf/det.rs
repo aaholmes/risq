@@ -53,16 +53,16 @@ impl Config {
         }
     }
 
-    pub fn is_valid_stored(&self, excite: &StoredExcite) -> bool {
+    pub fn is_valid_stored(&self, excite: &StoredExcite, is_alpha: Option<bool>) -> bool {
         match excite.target {
             Orbs::Double((r, s)) => {
-                match excite.is_alpha {
+                match is_alpha {
                     None => {
                         if btest(self.up, r) { return false; }
                         !btest(self.dn, s)
                     }
-                    Some(is_alpha) => {
-                        if is_alpha {
+                    Some(is_a) => {
+                        if is_a {
                             if btest(self.up, r) { return false; }
                             !btest(self.up, s)
                         } else {
@@ -73,7 +73,7 @@ impl Config {
                 }
             },
             Orbs::Single(r) => {
-                if excite.is_alpha.unwrap() {
+                if is_alpha.unwrap() {
                     !btest(self.up, r)
                 } else {
                     !btest(self.dn, r)
@@ -120,7 +120,10 @@ impl Config {
                     }
                 }
             },
-            _ => {} // Because could be (single, double), etc
+            _ => Config {
+                up: self.up,
+                dn: self.dn
+            }// Because could be (single, double), etc
         }
     }
 
@@ -150,14 +153,14 @@ impl Det {
             (Orbs::Single(p), Orbs::Single(r)) => {
                 self.new_diag_sing(&ham, p, r, excite.is_alpha.unwrap())
             },
-            _ => {} // Because could be (single, double), etc
+            _ => 0.0 // Because could be (single, double), etc
         }
     }
 
 
 // Backend
 
-    fn new_diag_opp(&self, ham: &Ham, init: (i32, i32), target: (i32, i32)) -> f64 {
+    pub(crate) fn new_diag_opp(&self, ham: &Ham, init: (i32, i32), target: (i32, i32)) -> f64 {
         // Compute new diagonal element given the old one
 
         // O(1) One-body part: E += h(r) + h(s) - h(p) - h(q)
@@ -190,7 +193,7 @@ impl Det {
         new_diag
     }
 
-    fn new_diag_same(&self, ham: &Ham, init: (i32, i32), target: (i32, i32), is_alpha: bool) -> f64 {
+    pub(crate) fn new_diag_same(&self, ham: &Ham, init: (i32, i32), target: (i32, i32), is_alpha: bool) -> f64 {
         // Compute new diagonal element given the old one
 
         // O(1) One-body part: E += h(r) + h(s) - h(p) - h(q)
@@ -238,7 +241,7 @@ impl Det {
         new_diag
     }
 
-    fn new_diag_sing(&self, ham: &Ham, init: i32, target: i32, is_alpha: bool) -> f64 {
+    pub(crate) fn new_diag_sing(&self, ham: &Ham, init: i32, target: i32, is_alpha: bool) -> f64 {
         // Compute new diagonal element given the old one
 
         // O(1) One-body part: E += h(r) - h(p)

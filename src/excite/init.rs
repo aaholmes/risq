@@ -144,7 +144,7 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
     // Now, for each p, get its largest-magnitude excite among all p->r excites from above
     // (The first element in sing_generator[p] since it's already sorted in decreasing order)
     for p in 0..global.norb {
-        max_sing_list.push(excite_gen.sing_generator[p as usize][0].abs_h);
+        max_sing_list.push(excite_gen.sing_generator.get(&Orbs::Single(p)).unwrap()[0].abs_h);
     }
 
     // Finally, get the global max_sing by taking max_p over the above

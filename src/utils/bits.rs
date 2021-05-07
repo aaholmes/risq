@@ -3,7 +3,7 @@
 // plus functions for computing parity and getting and setting bits
 
 use crate::wf::det::Config;
-use crate::excite::Orbs;
+// use crate::excite::Orbs;
 
 // Iterate over set bits in a u128
 // Syntax: for i in bits(det: u128): loops over the set bits in det
@@ -18,20 +18,21 @@ pub fn bit_pairs(det: u128) -> impl Iterator<Item = (i32, i32)> {
 }
 
 
-// Single iterator (same as bits, but return type is Orbs)
-pub fn sing_iter(det: u128) -> impl Iterator<Item = Orbs> {
-    Bits::new(det).into_iter()
-}
-
-// Same-spin iterator (same as bit_pairs, but return type is Orbs)
-pub fn same_iter(det: u128) -> impl Iterator<Item = Orbs> {
-    SameIter::new(det).into_iter()
-}
-
-// Opposite-spin iterator
-pub fn opp_iter(det: &Config) -> impl Iterator<Item = Orbs> {
-    OppIter::new(det).into_iter()
-}
+// // Single iterator (same as bits, but return type is Orbs)
+// pub fn sing_iter(det: u128) -> impl Iterator<Item = Orbs> {
+//     SingIter::new(det).into_iter()
+// }
+//
+// // Same-spin iterator (same as bit_pairs, but return type is Orbs)
+// pub fn same_iter(det: u128) -> impl Iterator<Item = Orbs> {
+//     SameIter::new(det).into_iter()
+// }
+//
+// // Opposite-spin iterator
+// pub fn opp_iter(det: &Config) -> Box<dyn Iterator<Item = Orbs>> {
+//     //pub fn opp_iter(det: &Config) -> impl Iterator<Item = Orbs> {
+//     OppIter::new(det).into_iter()
+// }
 
 
 // Iterate over set bits in a Config
@@ -96,6 +97,7 @@ impl IntoIterator for Bits {
     }
 }
 
+#[derive(Clone, Copy)]
 struct BitsIntoIterator {
     bits_left: u128,
 }
@@ -115,43 +117,43 @@ impl Iterator for BitsIntoIterator {
 
 // Backend for sing_iter (same as bits but return type is Orbs)
 
-struct SingIter {
-    det: u128,
-}
-
-impl SingIter {
-    fn new(d: u128) -> SingIter {
-        SingIter { det: d }
-    }
-}
-
-impl IntoIterator for SingIter {
-    type Item = Orbs;
-    type IntoIter = SingIterIntoIterator;
-
-    fn into_iter(self) -> Self::IntoIter {
-        SingIterIntoIterator {
-            bits_left: self.det,
-        }
-    }
-}
-
-struct SingIterIntoIterator {
-    bits_left: u128,
-}
-
-impl Iterator for SingIterIntoIterator {
-    type Item = Orbs;
-
-    fn next(&mut self) -> Option<Orbs> {
-        if self.bits_left == 0 {
-            return None;
-        };
-        let res: i32 = self.bits_left.trailing_zeros() as i32;
-        self.bits_left &= !(1 << res);
-        Some(Orbs::Single(res))
-    }
-}
+// struct SingIter {
+//     det: u128,
+// }
+//
+// impl SingIter {
+//     fn new(d: u128) -> SingIter {
+//         SingIter { det: d }
+//     }
+// }
+//
+// impl IntoIterator for SingIter {
+//     type Item = Orbs;
+//     type IntoIter = SingIterIntoIterator;
+//
+//     fn into_iter(self) -> Self::IntoIter {
+//         SingIterIntoIterator {
+//             bits_left: self.det,
+//         }
+//     }
+// }
+//
+// struct SingIterIntoIterator {
+//     bits_left: u128,
+// }
+//
+// impl Iterator for SingIterIntoIterator {
+//     type Item = Orbs;
+//
+//     fn next(&mut self) -> Option<Orbs> {
+//         if self.bits_left == 0 {
+//             return None;
+//         };
+//         let res: i32 = self.bits_left.trailing_zeros() as i32;
+//         self.bits_left &= !(1 << res);
+//         Some(Orbs::Single(res))
+//     }
+// }
 
 // Backend for bit_pairs()
 
@@ -208,94 +210,94 @@ impl Iterator for BitPairsIntoIterator {
     }
 }
 
-struct SameIter {
-    det: u128,
-}
-
-impl SameIter {
-    fn new(d: u128) -> SameIter {
-        SameIter { det: d }
-    }
-}
-
-impl IntoIterator for SameIter {
-    type Item = Orbs;
-    type IntoIter = SameIterIntoIterator;
-
-    fn into_iter(self) -> Self::IntoIter {
-        let bit: i32 = self.det.trailing_zeros() as i32;
-        let init: u128 = self.det & !(1 << bit);
-        SameIterIntoIterator {
-            first_bits_left: init,
-            second_bits_left: init,
-            first_bit: bit,
-        }
-    }
-}
-
-struct SameIterIntoIterator {
-    first_bits_left: u128,
-    second_bits_left: u128,
-    first_bit: i32,
-}
-
-impl Iterator for SameIterIntoIterator {
-    type Item = Orbs;
-
-    fn next(&mut self) -> Option<Orbs> {
-        if self.first_bits_left == 0 {
-            return None;
-        };
-        if self.second_bits_left == 0 {
-            let res: i32 = self.first_bits_left.trailing_zeros() as i32;
-            self.first_bits_left &= !(1 << res);
-            if self.first_bits_left == 0 {
-                return None;
-            };
-            self.second_bits_left = self.first_bits_left;
-            self.first_bit = res;
-        };
-        let res: i32 = self.second_bits_left.trailing_zeros() as i32;
-        self.second_bits_left &= !(1 << res);
-        Some(Orbs::Double((self.first_bit, res)))
-    }
-}
-
-struct OppIter {
-    det: &'static Config,
-}
-
-impl OppIter {
-    fn new(d: &Config) -> OppIter {
-        OppIter { det: d }
-    }
-}
-
-impl IntoIterator for OppIter {
-    type Item = Orbs;
-    type IntoIter = OppIterIntoIterator;
-
-    fn into_iter(self) -> Self::IntoIter {
-        OppIterIntoIterator {
-            iter: iproduct!(bits(self.det.up), bits(self.det.dn))
-        }
-    }
-}
-
-struct OppIterIntoIterator {
-    iter: dyn Iterator<Item=(i32, i32)>
-}
-
-impl Iterator for OppIterIntoIterator {
-    type Item = Orbs;
-
-    fn next(&mut self) -> Option<Orbs> {
-        match self.iter.next() {
-            None => None,
-            Some(pq) => return Some(Orbs::Double(pq))
-        }
-    }
-}
+// struct SameIter {
+//     det: u128,
+// }
+//
+// impl SameIter {
+//     fn new(d: u128) -> SameIter {
+//         SameIter { det: d }
+//     }
+// }
+//
+// impl IntoIterator for SameIter {
+//     type Item = Orbs;
+//     type IntoIter = SameIterIntoIterator;
+//
+//     fn into_iter(self) -> Self::IntoIter {
+//         let bit: i32 = self.det.trailing_zeros() as i32;
+//         let init: u128 = self.det & !(1 << bit);
+//         SameIterIntoIterator {
+//             first_bits_left: init,
+//             second_bits_left: init,
+//             first_bit: bit,
+//         }
+//     }
+// }
+//
+// struct SameIterIntoIterator {
+//     first_bits_left: u128,
+//     second_bits_left: u128,
+//     first_bit: i32,
+// }
+//
+// impl Iterator for SameIterIntoIterator {
+//     type Item = Orbs;
+//
+//     fn next(&mut self) -> Option<Orbs> {
+//         if self.first_bits_left == 0 {
+//             return None;
+//         };
+//         if self.second_bits_left == 0 {
+//             let res: i32 = self.first_bits_left.trailing_zeros() as i32;
+//             self.first_bits_left &= !(1 << res);
+//             if self.first_bits_left == 0 {
+//                 return None;
+//             };
+//             self.second_bits_left = self.first_bits_left;
+//             self.first_bit = res;
+//         };
+//         let res: i32 = self.second_bits_left.trailing_zeros() as i32;
+//         self.second_bits_left &= !(1 << res);
+//         Some(Orbs::Double((self.first_bit, res)))
+//     }
+// }
+//
+// struct OppIter {
+//     det: &'static Config,
+// }
+//
+// impl OppIter {
+//     fn new(d: &'static Config) -> OppIter {
+//         OppIter { det: d }
+//     }
+// }
+//
+// impl IntoIterator for OppIter {
+//     type Item = Orbs;
+//     type IntoIter = OppIterIntoIterator;
+//
+//     fn into_iter(self) -> Self::IntoIter {
+//         OppIterIntoIterator {
+//             iter: iproduct!(bits(self.det.up), bits(self.det.dn))
+//         }
+//     }
+// }
+//
+// struct OppIterIntoIterator {
+//     iter: dyn Iterator<Item=(i32, i32)>
+// }
+//
+// impl Iterator for OppIterIntoIterator {
+//     type Item = Orbs;
+//
+//     fn next(&mut self) -> Option<Orbs> {
+//         match self.iter.next() {
+//             None => None,
+//             Some(pq) => Some(Orbs::Double(pq))
+//         }
+//     }
+// }
 
 
 // Backend for bit_and_bit_pairs()
