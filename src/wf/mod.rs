@@ -30,7 +30,7 @@ impl Wf {
         println!("\nWavefunction has {} dets with energy {}", self.n, self.energy);
         println!("Coeff   Det_up   Det_dn   <D|H|D>");
         for d in self.dets.iter() {
-            println!("{}   {} {}   {}", d.coeff, fmt_det(d.config.up), fmt_det(d.config.dn), d.diag);
+            println!("{:.4}   {} {}   {:.4}", d.coeff, fmt_det(d.config.up), fmt_det(d.config.dn), d.diag);
         }
         println!("\n");
     }
@@ -87,7 +87,7 @@ impl Wf {
         // Iterate over excitations using heat-bath cutoff eps
         // Used internally by both approx_matmul and get_new_dets
         // If matmul, then return H*psi; else, return a wf composed of new dets
-        println!("Getting new dets with epsilon = {}", eps);
+        println!("Getting new dets with epsilon = {:.1e}", eps);
         let mut local_eps: f64;
         let mut excite: Excite;
         let mut new_det: Option<Config>;
