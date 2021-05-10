@@ -21,6 +21,7 @@ use var::variational;
 
 mod utils;
 mod stoch;
+mod semistoch;
 
 use utils::read_input::{Global, read_input};
 

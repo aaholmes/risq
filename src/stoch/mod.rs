@@ -71,7 +71,7 @@ pub fn matmul_sample_remaining(screened_sampler: &ScreenedSampler, excite_gen: &
         Some(d) => {
             // Compute new det coefficient
             let mut new_det_coeff = det_orb_sample.det.coeff;
-            match sampled_det.init {
+            match det_orb_sample.init {
                 Orbs::Double(_) => new_det_coeff *= ham.ham_doub(&det_orb_sample.det.config, d),
                 Orbs::Single(_) => new_det_coeff *= ham.ham_sing(&det_orb_sample.det.config, d),
             }
@@ -79,7 +79,7 @@ pub fn matmul_sample_remaining(screened_sampler: &ScreenedSampler, excite_gen: &
                 Det {
                     config: d,
                     coeff: new_det_coeff,
-                    diag: 0.0
+                    diag: 0.0 // Compute diagonal element later, only if needed (since it would be the most expensive step)
                 }
             ), prob_sampled_det)
         }
