@@ -3,7 +3,7 @@ use rand::prelude::*;
 use crate::excite::StoredExcite;
 use std::intrinsics::offset;
 
-pub fn sample_cdf_decreasing_order(cdf: Vec<StoredExcite>, r: f64) -> usize {
+pub fn sample_cdf(cdf: &Vec<StoredExcite>, r: f64) -> &StoredExcite {
     // Sample a CDF (in decreasing order) by sampling a uniform random number up to r
     // and binary searching the CDF
     // Returns the sampled index
@@ -13,7 +13,8 @@ pub fn sample_cdf_decreasing_order(cdf: Vec<StoredExcite>, r: f64) -> usize {
     let target: f64 = r * rng.gen();
 
     // Binary-search for target
-    cdf.partition_point(|&x| x.sum_remaining_abs_h > target)
+    let ind = cdf.partition_point(|&x| x.sum_remaining_abs_h > target);
+    &cdf[ind]
 }
 
 // struct Alias {
