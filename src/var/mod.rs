@@ -1,6 +1,6 @@
 // Variational stage
 
-// mod davidson;
+mod davidson;
 
 use super::ham::Ham;
 use super::wf::Wf;
@@ -11,7 +11,7 @@ pub fn variational(ham: &Ham, excite_gen: &ExciteGenerator, wf: &mut Wf) {
 
     let mut iter: i32 = 0;
 
-    println!("Start of variational stage: Wavefunction has {} determinants with energy {}", wf.n, wf.energy);
+    println!("Start of variational stage: Wavefunction has {} det with energy {}", wf.n, wf.energy);
 
     while !wf.converged {
 
@@ -22,16 +22,15 @@ pub fn variational(ham: &Ham, excite_gen: &ExciteGenerator, wf: &mut Wf) {
         println!("Wf after add_new_dets:");
         wf.print();
 
-        // TODO: wf.optimize(&ham, &excite_gen);
+        wf.optimize(&ham, &excite_gen);
+
+        println!("End of iteration {}: Wavefunction has {} determinants with energy {}", iter, wf.n, wf.energy);
+
+        if wf.n <= 20 {
+            wf.print();
+        }
 
         break;
-        // println!("End of iteration {}: Wavefunction has {} determinants with energy {}", iter, wf.n, wf.energy);
-        //
-        // if wf.n <= 20 {
-        //     wf.print();
-        // }
-
-
     }
 
 }
