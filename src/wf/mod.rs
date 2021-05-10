@@ -65,7 +65,7 @@ impl Wf {
         }
     }
 
-    pub fn approx_matmul(&self, ham: &Ham, excite_gen: &ExciteGenerator, eps: f64) -> Wf {
+    pub fn approx_matmul(&self, ham: &Ham, excite_gen: &ExciteGenerator, eps: f64) -> (Wf, Alias) {
         // Approximate matrix-vector multiplication
         // Uses eps as a cutoff for doubles, but uses additional singles (since checking whether
         // they meet the cutoff is as expensive as actually calculating the matrix element)
