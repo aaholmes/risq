@@ -65,7 +65,7 @@ impl Wf {
         }
     }
 
-    pub fn approx_matmul(&self, ham: &Ham, excite_gen: &ExciteGenerator) -> Wf {
+    pub fn approx_matmul(&self, ham: &Ham, excite_gen: &ExciteGenerator, eps: f64) -> Wf {
         // Approximate matrix-vector multiplication
         // Uses eps as a cutoff for doubles, but uses additional singles (since checking whether
         // they meet the cutoff is as expensive as actually calculating the matrix element)
@@ -73,10 +73,13 @@ impl Wf {
         // Iterate over all dets; for each, use eps to truncate the excitations; for each excitation,
         // add to output wf
         // TODO: Set up for sampling of remaining
+        let mut local_eps: f64;
+        let mut excite: Excite;
+        let mut new_det: Option<Config>;
 
         // Diagonal component
         let mut out: Wf = Wf::default();
-        for det in self.dets {
+        for det in &self.dets {
             out.push(Det{config: det.config, coeff: det.diag * det.coeff, diag: det.diag});
         }
 
@@ -102,7 +105,7 @@ impl Wf {
                                     // Valid excite: add to H*psi
                                     // Compute matrix element and add to H*psi
                                     // TODO: Do this in a cache efficient way
-                                    out.add_det_with_coeff(det, ham, excite, d, ham.ham_doub(&det.config, &d) * det.coeff);
+                                    out.add_det_with_coeff(det, ham, &excite, d, ham.ham_doub(&det.config, &d) * det.coeff);
                                 }
                                 None => {}
                             }
@@ -129,7 +132,7 @@ impl Wf {
                                     // Valid excite: add to H*psi
                                     // Compute matrix element and add to H*psi
                                     // TODO: Do this in a cache efficient way
-                                    out.add_det_with_coeff(det, ham, excite, d, ham.ham_doub(&det.config, &d) * det.coeff);
+                                    out.add_det_with_coeff(det, ham, &excite, d, ham.ham_doub(&det.config, &d) * det.coeff);
                                 }
                                 None => {}
                             }
@@ -156,7 +159,7 @@ impl Wf {
                                     // Valid excite: add to H*psi
                                     // Compute matrix element and add to H*psi
                                     // TODO: Do this in a cache efficient way
-                                    out.add_det_with_coeff(det, ham, excite, d, ham.ham_sing(&det.config, &d) * det.coeff);
+                                    out.add_det_with_coeff(det, ham, &excite, d, ham.ham_sing(&det.config, &d) * det.coeff);
                                 }
                                 None => {}
                             }
@@ -173,10 +176,14 @@ impl Wf {
         // Approximate matrix-vector multiplication within variational space only
         // Uses eps as a cutoff for doubles, but uses additional singles (since checking whether
         // they meet the cutoff is as expensive as actually calculating the matrix element)
+        let mut local_eps: f64;
+        let mut excite: Excite;
+        let mut new_det: Option<Config>;
+        let mut ind: usize;
 
         // Diagonal component
         let mut out: Wf = Wf::default();
-        for det in self.dets {
+        for det in &self.dets {
             out.push(Det{config: det.config, coeff: det.diag * det.coeff, diag: det.diag});
         }
 
@@ -203,11 +210,13 @@ impl Wf {
                             match new_det {
                                 Some(d) => {
                                     // Valid excite: add to H*psi
-                                    if self.inds.contains_key(&d) {
+                                    match self.inds.get(&d) {
                                         // Compute matrix element and add to H*psi
                                         // TODO: Do this in a cache efficient way
-                                        ind = self.inds.get(&d);
-                                        out[ind] += ham.ham_doub(&det.config, &d) * det.coeff;
+                                        Some(ind) => {
+                                            out.dets[*ind].coeff += ham.ham_doub(&det.config, &d) * det.coeff
+                                        },
+                                        _ => {}
                                     }
                                 }
                                 None => {}
@@ -233,11 +242,14 @@ impl Wf {
                             match new_det {
                                 Some(d) => {
                                     // Valid excite: add to H*psi
-                                    if self.inds.contains_key(&d) {
+                                    // Valid excite: add to H*psi
+                                    match self.inds.get(&d) {
                                         // Compute matrix element and add to H*psi
                                         // TODO: Do this in a cache efficient way
-                                        ind = self.inds.get(&d);
-                                        out[ind] += ham.ham_doub(&det.config, &d) * det.coeff;
+                                        Some(ind) => {
+                                            out.dets[*ind].coeff += ham.ham_doub(&det.config, &d) * det.coeff
+                                        },
+                                        _ => {}
                                     }
                                 }
                                 None => {}
@@ -263,11 +275,13 @@ impl Wf {
                             match new_det {
                                 Some(d) => {
                                     // Valid excite: add to H*psi
-                                    if self.inds.contains_key(&d) {
+                                    match self.inds.get(&d) {
                                         // Compute matrix element and add to H*psi
                                         // TODO: Do this in a cache efficient way
-                                        ind = self.inds.get(&d);
-                                        out[ind] += ham.ham_sing(&det.config, &d) * det.coeff;
+                                        Some(ind) => {
+                                            out.dets[*ind].coeff += ham.ham_doub(&det.config, &d) * det.coeff
+                                        },
+                                        _ => {}
                                     }
                                 }
                                 None => {}

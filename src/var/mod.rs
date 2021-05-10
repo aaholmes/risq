@@ -22,7 +22,7 @@ pub fn variational(ham: &Ham, excite_gen: &ExciteGenerator, wf: &mut Wf) {
         println!("Wf after add_new_dets:");
         wf.print();
 
-        wf.optimize(&ham, &excite_gen);
+        // wf.optimize(&ham, &excite_gen);
 
         println!("End of iteration {}: Wavefunction has {} determinants with energy {}", iter, wf.n, wf.energy);
 

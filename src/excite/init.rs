@@ -7,6 +7,7 @@ use std::collections::HashMap;
 use crate::excite::{StoredExcite, Orbs};
 use crate::utils::read_input::Global;
 use crate::ham::Ham;
+use std::process::exit;
 
 // Heat-bath excitation generator
 pub struct ExciteGenerator {
@@ -154,7 +155,7 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
         v_sing.sort_by(|a, b| b.abs_h.partial_cmp(&a.abs_h).unwrap_or(Equal));
 
         // Finally, compute sum_remaining_abs_h for all of these
-        for i in (0 .. v_sing.len() - 1).rev_sing() {
+        for i in (0 .. v_sing.len() - 1).rev() {
             v_sing[i].sum_remaining_abs_h = v_sing[i + 1].sum_remaining_abs_h + v_sing[i].abs_h;
         }
 
