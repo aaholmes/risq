@@ -127,6 +127,16 @@ dependencies = [
  "serde",
  "serde_json",
  "sprs",
+ "vose-alias",
+]
+
+[[package]]
+name = "float-cmp"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e1267f4ac4f343772758f7b1bdcbe767c218bbab93bb432acbf5162bbf85a6c4"
+dependencies = [
+ "num-traits",
 ]
 
 [[package]]
@@ -546,6 +556,16 @@ name = "version_check"
 version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5fecdca9a5291cc2b8dcf7dc02453fee791a280f3743cb0905f8822ae463b3fe"
+
+[[package]]
+name = "vose-alias"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e9048501951703c3a4e727986f25229951fa11dbdeda310db134e00215727e44"
+dependencies = [
+ "float-cmp",
+ "rand",
+]
 
 [[package]]
 name = "wasi"

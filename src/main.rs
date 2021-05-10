@@ -20,6 +20,8 @@ mod var;
 use var::variational;
 
 mod utils;
+mod stoch;
+
 use utils::read_input::{Global, read_input};
 
 fn main() {
