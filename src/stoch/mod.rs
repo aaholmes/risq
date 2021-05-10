@@ -2,7 +2,7 @@
 
 use vose_alias::VoseAlias;
 use crate::wf::det::{Config, Det};
-use crate::excite::{Orbs, Excite};
+use crate::excite::{Orbs, Excite, StoredExcite};
 use crate::excite::init::ExciteGenerator;
 use crate::stoch::utils::sample_cdf;
 use crate::ham::Ham;
@@ -34,20 +34,21 @@ pub fn matmul_sample_remaining(screened_sampler: &ScreenedSampler, excite_gen: &
     let det_orb_sample = screened_sampler.det_orb_sampler.sample();
 
     // Sample excitation from this det/orb pair by binary search the stored cdf
+    let mut sampled_excite: &StoredExcite;
     match is_alpha {
         None => {
             // Opposite spin double
-            let sampled_excite = sample_cdf(excite_gen.opp_doub_generator.get(&sampled_orbs).unwrap(), det_orb_sample.sum_abs_hc);
+            sampled_excite = sample_cdf(excite_gen.opp_doub_generator.get(&det_orb_sample.init).unwrap(), det_orb_sample.sum_abs_hc);
         },
-        Some(alpha) => {
-            match sampled_orbs {
-                Orbs::Double(pq) => {
+        Some(_) => {
+            match det_orb_sample.init {
+                Orbs::Double(_) => {
                     // Same spin double
-                    let sampled_excite = sample_cdf(excite_gen.same_doub_generator.get(&sampled_orbs).unwrap(), det_orb_sample.sum_abs_hc);
+                    sampled_excite = sample_cdf(excite_gen.same_doub_generator.get(&det_orb_sample.init).unwrap(), det_orb_sample.sum_abs_hc);
                 },
-                Orbs::Single(p) => {
+                Orbs::Single(_) => {
                     // Single
-                    let sampled_excite = sample_cdf(excite_gen.sing_generator.get(&sampled_orbs).unwrap(), det_orb_sample.sum_abs_hc);
+                    sampled_excite = sample_cdf(excite_gen.sing_generator.get(&det_orb_sample.init).unwrap(), det_orb_sample.sum_abs_hc);
                 }
             }
         }
