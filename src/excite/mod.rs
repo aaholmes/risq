@@ -24,7 +24,9 @@ pub struct Excite {
 // Simplified excitations for storing in heat-bath tensor
 // Double excitation triplet (r, s, |H|)
 // Single excitation doublet (r, max |H|)
+// Also includes sum of remaining |H| values for importance sampling the CDF
 pub struct StoredExcite {
     pub target: Orbs,
     pub abs_h: f64,
+    pub sum_remaining_abs_h: f64,
 }
