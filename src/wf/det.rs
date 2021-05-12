@@ -7,13 +7,14 @@ use crate::utils::bits::{bits, btest, ibset, ibclr};
 use crate::excite::{Excite, Orbs, StoredExcite};
 
 // Configuration: up and dn spin occupation bitstrings
-#[derive(Clone, Copy, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub struct Config {
     pub up: u128,
     pub dn: u128,
 }
 
 // Determinant - configuration with coefficient, diagonal H element
+#[derive(Clone, Copy, Debug)]
 pub struct Det {
     pub config: Config,
     pub coeff: f64,

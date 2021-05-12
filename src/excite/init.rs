@@ -7,7 +7,6 @@ use std::collections::HashMap;
 use crate::excite::{StoredExcite, Orbs};
 use crate::utils::read_input::Global;
 use crate::ham::Ham;
-use std::process::exit;
 
 // Heat-bath excitation generator
 pub struct ExciteGenerator {
@@ -122,8 +121,8 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
     let mut v_sing: Vec<StoredExcite>;
     let mut v_same: Vec<f64>;
     let mut v_opp: Vec<f64>;
-    let mut max1: f64 = 0.0;
-    let mut max2: f64 = 0.0;
+    let mut max1: f64;
+    let mut max2: f64;
     for p in 0..global.norb {
         v_sing = vec![];
         for r in 0..global.norb {

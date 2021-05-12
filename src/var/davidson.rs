@@ -1,8 +1,8 @@
 // Module for just performing matrix-free Davidson
 // For now, just use simple diagonal preconditioning
 
-use crate::wf::Wf;
-use itertools::enumerate;
+// use crate::wf::Wf;
+// use itertools::enumerate;
 
 // impl Wf {
 //     pub fn optimize(&mut self, hb_eps: f64, dav_eps: f64) {

@@ -13,6 +13,7 @@ use crate::excite::init::ExciteGenerator;
 use det::{Det, Config};
 use eps::{Eps, init_eps};
 use crate::utils::bits::{bit_pairs, bits};
+use crate::stoch::{DetOrbSample, ScreenedSampler, generate_screened_sampler};
 
 #[derive(Default)]
 pub struct Wf {
@@ -26,14 +27,6 @@ pub struct Wf {
 }
 
 impl Wf {
-    pub fn print(&self) {
-        println!("\nWavefunction has {} dets with energy {}", self.n, self.energy);
-        println!("Coeff     Det_up     Det_dn    <D|H|D>");
-        for d in self.dets.iter() {
-            println!("{:.4}   {}   {}   {:.3}", d.coeff, fmt_det(d.config.up), fmt_det(d.config.dn), d.diag);
-        }
-        println!("\n");
-    }
 
     pub fn push(&mut self, d: Det) {
         // Just adds a new det to the wf
@@ -65,22 +58,24 @@ impl Wf {
         }
     }
 
-    pub fn approx_matmul(&self, ham: &Ham, excite_gen: &ExciteGenerator, eps: f64) -> (Wf, Alias) {
+    pub fn approx_matmul(&self, ham: &Ham, excite_gen: &ExciteGenerator, eps: f64) -> (Wf, ScreenedSampler) {
         // Approximate matrix-vector multiplication
         // Uses eps as a cutoff for doubles, but uses additional singles (since checking whether
         // they meet the cutoff is as expensive as actually calculating the matrix element)
 
         // Iterate over all dets; for each, use eps to truncate the excitations; for each excitation,
         // add to output wf
-        // TODO: Set up for sampling of remaining
         let mut local_eps: f64;
         let mut excite: Excite;
         let mut new_det: Option<Config>;
 
+        // For making screened sampler
+        let mut det_orbs: Vec<DetOrbSample> = vec![];
+
         // Diagonal component
-        let mut out: Wf = Wf::default();
+        let mut out_wf: Wf = Wf::default();
         for det in &self.dets {
-            out.push(Det{config: det.config, coeff: det.diag * det.coeff, diag: det.diag});
+            out_wf.push(Det{config: det.config, coeff: det.diag * det.coeff, diag: det.diag});
         }
 
         // Off-diagonal component
@@ -92,7 +87,17 @@ impl Wf {
                 for i in bits(det.config.up) {
                     for j in bits(det.config.dn) {
                         for stored_excite in excite_gen.opp_doub_generator.get(&Orbs::Double((i, j))).unwrap() {
-                            if stored_excite.abs_h < local_eps { break; }
+                            if stored_excite.abs_h < local_eps {
+                                // No more deterministic excitations will meet the eps cutoff
+                                // Update the screened sampler, then break
+                                det_orbs.push(DetOrbSample{
+                                    det: det,
+                                    init: Orbs::Double((i, j)),
+                                    is_alpha: None,
+                                    sum_abs_hc: stored_excite.sum_remaining_abs_h
+                                });
+                                break;
+                            }
                             excite = Excite {
                                 init: Orbs::Double((i, j)),
                                 target: stored_excite.target,
@@ -105,7 +110,7 @@ impl Wf {
                                     // Valid excite: add to H*psi
                                     // Compute matrix element and add to H*psi
                                     // TODO: Do this in a cache efficient way
-                                    out.add_det_with_coeff(det, ham, &excite, d, ham.ham_doub(&det.config, &d) * det.coeff);
+                                    out_wf.add_det_with_coeff(det, ham, &excite, d, ham.ham_doub(&det.config, &d) * det.coeff);
                                 }
                                 None => {}
                             }
@@ -119,7 +124,17 @@ impl Wf {
                 for (config, is_alpha) in &[(det.config.up, true), (det.config.dn, false)] {
                     for (i, j) in bit_pairs(*config) {
                         for stored_excite in excite_gen.same_doub_generator.get(&Orbs::Double((i, j))).unwrap() {
-                            if stored_excite.abs_h < local_eps { break; }
+                            if stored_excite.abs_h < local_eps {
+                                // No more deterministic excitations will meet the eps cutoff
+                                // Update the screened sampler, then break
+                                det_orbs.push(DetOrbSample{
+                                    det: det,
+                                    init: Orbs::Double((i, j)),
+                                    is_alpha: Some(*is_alpha),
+                                    sum_abs_hc: stored_excite.sum_remaining_abs_h
+                                });
+                                break;
+                            }
                             excite = Excite {
                                 init: Orbs::Double((i, j)),
                                 target: stored_excite.target,
@@ -132,7 +147,7 @@ impl Wf {
                                     // Valid excite: add to H*psi
                                     // Compute matrix element and add to H*psi
                                     // TODO: Do this in a cache efficient way
-                                    out.add_det_with_coeff(det, ham, &excite, d, ham.ham_doub(&det.config, &d) * det.coeff);
+                                    out_wf.add_det_with_coeff(det, ham, &excite, d, ham.ham_doub(&det.config, &d) * det.coeff);
                                 }
                                 None => {}
                             }
@@ -146,7 +161,17 @@ impl Wf {
                 for (config, is_alpha) in &[(det.config.up, true), (det.config.dn, false)] {
                     for i in bits(*config) {
                         for stored_excite in excite_gen.sing_generator.get(&Orbs::Single(i)).unwrap() {
-                            if stored_excite.abs_h < local_eps { break; }
+                            if stored_excite.abs_h < local_eps {
+                                // No more deterministic excitations will meet the eps cutoff
+                                // Update the screened sampler, then break
+                                det_orbs.push(DetOrbSample{
+                                    det: det,
+                                    init: Orbs::Single(i),
+                                    is_alpha: Some(*is_alpha),
+                                    sum_abs_hc: stored_excite.sum_remaining_abs_h
+                                });
+                                break;
+                            }
                             excite = Excite {
                                 init: Orbs::Single(i),
                                 target: stored_excite.target,
@@ -159,7 +184,7 @@ impl Wf {
                                     // Valid excite: add to H*psi
                                     // Compute matrix element and add to H*psi
                                     // TODO: Do this in a cache efficient way
-                                    out.add_det_with_coeff(det, ham, &excite, d, ham.ham_sing(&det.config, &d) * det.coeff);
+                                    out_wf.add_det_with_coeff(det, ham, &excite, d, ham.ham_sing(&det.config, &d) * det.coeff);
                                 }
                                 None => {}
                             }
@@ -169,7 +194,8 @@ impl Wf {
             }
         } // for det in self.dets
 
-        out
+        // Now, convert det_orbs to a screened_sampler
+        (out_wf, generate_screened_sampler(eps, det_orbs))
     }
 
     pub fn approx_matmul_variational(&self, ham: &Ham, excite_gen: &ExciteGenerator, eps: f64) -> Wf {
@@ -179,7 +205,6 @@ impl Wf {
         let mut local_eps: f64;
         let mut excite: Excite;
         let mut new_det: Option<Config>;
-        let mut ind: usize;
 
         // Diagonal component
         let mut out: Wf = Wf::default();
@@ -471,13 +496,6 @@ impl Wf {
 
         out
     }
-}
-
-
-fn fmt_det(d: u128) -> String {
-    let mut s = format!("{:#10b}", d);
-    s = str::replace(&s, "0", "_");
-    str::replace(&s, "_b", "")
 }
 
 // Initialize variational wf to the HF det (only needs to be called once)

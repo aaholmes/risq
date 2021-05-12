@@ -39,9 +39,9 @@ pub fn init_eps(wf: &Wf, global: &Global, excite_gen: &ExciteGenerator) -> Eps {
     // excitations coming from initial wf (usually HF det)
     let mut excite: &StoredExcite;
     let mut max_doub: f64 = global.eps;
-    let mut this_doub: f64 = 0.0;
-    // Opposite spin
+    let mut this_doub: f64;
     for det in &wf.dets {
+        // Opposite spin
         for i in bits(det.config.up) {
             for j in bits(det.config.dn) {
                 excite = &excite_gen.opp_doub_generator.get(&Orbs::Double((i, j))).unwrap()[0];

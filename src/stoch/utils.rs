@@ -1,7 +1,8 @@
+extern crate rand;
 use rand::prelude::*;
 
 use crate::excite::StoredExcite;
-use std::intrinsics::offset;
+// use std::intrinsics::offset;
 
 pub fn sample_cdf(cdf: &Vec<StoredExcite>, max_cdf: f64) -> &StoredExcite {
     // Sample a CDF (in decreasing order) by sampling a uniform random number up to max_cdf
@@ -12,10 +13,11 @@ pub fn sample_cdf(cdf: &Vec<StoredExcite>, max_cdf: f64) -> &StoredExcite {
 
     // TODO: Move this rng def out of this fn
     let mut rng = rand::thread_rng();
-    let target: f64 = max_cdf * rng.gen();
+    let mut target: f64 = rng.gen();
+    target *= max_cdf;
 
     // Binary-search for target
-    let ind = cdf.partition_point(|&x| x.sum_remaining_abs_h > target);
+    let ind = cdf.partition_point(|x| x.sum_remaining_abs_h > target);
 
     // Return sampled excite
     &cdf[ind]

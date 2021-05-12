@@ -25,7 +25,7 @@ pub fn read_ints(global: &Global, filename: &str) -> Ham {
         for line in lines {
             if let Ok(read_str) = line {
                 let mut str_split = read_str.split_whitespace();
-                let mut i: f64 = 0.0;
+                let i: f64;
                 match parse(str_split.next().unwrap()) {
                     Ok(v) => i = v,
                     Err(_) => continue, // Skip header lines that don't begin with a float
