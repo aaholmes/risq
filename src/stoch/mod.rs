@@ -21,11 +21,10 @@ pub struct ScreenedSampler<'a> {
 
 #[derive(Clone, Copy, Debug)]
 pub struct DetOrbSample<'a> {
-    // Individual sample
+    // Individual sample of a det and an electron or electron pair to excite from
     pub det: &'a Det,
     pub init: Orbs,
     pub is_alpha: Option<bool>,
-    // skip this?
     pub sum_abs_hc: f64
 }
 
