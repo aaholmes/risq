@@ -5,6 +5,7 @@ mod davidson;
 use super::ham::Ham;
 use super::wf::Wf;
 use crate::excite::init::ExciteGenerator;
+// use crate::var::davidson::optimize;
 
 
 pub fn variational(ham: &Ham, excite_gen: &ExciteGenerator, wf: &mut Wf) {
@@ -22,7 +23,7 @@ pub fn variational(ham: &Ham, excite_gen: &ExciteGenerator, wf: &mut Wf) {
         println!("Wf after add_new_dets:");
         wf.print();
 
-        // wf.optimize(&ham, &excite_gen);
+        // optimize(wf, &ham, &excite_gen);
 
         println!("End of iteration {}: Wavefunction has {} determinants with energy {}", iter, wf.n, wf.energy);
 

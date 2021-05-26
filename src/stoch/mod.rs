@@ -64,9 +64,9 @@ pub fn generate_screened_sampler(eps: f64, det_orbs: Vec<DetOrbSample>) -> Scree
     }
 }
 
-pub fn matmul_sample_remaining(screened_sampler: &ScreenedSampler, excite_gen: &ExciteGenerator, ham: &Ham) -> (Option<Det>, f64) {
+pub fn matmul_sample_remaining(screened_sampler: &ScreenedSampler, excite_gen: &ExciteGenerator, ham: &Ham) -> (Option<(Det, Excite, Det)>, f64) {
     // Importance-sample the remaining component of a screened matmul using the given epsilon
-    // Returns sampled determinant (with coeff attached), and probability of that sample
+    // Returns tuple containing (option(exciting det, excitation, and sampled determinant (with coeff attached)), and probability of that sample
     // O(log M) time
 
     // First, sample a (determinant, orbs) pair using Alias sampling
@@ -93,15 +93,16 @@ pub fn matmul_sample_remaining(screened_sampler: &ScreenedSampler, excite_gen: &
         }
     }
 
+    // Construct the excitation (for output)
+    let excite = Excite {
+        init: det_orb_sample.init,
+        target: sampled_excite.target,
+        abs_h: sampled_excite.abs_h,
+        is_alpha: det_orb_sample.is_alpha
+    };
+
     // Apply the excitation to the sampled det
-    let sampled_det = det_orb_sample.det.config.safe_excite_det(
-        &Excite {
-            init: det_orb_sample.init,
-            target: sampled_excite.target,
-            abs_h: sampled_excite.abs_h,
-            is_alpha: det_orb_sample.is_alpha
-        }
-    );
+    let sampled_det = det_orb_sample.det.config.safe_excite_det(&excite);
 
     // Compute total probability
     let prob_sampled_det = sampled_excite.abs_h * det_orb_sample.det.coeff.abs() / screened_sampler.sum_abs_hc_all_dets_orbs;
@@ -115,13 +116,19 @@ pub fn matmul_sample_remaining(screened_sampler: &ScreenedSampler, excite_gen: &
                 Orbs::Double(_) => new_det_coeff *= ham.ham_doub(&det_orb_sample.det.config, &d),
                 Orbs::Single(_) => new_det_coeff *= ham.ham_sing(&det_orb_sample.det.config, &d),
             }
-            (Some(
-                Det {
-                    config: d,
-                    coeff: new_det_coeff,
-                    diag: 0.0 // Compute diagonal element later, only if needed (since it would be the most expensive step)
-                }
-            ), prob_sampled_det)
+            (
+                Some(
+                    (
+                        *det_orb_sample.det,
+                        excite,
+                        Det {
+                            config: d,
+                            coeff: new_det_coeff,
+                            diag: 0.0 // Compute diagonal element later, only if needed (since it would be the most expensive step)
+                        }
+                    )
+                ), prob_sampled_det
+            )
         }
     }
 }

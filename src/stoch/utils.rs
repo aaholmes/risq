@@ -15,6 +15,10 @@ pub fn sample_cdf(cdf: &Vec<StoredExcite>, max_cdf: f64) -> &StoredExcite {
     let mut rng = rand::thread_rng();
     let mut target: f64 = rng.gen();
     target *= max_cdf;
+    // println!("Sampling excitation with max_cdf {} from the CDF: ", max_cdf);
+    // for c in cdf.iter() {
+    //     println!("{}", c.sum_remaining_abs_h);
+    // }
 
     // Binary-search for target
     let ind = cdf.partition_point(|x| x.sum_remaining_abs_h > target);

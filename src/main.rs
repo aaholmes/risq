@@ -22,9 +22,10 @@ use var::variational;
 mod utils;
 mod stoch;
 mod semistoch;
+mod pt;
 
 use utils::read_input::{Global, read_input};
-use crate::semistoch::semistoch_matmul;
+use crate::semistoch::semistoch_enpt2;
 
 fn main() {
 
@@ -50,9 +51,12 @@ fn main() {
     wf.print();
 
     let eps = 0.1;
-    let n_samples = 10;
-    println!("Calling semistoch_matmul!");
-    semistoch_matmul(wf, &HAM, &EXCITE_GEN, eps, n_samples);
+    let n_samples = 1000;
+    // println!("Calling semistoch_matmul!");
+    // semistoch_matmul(wf, &HAM, &EXCITE_GEN, eps, n_samples);
+
+    println!("Calling semistoch ENPT2!");
+    semistoch_enpt2(wf, &HAM, &EXCITE_GEN, eps, 2, 10);
 
     // println!("Computing variational wavefunction and energy");
     // variational(&HAM, &EXCITE_GEN, &mut wf);
