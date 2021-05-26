@@ -41,22 +41,22 @@ pub fn semistoch_enpt2(input_wf: Wf, ham: &Ham, excite_gen: &ExciteGenerator, ep
         // Sample a batch of samples, updating the stoch component of the energy for each sample
         println!("\n Starting batch {}", i_batch);
         for i_sample in 0..n_samples_per_batch {
-            println!("\nCollecting sample {}...", i_sample);
+            //println!("\nCollecting sample {}...", i_sample);
             let (sampled_det_info, sampled_prob) = matmul_sample_remaining(&screened_sampler, excite_gen, ham);
             match sampled_det_info {
                 None => {
-                    println!("Sampled excitation not valid! Sample prob = {}", sampled_prob);
+                    //println!("Sampled excitation not valid! Sample prob = {}", sampled_prob);
                 }
                 Some((exciting_det, excite, target_det)) => {
                     // Update expectation values using determinant d, sample probability sampled_prob
-                    println!("Sampled config: {} with probability = {}", target_det.config, sampled_prob);
-                    println!("Coeff/sampled_prob = {}", target_det.coeff / sampled_prob);
+                    //println!("Sampled config: {} with probability = {}", target_det.config, sampled_prob);
+                    //println!("Coeff/sampled_prob = {}", target_det.coeff / sampled_prob);
                     // If sampled_det is in dtm_result, then update the stoch_enpt2 energy
                     match dtm_result.inds.get(&target_det.config) {
                         None => {}
                         Some(ind) => {
                             energy_sample = dtm_result.dets[*ind].coeff * target_det.coeff / sampled_prob / (dtm_result.dets[*ind].diag - input_wf.energy);
-                            println!("Sampled energy: {}", energy_sample);
+                            //println!("Sampled energy: {}", energy_sample);
                             stoch_enpt2.update(energy_sample);
                         }
                     }

@@ -56,7 +56,7 @@ fn main() {
     // semistoch_matmul(wf, &HAM, &EXCITE_GEN, eps, n_samples);
 
     println!("Calling semistoch ENPT2!");
-    semistoch_enpt2(wf, &HAM, &EXCITE_GEN, eps, 2, 10);
+    semistoch_enpt2(wf, &HAM, &EXCITE_GEN, eps, 10, 100000);
 
     // println!("Computing variational wavefunction and energy");
     // variational(&HAM, &EXCITE_GEN, &mut wf);

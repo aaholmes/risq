@@ -27,6 +27,7 @@ impl PtSamples {
     pub fn add_sample(&mut self, var_det: Det, excite: &Excite, pt_det: Det, sampled_prob: f64, ham: &Ham) {
         // Add a new sample to PtSamples
         // Compute diagonal element of perturbative determinant if it hasn't already been computed
+        self.n += 1;
         match self.samples.get_mut(&pt_det.config) {
             None => {
                 // New PT det was sampled: compute diagonal element and create new variational det map
@@ -63,13 +64,17 @@ impl PtSamples {
             diag_term = 0.0;
             to_square = 0.0;
             for (hai_ci, p, w) in var_det_map.values() {
+                //println!("New energy sample! H_ai c_i = {}, p = {}, w = {}, E0 = {}, E_a = {}", hai_ci, p, w, e0, pt_det_diag);
                 w_over_p = (*w as f64) / p;
                 diag_term += ((self.n - 1) as f64 - w_over_p) * w_over_p * hai_ci * hai_ci;
                 to_square += hai_ci * w_over_p;
+                //println!("Diag term = {}, off-diag term = {}", diag_term, to_square);
             }
+            //println!("Incrementing output by... {}", (diag_term + to_square * to_square) / (e0 - pt_det_diag));
             out += (diag_term + to_square * to_square) / (e0 - pt_det_diag);
         }
 
+        //println!("Unbiased estimator = {}", out / (self.n as f64 * (self.n - 1) as f64));
         out / (self.n as f64 * (self.n - 1) as f64)
     }
 }
