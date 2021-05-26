@@ -5,7 +5,7 @@ use crate::stoch::matmul_sample_remaining;
 use rolling_stats::Stats;
 use crate::pt::PtSamples;
 
-pub fn semistoch_enpt2(input_wf: Wf, ham: &Ham, excite_gen: &ExciteGenerator, eps: f64, n_batches: i32, n_samples_per_batch: i32) -> f64 {
+pub fn semistoch_enpt2(input_wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerator, eps: f64, n_batches: i32, n_samples_per_batch: i32) -> (f64, f64) {
     // Semistochastic Epstein-Nesbet PT2
     // In earlier SHCI paper, used the following strategy:
     // 1. Compute ENPT2 deterministically using large eps
@@ -31,7 +31,7 @@ pub fn semistoch_enpt2(input_wf: Wf, ham: &Ham, excite_gen: &ExciteGenerator, ep
     let mut dtm_enpt2: f64 = 0.0;
     let mut energy_sample: f64 = 0.0;
     for det in &dtm_result.dets {
-        dtm_enpt2 += (det.coeff * det.coeff) / (det.diag - input_wf.energy);
+        dtm_enpt2 += (det.coeff * det.coeff) / (input_wf.energy - det.diag);
     }
     let mut stoch_enpt2: Stats<f64> = Stats::new(); // samples overlap with deterministic part
     let mut stoch_enpt2_2: Stats<f64> = Stats::new(); // unbiased contribution from samples with themselves
@@ -55,7 +55,7 @@ pub fn semistoch_enpt2(input_wf: Wf, ham: &Ham, excite_gen: &ExciteGenerator, ep
                     match dtm_result.inds.get(&target_det.config) {
                         None => {}
                         Some(ind) => {
-                            energy_sample = dtm_result.dets[*ind].coeff * target_det.coeff / sampled_prob / (dtm_result.dets[*ind].diag - input_wf.energy);
+                            energy_sample = dtm_result.dets[*ind].coeff * target_det.coeff / sampled_prob / (input_wf.energy - dtm_result.dets[*ind].diag);
                             //println!("Sampled energy: {}", energy_sample);
                             stoch_enpt2.update(energy_sample);
                         }
@@ -76,7 +76,7 @@ pub fn semistoch_enpt2(input_wf: Wf, ham: &Ham, excite_gen: &ExciteGenerator, ep
     // Multiply the first component by 2
     // println!("Stochastic component: {} +- {}", 2f64 * stoch_enpt2.mean, 2f64 * stoch_enpt2.std_dev);
     println!("Stochastic components: {} +- {},   {} +- {}", 2f64 * stoch_enpt2.mean, 2f64 * stoch_enpt2.std_dev, stoch_enpt2_2.mean, stoch_enpt2_2.std_dev);
-    dtm_enpt2 + 2f64 * stoch_enpt2.mean + stoch_enpt2_2.mean
+    (dtm_enpt2 + 2f64 * stoch_enpt2.mean + stoch_enpt2_2.mean, stoch_enpt2_2.std_dev)
 }
 
 // pub fn semistoch_matmul(input_wf: Wf, ham: &Ham, excite_gen: &ExciteGenerator, eps: f64, n_samples: i32) {
