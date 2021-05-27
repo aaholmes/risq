@@ -56,7 +56,7 @@ impl fmt::Display for DetOrbSample<'_> {
 
 impl Wf {
     pub fn print(&self) {
-        println!("\nWavefunction has {} dets with energy {}", self.n, self.energy);
+        println!("\nWavefunction has {} dets with energy {:.4}", self.n, self.energy);
         println!("Coeff     Det_up     Det_dn    <D|H|D>");
         for d in self.dets.iter() {
             println!("{:.4}   {}   {}   {:.3}", d.coeff, fmt_det(d.config.up), fmt_det(d.config.dn), d.diag);

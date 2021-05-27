@@ -57,8 +57,9 @@ fn main() {
 
     println!("Calling semistoch ENPT2!");
     let (e_pt2, std_dev) = semistoch_enpt2(&wf, &HAM, &EXCITE_GEN, eps, 3, 100000);
-    println!("PT energy: {:.4} +- {:.4}", e_pt2, std_dev);
-    println!("Total energy: {:.4} +- {:.4}", wf.energy + e_pt2, std_dev);
+    println!("Variational energy: {:.6}", wf.energy);
+    println!("PT energy: {:.6} +- {:.6}", e_pt2, std_dev);
+    println!("Total energy: {:.6} +- {:.6}", wf.energy + e_pt2, std_dev);
 
     // println!("Computing variational wavefunction and energy");
     // variational(&HAM, &EXCITE_GEN, &mut wf);

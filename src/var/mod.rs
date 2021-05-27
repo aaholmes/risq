@@ -12,7 +12,7 @@ pub fn variational(ham: &Ham, excite_gen: &ExciteGenerator, wf: &mut Wf) {
 
     let mut iter: i32 = 0;
 
-    println!("Start of variational stage: Wavefunction has {} det with energy {}", wf.n, wf.energy);
+    println!("Start of variational stage: Wavefunction has {} det with energy {:.4}", wf.n, wf.energy);
 
     while !wf.converged {
 
@@ -25,7 +25,7 @@ pub fn variational(ham: &Ham, excite_gen: &ExciteGenerator, wf: &mut Wf) {
 
         // optimize(wf, &ham, &excite_gen);
 
-        println!("End of iteration {}: Wavefunction has {} determinants with energy {}", iter, wf.n, wf.energy);
+        println!("End of iteration {}: Wavefunction has {} determinants with energy {:.4}", iter, wf.n, wf.energy);
 
         if wf.n <= 20 {
             wf.print();

@@ -77,7 +77,7 @@ pub fn init_eps(wf: &Wf, global: &Global, excite_gen: &ExciteGenerator) -> Eps {
         }
     } // det
 
-    println!("Setting initial eps = {}", max_doub);
+    println!("Setting initial eps = {:.4}", max_doub);
     Eps {
         next: max_doub - 1e-9, // Slightly less than max_doub in case there are two or more elements that are off by machine precision
         target: global.eps,
