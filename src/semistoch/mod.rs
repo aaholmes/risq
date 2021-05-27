@@ -75,7 +75,7 @@ pub fn semistoch_enpt2(input_wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerator, e
 
     // Multiply the first component by 2
     // println!("Stochastic component: {} +- {}", 2f64 * stoch_enpt2.mean, 2f64 * stoch_enpt2.std_dev);
-    println!("Stochastic components: {} +- {},   {} +- {}", 2f64 * stoch_enpt2.mean, 2f64 * stoch_enpt2.std_dev, stoch_enpt2_2.mean, stoch_enpt2_2.std_dev);
+    println!("Stochastic components: {:.4} +- {:.4},   {:.4} +- {:.4}", 2f64 * stoch_enpt2.mean, 2f64 * stoch_enpt2.std_dev, stoch_enpt2_2.mean, stoch_enpt2_2.std_dev);
     (dtm_enpt2 + 2f64 * stoch_enpt2.mean + stoch_enpt2_2.mean, stoch_enpt2_2.std_dev)
 }
 
