@@ -24,6 +24,11 @@ pub struct PtSamples {
 }
 
 impl PtSamples {
+    pub fn clear(&mut self) {
+        // Clear data structure to start collecting a new batch of samples
+        self.n = 0;
+        self.samples = Default::default();
+    }
     pub fn add_sample(&mut self, var_det: Det, excite: &Excite, pt_det: Det, sampled_prob: f64, ham: &Ham) {
         // Add a new sample to PtSamples
         // Compute diagonal element of perturbative determinant if it hasn't already been computed
@@ -52,9 +57,11 @@ impl PtSamples {
         }
     }
 
-    pub fn unbiased_pt_estimator(&self, e0: f64) -> f64 {
+    pub fn pt_estimator(&self, e0: f64) -> f64 {
         // Computes the unbiased PT estimator as in the original SHCI paper
         // Needs to input the variational energy e0
+        // TODO: Figure out why PT energy is wrong and why contributions vary so much
+
         let mut out: f64 = 0.0;
         let mut diag_term: f64;
         let mut to_square: f64;
@@ -68,13 +75,13 @@ impl PtSamples {
                 w_over_p = (*w as f64) / p;
                 diag_term += ((self.n - 1) as f64 - w_over_p) * w_over_p * hai_ci * hai_ci;
                 to_square += hai_ci * w_over_p;
-                //println!("Diag term = {}, off-diag term = {}", diag_term, to_square);
             }
             //println!("Incrementing output by... {}", (diag_term + to_square * to_square) / (e0 - pt_det_diag));
+            println!("Diag term = {:.3}, off-diag term = {:.3}, diag + off-diag^2 = {:.3}", diag_term, to_square, diag_term + to_square * to_square);
             out += (diag_term + to_square * to_square) / (e0 - pt_det_diag);
         }
 
-        //println!("Unbiased estimator = {}", out / (self.n as f64 * (self.n - 1) as f64));
+        println!("Unbiased estimator ({} samples) = {}", self.n, out / (self.n as f64 * (self.n - 1) as f64));
         out / (self.n as f64 * (self.n - 1) as f64)
     }
 }

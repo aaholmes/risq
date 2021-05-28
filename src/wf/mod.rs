@@ -96,7 +96,8 @@ impl Wf {
                                     det: det,
                                     init: Orbs::Double((i, j)),
                                     is_alpha: None,
-                                    sum_abs_hc: stored_excite.sum_remaining_abs_h
+                                    sum_abs_hc: det.coeff.abs() * stored_excite.sum_remaining_abs_h,
+                                    sum_hc_squared: det.coeff * det.coeff * stored_excite.sum_remaining_h_squared,
                                 });
                                 break;
                             }
@@ -135,7 +136,8 @@ impl Wf {
                                     det: det,
                                     init: Orbs::Double((i, j)),
                                     is_alpha: Some(*is_alpha),
-                                    sum_abs_hc: stored_excite.sum_remaining_abs_h
+                                    sum_abs_hc: det.coeff.abs() * stored_excite.sum_remaining_abs_h,
+                                    sum_hc_squared: det.coeff * det.coeff * stored_excite.sum_remaining_h_squared,
                                 });
                                 break;
                             }
@@ -174,7 +176,8 @@ impl Wf {
                                     det: det,
                                     init: Orbs::Single(i),
                                     is_alpha: Some(*is_alpha),
-                                    sum_abs_hc: stored_excite.sum_remaining_abs_h
+                                    sum_abs_hc: det.coeff.abs() * stored_excite.sum_remaining_abs_h,
+                                    sum_hc_squared: det.coeff * det.coeff * stored_excite.sum_remaining_h_squared,
                                 });
                                 break;
                             }
@@ -243,7 +246,8 @@ impl Wf {
                                 det: det,
                                 init: Orbs::Double((i, j)),
                                 is_alpha: None,
-                                sum_abs_hc: stored_excite.sum_remaining_abs_h
+                                sum_abs_hc: det.coeff.abs() * stored_excite.sum_remaining_abs_h,
+                                sum_hc_squared: det.coeff * det.coeff * stored_excite.sum_remaining_h_squared,
                             });
                             break;
                         }
@@ -280,7 +284,8 @@ impl Wf {
                                 det: det,
                                 init: Orbs::Double((i, j)),
                                 is_alpha: Some(*is_alpha),
-                                sum_abs_hc: stored_excite.sum_remaining_abs_h
+                                sum_abs_hc: det.coeff.abs() * stored_excite.sum_remaining_abs_h,
+                                sum_hc_squared: det.coeff * det.coeff * stored_excite.sum_remaining_h_squared,
                             });
                             break;
                         }
@@ -315,7 +320,8 @@ impl Wf {
                         det: det,
                         init: Orbs::Single(i),
                         is_alpha: Some(*is_alpha),
-                        sum_abs_hc: stored_excite.sum_remaining_abs_h
+                        sum_abs_hc: det.coeff.abs() * stored_excite.sum_remaining_abs_h,
+                        sum_hc_squared: det.coeff * det.coeff * stored_excite.sum_remaining_h_squared,
                     });
                 }
             }

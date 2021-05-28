@@ -55,7 +55,8 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
                         StoredExcite {
                             target: Orbs::Double((r, s)),
                             abs_h: h,
-                            sum_remaining_abs_h: h
+                            sum_remaining_abs_h: h,
+                            sum_remaining_h_squared: h * h,
                         }
                     );
                 }
@@ -66,6 +67,7 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
             // Finally, compute sum_remaining_abs_h for all of these
             for i in (0 .. v.len() - 1).rev() {
                 v[i].sum_remaining_abs_h = v[i + 1].sum_remaining_abs_h + v[i].abs_h;
+                v[i].sum_remaining_h_squared = v[i + 1].sum_remaining_h_squared + v[i].abs_h * v[i].abs_h;
             }
 
             excite_gen.opp_doub_generator.insert(Orbs::Double((p, q)), v);
@@ -89,6 +91,7 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
                             target: Orbs::Double((r, s)),
                             abs_h: h,
                             sum_remaining_abs_h: h,
+                            sum_remaining_h_squared: h * h,
                         }
                     );
                 }
@@ -99,6 +102,7 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
             // Finally, compute sum_remaining_abs_h for all of these
             for i in (0 .. v.len() - 1).rev() {
                 v[i].sum_remaining_abs_h = v[i + 1].sum_remaining_abs_h + v[i].abs_h;
+                v[i].sum_remaining_h_squared = v[i + 1].sum_remaining_h_squared + v[i].abs_h * v[i].abs_h;
             }
 
             excite_gen.same_doub_generator.insert(Orbs::Double((p, q)), v);
@@ -147,6 +151,7 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
                     target: Orbs::Single(r),
                     abs_h: {if max1.abs() > max2.abs() { max1.abs() } else { max2.abs() } },
                     sum_remaining_abs_h: {if max1.abs() > max2.abs() { max1.abs() } else { max2.abs() } },
+                    sum_remaining_h_squared: {if max1.abs() > max2.abs() { max1 * max1 } else { max2 * max2 } },
                 }
             );
         }
@@ -156,6 +161,7 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
         // Finally, compute sum_remaining_abs_h for all of these
         for i in (0 .. v_sing.len() - 1).rev() {
             v_sing[i].sum_remaining_abs_h = v_sing[i + 1].sum_remaining_abs_h + v_sing[i].abs_h;
+            v_sing[i].sum_remaining_h_squared = v_sing[i + 1].sum_remaining_h_squared + v_sing[i].abs_h * v_sing[i].abs_h;
         }
 
         excite_gen.sing_generator.insert(Orbs::Single(p), v_sing);

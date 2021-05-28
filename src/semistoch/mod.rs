@@ -1,7 +1,7 @@
 use crate::wf::Wf;
 use crate::ham::Ham;
 use crate::excite::init::ExciteGenerator;
-use crate::stoch::matmul_sample_remaining;
+use crate::stoch::{matmul_sample_remaining, ImpSampleDist};
 use rolling_stats::Stats;
 use crate::pt::PtSamples;
 
@@ -40,9 +40,11 @@ pub fn semistoch_enpt2(input_wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerator, e
     for i_batch in 0..n_batches {
         // Sample a batch of samples, updating the stoch component of the energy for each sample
         println!("\n Starting batch {}", i_batch);
+        samples.clear();
         for i_sample in 0..n_samples_per_batch {
             //println!("\nCollecting sample {}...", i_sample);
-            let (sampled_det_info, sampled_prob) = matmul_sample_remaining(&screened_sampler, excite_gen, ham);
+            // Sample with probability proportional to (Hc)^2
+            let (sampled_det_info, sampled_prob) = matmul_sample_remaining(&screened_sampler, ImpSampleDist::HcSquared, excite_gen, ham);
             match sampled_det_info {
                 None => {
                     //println!("Sampled excitation not valid! Sample prob = {}", sampled_prob);
@@ -69,7 +71,7 @@ pub fn semistoch_enpt2(input_wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerator, e
         println!("Stochastic component projected against deterministic component: {}", stoch_enpt2);
 
         // Collect the samples, evaluate their contributions a la the original SHCI paper
-        stoch_enpt2_2.update(samples.unbiased_pt_estimator(input_wf.energy));
+        stoch_enpt2_2.update(samples.pt_estimator(input_wf.energy));
 
     }
 
