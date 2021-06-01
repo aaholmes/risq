@@ -111,9 +111,10 @@ A simpler sampling algorithm is binary-searching the CDF. First, sample a real n
 
 This sampling algorithm requires $\mathcal{O}(N)$ time and storage to set up (assuming that the CDF was not already known!), and each sample can be collected in $\mathcal{O}(\log N)$ time.
 
+\subsubsection{Both sampling algorithms are useful}
 Most of the time, for values of $N$ that are not trivially small, Alias sampling would be the preferred choice of these two sampling algorithms as it has a lower time complexity per sample.
 
-However, as we will describe below, CDF searching has an intriguing use case: Suppose we want to be able to sample one of the first $n$ elements of a stored discrete distribution, where $n$ is not known ahead of time. In that case, we could modify the sampling algorithm to sample only one of the first $n$ elements by simply multiplying $r$ by $\textrm{CDF}_n$ before binary-searching. In that case, the setup time would be negligible! Alias sampling does not have an analogous property.
+However, as we will describe below, CDF searching has an intriguing use case: Suppose we want to be able to sample one of the first $n$ elements of a stored discrete distribution, where $n$ is not known ahead of time. In that case, we could modify the sampling algorithm to sample only one of the first $n$ elements by simply multiplying $r$ by $\textrm{CDF}_n$ before binary-searching, so the setup time is negligible! Alias sampling does not have an analogous property, so we need both sampling algorithms to perform the sampling described in this paper.
 
 \section{Semistochastic importance sampling algorithm}
 We are now in position to describe the semistochastic importance sampling algorithm we have developed.
