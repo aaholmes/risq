@@ -42,27 +42,64 @@ We present an algorithm for semistochastically applying a second-quantized opera
 \end{abstract}
 
 \section{Introduction}
-Many quantum chemistry algorithms operate in the space of Slater determinants. These methods include deterministic algorithms such as selected configuration interaction, stochastic/semistochastic algorithms using classical statistics such as semistochastic multireference perturbation theory, and projector Monte Carlo algorithms such as full configuration interaction quantum Monte Carlo (FCIQMC).
+Many quantum chemistry algorithms operate in the space of Slater determinants. These methods include deterministic algorithms such as selected configuration interaction (e.g., HCI), stochastic/semistochastic algorithms using classical statistics such as semistochastic multireference perturbation theory (e.g., in SHCI), and projector Monte Carlo algorithms such as full configuration interaction quantum Monte Carlo (FCIQMC).
 
 In all of these determinant-space algorithms, one of the key steps is applying a second-quantized operator (usually the Hamiltonian) to a Slater determinant (or linear combination of them):
 \begin{itemize}
 \item In selected CI, a variational wavefunction is obtained iteratively by `selecting' new determinants each iteration using a criterion that is a function of the Hamiltonian times the previous iteration's wavefunction. Once the new determinants are selected, their coefficients are variationally optimized using an algorithm such as Davidson, in which the Hamiltonian is diagonalized in a space of Krylov vectors, each of which is a function of the Hamiltonian times other Krylov vectors.
 \item In semistochastic multireference perturbation theory as used in SHCI, contributions to the perturbation theory expression are computed by applying the Hamiltonian to determinants sampled from the variational Hamiltonian.
-\item In FCIQMC, the power method is simulated in the full set of Slater determinants by repeatedly stochastically (or semistochastically) applying a projector operator $-$ a function of the Hamiltonian $-$ to a stochastic representation of the wavefunction. The energy is estimated using a mixed energy estimator, which makes use of the Hamiltonian times a trial wavefunction in determinant space.
+\item In FCIQMC, the power method is simulated in the full set of Slater determinants by repeatedly stochastically (or semistochastically) applying a projector operator $-$ a linear function of the Hamiltonian $-$ to a stochastic representation of the wavefunction. The energy is estimated using a mixed estimator, which also makes use of the Hamiltonian times a trial wavefunction in determinant space.
 \end{itemize}
 
 Since the application of the Hamiltonian to a Slater determinant is such a key step in all of these algorithms, we explore methods to evaluate it. Broadly, there are three main approaches:
 \begin{enumerate}
-	\item {\bf Deterministic:} Simply evaluating all single and double excitations from the initial Slater determinant. Time complexity: $\mathcal{O}(N^2 M^2)$, space complexity: $\mathcal{O}(N^2M^2)$.
+	\item {\bf Deterministic:} Simply evaluating all single and double excitations from the initial Slater determinant. Time complexity: $\mathcal{O}(N^2 M^2)$, space complexity: $\mathcal{O}(N^2M^2)$, where $N$ is the number of electrons and $M$ (assumed to be $>>N$) is the number of orbitals.
 	\item {\bf Stochastic:} Sampling excitations according to some distribution. Reduces the time and space complexity, but introduces a stochastic uncertainty (and in projector methods, the fermion sign problem!).
-	\item {\bf Semistochastic:} Evaluating the largest-magnitude components, and sampling the remaining, smaller components. Has a much reduced time and space complexity relative to the deterministic approach, but with a greatly reduced stochastic uncertainty relative to fully stochastic methods. In projector methods, it also mitigates the bias due to the fermion sign problem.
+	\item {\bf Semistochastic:} Evaluating the largest-magnitude components, and sampling the remaining, smaller components. Has a much reduced time and space complexity relative to the deterministic approach, but with a greatly reduced stochastic uncertainty relative to fully stochastic methods. In projector methods, it also mitigates the bias incurred in taming the fermion sign problem, such as the initiator bias in FCIQMC.
 \end{enumerate}
 
-It should be noted that a simple version of semistochastic importance sampling has been used before in the context of FCIQMC. However, in that case, the deterministic component was pre-computed, and the stochastic component was not disjoint from it: there was some probability of sampling an excitation that already existed in the deterministic component and therefore had to be discarded.
+It should be noted that a crude version of semistochastic importance sampling has been used before in the context of FCIQMC. However, in that case, the deterministic component was pre-computed, and the stochastic component was not disjoint from it: there was some probability of sampling an excitation that already existed in the deterministic component and therefore had to be discarded.
 
-In this paper, we describe a unified approach to semistochastic importance sampling, in which the deterministic component is computed efficiently on the fly, and the stochastic component efficiently samples only the remaining terms left out of the deterministic component.
+In this paper, we describe a unified approach to semistochastic importance sampling, in which the deterministic component is computed efficiently on the fly, and the stochastic component efficiently samples only the remaining terms left out of the deterministic component. We focus on the nonrelativistic quantum chemistry Hamiltonian, but note that the techniques could easily be generalized to alternative Hamiltonians or other second-quantized operators such as cluster operators.
 
-\section{}
+\section{Background}
+Here we describe the most important building blocks to the semistochastic importance sampling algorithm: deterministic evaluation of the screened sum over large-magnitude terms, and importance sampling of the remaining, small-magnitude terms.
+
+\subsection{Deterministic screening}
+The deterministic component of the algorithm has already been described in the original HCI paper. By storing excitations in sorted order by magnitude, we can generate all excitations exceeding a threshold without wasting any time on excitations lower than the threshold.
+
+In the original HCI paper, only double excitations were treated efficiently, since they are simpler to compute and much more numerous than single excitations. However, in this paper, we also improve upon that method, in that we also pre-compute upper bounds on the single excitation magnitudes, so that they can be efficiently treated as well.
+
+For double excitations, the matrix elements are given by:
+\begin{eqnarray}
+	\left|H(pq\rightarrow rs)\right| = \begin{cases}
+		\left|g_{pqrs}\right|, &\textrm{opposite spin};\\
+		\left|g_{pqrs} - g_{pqsr}\right|,&\textrm{same spin},
+	\end{cases}
+\end{eqnarray}
+and for single excitations, the matrix elements are:
+\begin{eqnarray}
+	\left|H(p\rightarrow r)\right| = \left|f_{pr} + \sum_{q\in \textrm{occ}} g_{pqqr}\right|.
+\end{eqnarray}
+
+Unlike double excitations, single excitation matrix element magnitudes depend on the orbital occupancies of the exciting determinant. Since we are interested in storing both types of excitations in a determinant-independent data structure, we compute the following upper bounds to the single excitation magnitudes:
+\begin{eqnarray}
+	\left|H(p\rightarrow r)\right| &=& \left|f_{pr} + \sum_{q\in \textrm{occ}} g_{pqqr}\right|\\
+	&\le&\max\Bigg( \left|f_{pr} + \sum_{q\in [N-1 \textrm{ largest}]} g_{pqqr}\right|,
+	 %\\&&\quad \quad \quad 
+	 \quad \left|f_{pr} + \sum_{q\in [N-1 \textrm{ smallest}]} g_{pqqr}\right|\Bigg),
+\end{eqnarray}
+where the sums in the last line above are over the $N-1$ distinct orbitals $q\notin\{p,r\}$ (of the correct total spin) for which $g_{pqqr}$ is largest or smallest (the values, not the magnitudes), respectively.
+
+\subsection{Discrete sampling}
+The sampling method presented in this paper makes use of two well-known approaches to discrete sampling: Alias sampling and binary-searching a discrete cumulative distribution function (CDF). We describe them both here.
+
+\subsubsection{Alias sampling}
+
+\subsubsection{Binary-searching a CDF}
+
+\section{Semistochastic importance sampling algorithm}
+
 
 
 \end{document}
