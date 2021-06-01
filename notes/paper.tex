@@ -89,17 +89,34 @@ Unlike double excitations, single excitation matrix element magnitudes depend on
 	 %\\&&\quad \quad \quad 
 	 \quad \left|f_{pr} + \sum_{q\in [N-1 \textrm{ smallest}]} g_{pqqr}\right|\Bigg),
 \end{eqnarray}
-where the sums in the last line above are over the $N-1$ distinct orbitals $q\notin\{p,r\}$ (of the correct total spin) for which $g_{pqqr}$ is largest or smallest (the values, not the magnitudes), respectively.
+where the sums in the last line above are over the $N-1$ distinct orbitals $q\notin\{p,r\}$ (of the correct total spin) for which $g_{pqqr}$ is largest or smallest (the values, not the magnitudes), respectively. All of these upper bounds for the single excitations can be trivially precomputed in $\mathcal{O}(M^3\log M)$ time.
+
+Once all matrix element magnitudes (or upper bounds in the case of single excitations) are computed, we then group them (along with their target orbital(s)) by exciting orbital(s) (i.e., $(p,q)$ for double excitations, $p$ for single excitations), and sort each group in decreasing order by magnitude. Thus, for double excitations, for each exciting orbital pair $(p,q)$, we have a sorted list of all valid excitations $\{[|H(pq\rightarrow rs)|, (r,s)]\}$ that those orbitals could excite to. Similarly, for single excitations, for each exciting orbital $p$, we have a list of all corresponding valid excitations $\{[|H(p\rightarrow r)|_\textrm{max}, r]\}$ sorted by upper bounds on their magnitudes. This setup phase can be performed in $\mathcal{O}(M^4\log M)$ time and has a storage requirement of size $\mathcal{O}(M^4)$, same as the two-body integrals.
+
+Then, all excitations whose magnitudes exceed a given threshold $\epsilon$ can be computed efficiently as follows: Loop over each electron and each pair of electrons; for each, traverse its corresponding sorted list of candidate excitations. Once an excitation whose magnitude does not exceed $\epsilon$ is found, exit the inner for-loop and go to the next electron or electron pair. In the case of single excitations, each candidate excitation's matrix element must be computed to see whether its magnitude exceeds $\epsilon$, since only an upper bound on its magnitude was stored.
+
+Using this algorithm, no time is wasted on the double excitations that do not meet the threshold, but some time must be wasted on computing the magnitudes of candidate single excitations that end up being discarded. However, this algorithm is an improvement compared to the original HCI algorithm, in which all single excitations were considered candidates.
+
 
 \subsection{Discrete sampling}
 The sampling method presented in this paper makes use of two well-known approaches to discrete sampling: Alias sampling and binary-searching a discrete cumulative distribution function (CDF). We describe them both here.
 
 \subsubsection{Alias sampling}
+The idea of Alias sampling is to sample an arbitrary discrete distribution in two steps. First, sample an element with uniform probability. Then, if a low-probability element was selected, it has some probability of `aliasing' to another, high-probability element.
 
-\subsubsection{Binary-searching a CDF}
+For an $N$-element discrete distribution, Alias sampling requires $\mathcal{O}(N)$ time to generate a sampling data structure of size $\mathcal{O}(N)$, and each sample can be collected in constant time.
+
+\subsubsection{CDF searching}
+A simpler sampling algorithm is binary-searching the CDF. First, sample a real number $r$ between 0 and 1 with uniform probability. Then, binary-search the CDF for $r$. Specifically, we are looking for the smallest index $i$ for which $r<\textrm{CDF}_i$.
+
+This sampling algorithm requires $\mathcal{O}(N)$ time and storage to set up (assuming that the CDF was not already known!), and each sample can be collected in $\mathcal{O}(\log N)$ time.
+
+Most of the time, for values of $N$ that are not trivially small, Alias sampling would be the preferred choice of these two sampling algorithms as it has a lower time complexity per sample.
+
+However, as we will describe below, CDF searching has an intriguing use case: Suppose we want to be able to sample one of the first $n$ elements of a stored discrete distribution, where $n$ is not known ahead of time. In that case, we could modify the sampling algorithm to sample only one of the first $n$ elements by simply multiplying $r$ by $\textrm{CDF}_n$ before binary-searching. In that case, the setup time would be negligible! Alias sampling does not have an analogous property.
 
 \section{Semistochastic importance sampling algorithm}
-
+We are now in position to describe the semistochastic importance sampling algorithm we have developed.
 
 
 \end{document}
