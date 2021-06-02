@@ -89,9 +89,9 @@ Unlike double excitations, single excitation matrix element magnitudes depend on
 	 %\\&&\quad \quad \quad 
 	 \quad \left|f_{pr} + \sum_{q\in [N-1 \textrm{ smallest}]} g_{pqqr}\right|\Bigg),
 \end{eqnarray}
-where the sums in the last line above are over the $N-1$ distinct orbitals $q\notin\{p,r\}$ (of the correct total spin) for which $g_{pqqr}$ is largest or smallest (the values, not the magnitudes), respectively. All of these upper bounds for the single excitations can be trivially precomputed in $\mathcal{O}(M^3\log M)$ time.
+where the sums in the last line above are over the $N-1$ distinct spin-orbitals $q\notin\{p,r\}$ (of the correct total spin) for which $g_{pqqr}$ is largest or smallest (the values, not the magnitudes), respectively. All of these upper bounds for the single excitations can be trivially precomputed in $\mathcal{O}(M^3\log M)$ time.
 
-Once all matrix element magnitudes (or upper bounds in the case of single excitations) are computed, we then group them (along with their target orbital(s)) by exciting orbital(s) (i.e., $(p,q)$ for double excitations, $p$ for single excitations), and sort each group in decreasing order by magnitude. Thus, for double excitations, for each exciting orbital pair $(p,q)$, we have a sorted list of all valid excitations $\{[|H(pq\rightarrow rs)|, (r,s)]\}$ that those orbitals could excite to. Similarly, for single excitations, for each exciting orbital $p$, we have a list of all corresponding valid excitations $\{[|H(p\rightarrow r)|_\textrm{max}, r]\}$ sorted by upper bounds on their magnitudes. This setup phase can be performed in $\mathcal{O}(M^4\log M)$ time and has a storage requirement of size $\mathcal{O}(M^4)$, same as the two-body integrals.
+Once all matrix element magnitudes (or upper bounds in the case of single excitations) are computed, we then group them (along with their target orbital(s)) by exciting orbital(s) (i.e., $(p,q)$ for double excitations, $p$ for single excitations), and sort each group in decreasing order by magnitude. Thus, for double excitations, for each exciting orbital pair $(p,q)$, we have a sorted list of all valid excitations $\{[(r,s), |H(pq\rightarrow rs)|]\}$ that those orbitals could excite to. Similarly, for single excitations, for each exciting orbital $p$, we have a list of all corresponding valid excitations $\{[r, |H(p\rightarrow r)|_\textrm{max}]\}$ sorted by upper bounds on their magnitudes. This setup phase can be performed in $\mathcal{O}(M^4\log M)$ time and has a storage requirement of size $\mathcal{O}(M^4)$, same as the two-body integrals.
 
 Then, all excitations whose magnitudes exceed a given threshold $\epsilon$ can be computed efficiently as follows: Loop over each electron and each pair of electrons; for each, traverse its corresponding sorted list of candidate excitations. Once an excitation whose magnitude does not exceed $\epsilon$ is found, exit the inner for-loop and go to the next electron or electron pair. In the case of single excitations, each candidate excitation's matrix element must be computed to see whether its magnitude exceeds $\epsilon$, since only an upper bound on its magnitude was stored.
 
@@ -117,7 +117,23 @@ Most of the time, for values of $N$ that are not trivially small, Alias sampling
 However, as we will describe below, CDF searching has an intriguing use case: Suppose we want to be able to sample one of the first $n$ elements of a stored discrete distribution, where $n$ is not known ahead of time. In that case, we could modify the sampling algorithm to sample only one of the first $n$ elements by simply multiplying $r$ by $\textrm{CDF}_n$ before binary-searching, so the setup time is negligible! Alias sampling does not have an analogous property, so we need both sampling algorithms to perform the sampling described in this paper.
 
 \section{Semistochastic importance sampling algorithm}
-We are now in position to describe the semistochastic importance sampling algorithm we have developed.
+We are now in position to describe the semistochastic importance sampling algorithm we have developed. Recall that our goal is to construct an algorithm that has two components:
+\begin{enumerate}
+	\item Efficiently find all large-magnitude excitations.
+	\item Sample remaining, small-magnitude excitations, with probability proportional to a function of their magnitudes.
+\end{enumerate}
+Step 1 was already described in section 2.1. Here we describe step 2.
 
+After performing step 1, each exciting electron or electron pair has a corresponding list of remaining target electrons or electron pairs whose excitation magnitudes are lower than the threshold. We divide the sampling into two stages:
+\begin{enumerate}
+	\item Sample an exciting electron or electron pair with probability proportional to the sum of remaining (small-magnitude) targets that it could excite to.
+	\item Sample a target electron or electron pair with probability proportional to its excitation magnitude.
+\end{enumerate}
+
+For sampling step 1, we create an Alias sampling data structure during the deterministic step. That is, for each exciting electron or electron pair, we iterate over sorted excitation magnitudes, and as soon as the threshold is reached, we record the sum of remaining excitation magnitudes as that electron or electron pair's relative probability. Of course, if this sum had to be computed on the fly, the total time would then scale as the total number of excitations, defeating the purpose of going beyond a deterministic algorithm in the first place. Therefore, we modify the initial setup routine in which the excitations are sorted, to include not just the matrix element magnitudes, but also the cumulative (in reverse order) sums of remaining matrix element magnitudes for each exciting electron or electron pair. That is, for double excitations, for each exciting orbital pair $(p,q)$, we now store $\{[(r,s), |H(pq\rightarrow rs)|, \sum_{rs\in\textrm{remaining}}|H(pq\rightarrow rs)|]\}$. These cumulative sums can be precomputed in $\mathcal{O}(M^4)$ time after the sorting step. Once these cumulative sums are precomputed, constructing the Alias distribution takes only $\mathcal{O}(N^2)$ time.
+
+For sampling step 2, we now have to sample a target electron or electron pair, from the set of remaining excitations (i.e., the ones that were not already treated deterministically). We have stored the cumulative sums of all of the excitations starting from the exciting electron or electron pair in the setup stage, and we have identified the index corresponding to the first excitation we want to be able to sample (i.e., the first excitation whose magnitude did not meet the threshold in the deterministic step). As described in section 2.2.3, we can use CDF searching to sample this distribution in $\mathcal{O}(\log M)$ time without any additional time required to set up the distribution.
+
+Thus, the algorithm presented above augments the efficient deterministic screening algorithm described in the original HCI paper by enabling importance sampling of the remaining, screened-out terms that are not treated deterministically, in $\mathcal{O}(\log M)$ time per sample, with negligible overhead to the original (deterministic) algorithm.
 
 \end{document}
