@@ -136,4 +136,12 @@ For sampling step 2, we now have to sample a target electron or electron pair, f
 
 Thus, the algorithm presented above augments the efficient deterministic screening algorithm described in the original HCI paper by enabling importance sampling of the remaining, screened-out terms that are not treated deterministically, in $\mathcal{O}(\log M)$ time per sample, with negligible overhead to the original (deterministic) algorithm.
 
+\section{Application to multireference perturbation theory}
+
+\section{Conclusion and future work}
+We have presented an efficient, unified approach to treating second-quantized operators semistochastically using importance sampling for the stochastic component. It uses an initial setup stage that takes $\mathcal{O}(M^4\log M)$ time and creates a data structure of size $\mathcal{O}(M^4)$ (the same scaling as the setup stage in the original HCI algorithm). After the setup, the Hamiltonian (or other second-quantized operator) can be applied semistochastically, by generating all excitations exceeding an arbitrary threshold $\epsilon$, and importance sampling the remaining excitations that don't meet the threshold. The time it takes to do so scales as $\mathcal{O}(N^2 + N_{|H|>\epsilon})$ for the deterministic component, and $\mathcal{O}(\log M)$ time per sample for the stochastic component.
+
+We have used our semistochastic importance sampling algorithm to accelerate multireference Epstein-Nesbet perturbation theory in the context of SHCI.
+
+As there are many determinant-space algorithms in which a key step is efficiently acting on a Slater determinant with a second-quantized operator, we are now in the process of exploring the application of semistochastic importance sampling to other algorithms. In particular, we are exploring its use in FCIQMC, where it will enable a semistochastic projection, in which the division between the deterministic and stochastic components is dynamic, rather than fixed throughout the run as in the original S-FCIQMC paper. We expect that this approach will greatly ameliorate the fermion sign problem and reduce stochastic fluctuations.
 \end{document}
