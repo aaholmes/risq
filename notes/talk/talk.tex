@@ -115,6 +115,10 @@
 				\item  For each pair of orbitals $\left\{p,q\right\}$, store a list of %triplets
 				$\left\{r,s,\left|H\left(rs\leftarrow pq\right)\right|\right\}$,
 				sorted by $\left|H\left(rs\leftarrow pq\right)\right|$ in decreasing order
+				\item Also compute (for sampling algorithm):
+				\begin{eqnarray}
+				\sum_{rs\in\textrm{remaining}} |H(rs\leftarrow pq)|
+				\end{eqnarray}
 			\end{itemize}
 			{\color{white}  skip line}
 			\\
@@ -125,8 +129,9 @@
 			}
 			\begin{itemize}
 				\uncover<3->{
-					\item  \textbf{Generate only those double excitations that exceed $\epsilon$.}
-					\\For each pair of occupied orbitals $\left\{p,q\right\}$, look up the stored list
+					%\item  \textbf{Generate only those double excitations that exceed $\epsilon$.}
+					%\\
+					\item For each pair of occupied orbitals $\left\{p,q\right\}$, look up the stored list
 					of triplets $\left\{r,s,\left|H\left(rs\leftarrow pq\right)\right|\right\}$ and iterate
 					through the list until a triplet is reached for which $\left|H\left(rs\leftarrow pq\right)\right|<\epsilon$
 				}
