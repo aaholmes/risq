@@ -55,6 +55,7 @@
 		\begin{enumerate}
 			\item Coupled cluster
 			\item Moller-Plesset perturbation theory
+			\linebreak
 		\end{enumerate}
 		\item Determinant-space algorithms:
 		\begin{enumerate}
@@ -74,10 +75,10 @@
 	\small
 	In determinant-space algorithms, one of the key steps is applying a second-quantized operator (usually $H$) to a Slater determinant!
 	\begin{enumerate}
-		\item Full CI: Iterative diagonalization of the Hamiltonian (e.g. using Davidson) diagonalizes in the basis of Krylov vectors \begin{eqnarray}\{v_i=f(Hv_{i-1})\}\end{eqnarray}
-		\item Selected CI: New determinants are `selected' using a criterion that is a function of $H\psi_0$
-		\item Epstein-Nesbet perturbation theory: \begin{eqnarray}\Delta E = \left\langle \psi_0 \left| V \frac{1}{E_0 - H_0} V \right|\psi_0\right\rangle\end{eqnarray}
-		\item FCIQMC: Stochastically simulate the power method, \begin{eqnarray}\psi_0 \propto \lim_{n\rightarrow\infty} (1 - \tau H)^n \psi_T\end{eqnarray}
+		\uncover<2->{\item Full CI: Iterative diagonalization of the Hamiltonian (e.g. using Davidson) diagonalizes in the basis of Krylov vectors \begin{eqnarray}\{v_i=f(Hv_{i-1})\}\end{eqnarray}}
+		\uncover<3->{\item Selected CI: New determinants are `selected' using a criterion that is a function of $H\psi_0$}
+		\uncover<4->{\item Epstein-Nesbet perturbation theory: \begin{eqnarray}\Delta E = \left\langle \psi_0 \left| V \frac{1}{E_0 - H_0} V \right|\psi_0\right\rangle\end{eqnarray}}
+		\uncover<5->{\item FCIQMC: Stochastically simulate the power method, \begin{eqnarray}\psi_0 \propto \lim_{n\rightarrow\infty} (1 - \tau H)^n \psi_T\end{eqnarray}}
 	\end{enumerate}
 \end{frame}
 
