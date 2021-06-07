@@ -52,13 +52,13 @@
 \section{Motivation}
 \begin{frame}{Types of quantum chemistry algorithms}
 	\begin{enumerate}
-		\item Orbital-space algorithms:
+		\item Operator-based algorithms:
 		\begin{enumerate}
 			\item Coupled cluster
 			\item Moller-Plesset perturbation theory
 			\linebreak
 		\end{enumerate}
-		\item Determinant-space algorithms:
+		\item Wavefunction-based/determinant-space algorithms:
 		\begin{enumerate}
 			\item Full CI
 			\item Selected CI
@@ -89,7 +89,7 @@
 	\begin{enumerate}
 		\item {\bf Deterministic:} Simply evaluating all single and double excitations from the initial Slater determinant. Complexity: $\mathcal{O}(N^2 (M-N)^2)$
 		\item {\bf Stochastic:} Sampling excitations according to some distribution. Reduces the complexity, but introduces a stochastic uncertainty (and in projector methods, the fermion sign problem!)
-		\item {\bf Semistochastic:} Evaluating the largest-magnitude components, and sampling the remaining, smaller components. Reduces complexity relative to the deterministic approach, but with a greatly reduced stochastic uncertainty relative to fully stochastic methods. In projector methods, it also mitigates the bias incurred in taming the fermion sign problem, such as the initiator bias in FCIQMC.
+		\item {\bf Semistochastic:} Evaluating the largest-magnitude components, and sampling the remaining, smaller components. Reduces complexity relative to the deterministic approach, but with a \textbf{greatly reduced stochastic uncertainty} relative to fully stochastic methods. In projector methods, it also mitigates the bias incurred in taming the fermion sign problem, such as the initiator bias in FCIQMC.
 	\end{enumerate}
 \end{frame}
 
@@ -126,7 +126,7 @@
 			{\color{white}  skip line}
 			\\
 			\uncover<2->{
-				\item \textbf{Finding important connected determinants} $D_j$ (for which $\left|H_{ji}\right|>\epsilon$): %for at least one $i\in \mathcal{V}$)
+				\item \textbf{Finding important connected determinants} $D_j$ (for which $\left|H_{ji}\right|\ge\epsilon$): %for at least one $i\in \mathcal{V}$)
 				\\{\color{white}  skip line}
 				\\
 			}
@@ -135,8 +135,8 @@
 					%\item  \textbf{Generate only those double excitations that exceed $\epsilon$.}
 					%\\
 					\item For each pair of occupied orbitals $\left\{p,q\right\}$, look up the stored list
-					of triplets $\left\{r,s,\left|H\left(rs\leftarrow pq\right)\right|\right\}$ and iterate
-					through the list until a triplet is reached for which $\left|H\left(rs\leftarrow pq\right)\right|<\epsilon$
+					of $\left\{r,s,\left|H\left(rs\leftarrow pq\right)\right|\right\}$ and iterate
+					until $\left|H\left(rs\leftarrow pq\right)\right|<\epsilon$
 				}
 				\\{\color{white}  skip line}
 				\\
@@ -244,7 +244,7 @@
 %		%\]
 %		\small
 %		where the sums in the last line above are over the $N-1$ distinct spin-orbitals $q\notin\{p,r\}$ (of the correct total spin) for which $g_{pqqr}$ is largest or smallest (the values, not the magnitudes), respectively
-		where $|H(p\rightarrow r)|_{\max}$ is the largest magnitude the $p\rightarrow r$ excitation can have from any initial determinant
+		where $|H(p\rightarrow r)|_{\max}$ is the largest magnitude the $p\rightarrow r$ excitation can have from \textit{any} initial determinant
 		\item The simplest way to incorporate singles is to sample them with probability $P(|H(p\rightarrow r)|) \propto f(|H(p\rightarrow r)|_{\max})$ and skip them in the deterministic step
 	\end{itemize}
 \end{frame}
@@ -256,7 +256,7 @@
 	\item We can fix this as follows:
 	\begin{enumerate}
 		\item If an `invalid' excitation is sampled, discard it and resample until a valid excitation is sampled
-		\item Scale the sample probabilities by a constant factor so they remain normalized (can be performed in $\mathcal{O}(N^3)$ time during deterministic step)
+		\item Scale the sample probabilities by a constant factor so they remain normalized (can be performed in $\mathcal{O}(N^4 + N_{\textrm{det}} N^3)$ time during deterministic step)
 	\end{enumerate}
 \end{itemize}	
 \end{frame}
@@ -276,7 +276,7 @@ so we can now evaluate the $H_{ai}$ components semistochastically using importan
 	\begin{enumerate}
 		\item Divide $V\left|\psi_0\right\rangle$ into two pieces:
 		\begin{eqnarray}
-			H\left|\psi_0\right\rangle = \left(V\left|\psi_0\right\rangle\right)_{\ge \epsilon} + \left(V\left|\psi_0\right\rangle\right)_{<\epsilon}.
+			V\left|\psi_0\right\rangle = \left(V\left|\psi_0\right\rangle\right)_{\ge \epsilon} + \left(V\left|\psi_0\right\rangle\right)_{<\epsilon}.
 		\end{eqnarray}
 		\item Estimate $\Delta E$ deterministically:
 		\begin{eqnarray}
@@ -315,7 +315,7 @@ so we can now evaluate the $H_{ai}$ components semistochastically using importan
 		\begin{itemize}
 			\item Sample pairs of determinants $\{D_i, D_a\}$ %from $\psi_0$ and $\left(H\left|\psi_0\right\rangle\right)_{<\epsilon}$ respectively
 			using importance sampling: \begin{eqnarray} P(D_i, D_a) \propto \left(H_{ai} c_i\right)^2 \end{eqnarray}
-			\item Use those samples to evaluate the stochastic component of $\Delta E$,%\left[\left(V\left|\psi_0\right\rangle\right)_{\ge \epsilon}\right]$,
+			\item Use those samples to evaluate the stochastic component of $\Delta E$, %\left[\left(V\left|\psi_0\right\rangle\right)_{\ge \epsilon}\right]$,
 			whose largest-magnitude component is
 			\begin{eqnarray}
 				\sum_{ai %\substack{ai\\\textrm{ s.t. }\\|H_{ai}c_i|<\epsilon}
