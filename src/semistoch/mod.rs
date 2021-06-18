@@ -71,7 +71,9 @@ pub fn semistoch_enpt2(input_wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerator, e
         println!("Stochastic component projected against deterministic component: {}", stoch_enpt2);
 
         // Collect the samples, evaluate their contributions a la the original SHCI paper
-        stoch_enpt2_2.update(samples.pt_estimator(input_wf.energy));
+        let sampled_e: f64 = samples.pt_estimator(input_wf.energy);
+        println!("Sampled energy this batch = {}", sampled_e);
+        stoch_enpt2_2.update(sampled_e);
 
     }
 

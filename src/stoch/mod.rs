@@ -12,6 +12,9 @@ mod utils;
 
 pub struct ScreenedSampler<'a> {
     // For importance sampling the component of the matmul that is screened out by the eps threshold
+    // Matmul_sample_remaining performs the whole excitation sampling (exciting pair and target), but
+    // this contains only data structures sampling the exciting det and its exciting electron pair;
+    // sampling the target electron pair uses CDF searching which only requires ExciteGenerator
     // Lifetime 'a must last as long as the vector being semistochastically multiplied, since this
     // struct has pointers to its components
     // Contains two samplers, for sampling with p ~ |Hc| and with p ~ (Hc)^2
@@ -72,7 +75,7 @@ pub fn generate_screened_sampler(eps: f64, det_orbs: Vec<DetOrbSample>) -> Scree
         det_orb_sampler_abs_hc: VoseAlias::new(det_orbs.clone(), probs_abs_hc), // TODO: Remove clone here?
         det_orb_sampler_hc_squared: VoseAlias::new(det_orbs, probs_hc_squared),
         sum_abs_hc_all_dets_orbs: sum_hc_all_dets_orbs,
-        sum_hc_squared_all_dets_orbs: sum_hc_squared_all_dets_orbs
+        sum_hc_squared_all_dets_orbs: sum_hc_squared_all_dets_orbs,
     }
 }
 
@@ -160,6 +163,8 @@ pub fn matmul_sample_remaining(screened_sampler: &ScreenedSampler, imp_sample_di
         }
         ImpSampleDist::HcSquared => {
             prob_sampled_det = sampled_excite.abs_h * sampled_excite.abs_h * det_orb_sample.det.coeff * det_orb_sample.det.coeff / screened_sampler.sum_hc_squared_all_dets_orbs;
+            println!("Sampled abs_h = {}, sampled coeff = {}", sampled_excite.abs_h, det_orb_sample.det.coeff);
+            // println!("Probability of this det_orb pair: {}, Probability of this target pair: {}, total probability of this excitation: {}", );
         }
     }
 
@@ -172,6 +177,7 @@ pub fn matmul_sample_remaining(screened_sampler: &ScreenedSampler, imp_sample_di
                 Orbs::Double(_) => new_det_coeff *= ham.ham_doub(&det_orb_sample.det.config, &d),
                 Orbs::Single(_) => new_det_coeff *= ham.ham_sing(&det_orb_sample.det.config, &d),
             }
+            println!("Sampled excite with prob = {}", prob_sampled_det);
             (
                 Some(
                     (

@@ -26,12 +26,12 @@
 \renewcommand\algorithmname{ALGORITHM}
 \floatsetup[algorithm]{capposition=top}
 
-\linespread{2}
+\linespread{1.5}
 
 
 
 \title{Semistochastic importance sampling of second-quantized operators in determinant space: application to multireference perturbation theory}
-\author{Adam A Holmes}
+\author{Adam A Holmes and Edward F Valeev}
 
 \begin{document}
 
@@ -130,13 +130,51 @@ After performing step 1, each exciting electron or electron pair has a correspon
 	\item Sample a target electron or electron pair with probability proportional to its excitation magnitude.
 \end{enumerate}
 
-For sampling step 1, we create an Alias sampling data structure during the deterministic step. That is, for each exciting electron or electron pair, we iterate over sorted excitation magnitudes, and as soon as the threshold is reached, we record the sum of remaining excitation magnitudes as that electron or electron pair's relative probability. Of course, if this sum had to be computed on the fly, the total time would then scale as the total number of excitations, defeating the purpose of going beyond a deterministic algorithm in the first place. Therefore, we modify the initial setup routine in which the excitations are sorted, to include not just the matrix element magnitudes, but also the cumulative (in reverse order) sums of remaining matrix element magnitudes for each exciting electron or electron pair. That is, for double excitations, for each exciting orbital pair $(p,q)$, we now store $\{[(r,s), |H(pq\rightarrow rs)|, \sum_{rs\in\textrm{remaining}}|H(pq\rightarrow rs)|]\}$. These cumulative sums can be precomputed in $\mathcal{O}(M^4)$ time after the sorting step. Once these cumulative sums are precomputed, constructing the Alias distribution takes only $\mathcal{O}(N^2)$ time.
+For sampling step 1, we create an Alias sampling data structure during the deterministic step. That is, for each exciting electron or electron pair, we iterate over sorted excitation magnitudes, and as soon as the threshold is reached, we record the sum of remaining excitation magnitudes as that electron or electron pair's relative probability. Of course, if this sum had to be computed on the fly, the total time would then scale as the total number of excitations, defeating the purpose of going beyond a deterministic algorithm in the first place. Therefore, we modify the initial setup routine in which the excitations are sorted, to include not just the matrix element magnitudes, but also the cumulative (in reverse order) sums of remaining matrix element magnitudes for each exciting electron or electron pair. That is, for double excitations, for each exciting orbital pair $(p,q)$, we now store
+\begin{eqnarray}
+	\left\{\left[(r,s), \quad |H(pq\rightarrow rs)|, \quad \sum_{rs\in\textrm{remaining}}|H(pq\rightarrow rs)|\right]\right\},
+\end{eqnarray}
+and the analogous expression for single excitations. These cumulative sums can be precomputed in $\mathcal{O}(M^4)$ time after the sorting step. Once these cumulative sums are precomputed, constructing the Alias distribution takes only $\mathcal{O}(N^2)$ time.
 
 For sampling step 2, we now have to sample a target electron or electron pair, from the set of remaining excitations (i.e., the ones that were not already treated deterministically). We have stored the cumulative sums of all of the excitations starting from the exciting electron or electron pair in the setup stage, and we have identified the index corresponding to the first excitation we want to be able to sample (i.e., the first excitation whose magnitude did not meet the threshold in the deterministic step). As described in section 2.2.3, we can use CDF searching to sample this distribution in $\mathcal{O}(\log M)$ time without any additional time required to set up the distribution.
 
 Thus, the algorithm presented above augments the efficient deterministic screening algorithm described in the original HCI paper by enabling importance sampling of the remaining, screened-out terms that are not treated deterministically, in $\mathcal{O}(\log M)$ time per sample, with negligible overhead to the original (deterministic) algorithm.
 
+\subsection{Details}
+We now flesh out some minor but important details in the algorithm.
+
+\subsubsection{Sampling a multideterminant reference}
+The algorithm described above treats excitations from a single Slater determinant semistochastically. However, the generalization to a multideterminant reference is straightforward: the deterministic component is the same as in the original HCI paper, and the stochastic component can be performed by first sampling a determinant with the correct probability, then sampling an excitation using the single-determinant algorithm above. The correct probability will be a function of the determinant coefficient magnitude, times the sum of remaining excitations that don't meet the deterministic threshold.
+
+\subsubsection{Single excitations}
+Recall that for single excitations, the matrix element magnitudes cannot be known \emph{a priori}, so instead we use upper bounds on their magnitudes. During the deterministic stage, each candidate single excitation matrix element must be computed and compared to the screening threshold. Thus, the remaining single excitations that have not been treated deterministically include candidates that are discarded, in addition to the remaining, untouched single excitations. Double excitations don't require checking and potentially discarding candidates, since their magnitudes are known \emph{a priori}.
+
+Therefore, the algorithm presented above is not correct for single excitations. We therefore give two possible modifications that incorporate single excitations correctly.
+\begin{enumerate}
+	\item Treat single excitations fully stochastically. The simplest approach is simply to treat single excitations stochastically, and only use the semistochastic approach for the (much more numerous) double excitations. This can be done by simply using a very large $\epsilon$ for the single excitations, so that none of them exceed the threshold.
+	\item Save the discarded candidate single exciations as an auxiliary sampling distribution. In this case, each stored list of remaining target electrons is augmented by the list of discarded target electrons. This method appears to be complex and it is not obvious how to perform it efficiently.
+\end{enumerate}
+
+In addition to the above modifications for correctness, single excitations are still over-sampled due to the fact that their relative probability is given by the maximum matrix element among all exciting determinants that could perform that excitation, rather than the matrix element itself. This over-sampling can be counteracted by estimating the amount of over-sampling (e.g., during the deterministic stage), and reducing the relative probability of single excitations by that factor.
+
+\subsubsection{Target orbitals may already be occupied}
+The semistochastic algorithm depends on the fact that double excitation matrix elements are independent of the other occupied orbitals in the determinant. However, this feature also presents a downside: while the exciting orbitals are always chosen from the set of occupied orbitals, there is no guarantee that the target orbitals are unoccupied. So, the above sampling algorithm will sometimes produce invalid excitations (into already occupied orbitals), whose matrix elements are zero. While the algorithm is still correct, it is not ideal in that the importance sampled probability distribution has an additional delta function centered at zero.
+
+The simplest way to solve this problem is to simply collect new samples (new determinant, exciting orbitals, target orbitals), until a valid excitation is obtained. Since the relative probabilities among the valid excitations are unchanged, this does not introduce a bias.
+
+However, it is not easy to efficiently compute the probability in that case. The fastest I can come up with is $\mathcal{O}(N^3)$ time per determinant.
+%often useful to compute the probability of the sampled excitation. To do so requires the sum of invalid excitation magnitudes. Fortunately, it turns out that that quantity can also be computed efficiently, as follows. First, note that
+%\begin{eqnarray}
+%	\sum_{rs\in \textrm{unocc}} f(|H_{pqrs}|) &=& \sum_{rs} f(|H_{pqrs}|) \\
+%	&&- \sum_{r\in \textrm{occ},s} f(|H_{pqrs}|)  - \sum_{s\in\textrm{occ}, r} f(|H_{pqrs}|) \\
+%	&& + \sum_{rs\in \textrm{occ}} f(|H_{pqrs}|).
+%\end{eqnarray}
+%In the setup stage, we precompute the quantities $A_{pqs} = \sum_{r} f(|H_{pqrs}|)$ and $B_{pqr} = \sum_{s} f(|H_{pqrs}|)$ in %$\mathcal{O}(M^4)$ time; they require only a negligible $\mathcal{O}(M^3)$ storage.
+
+%Next, we store the quantities $\sum_{pqs\in \textrm{occ}} A_{pqs}$, $\sum_{pqr\in\textrm{occ}} B_{pqr}$, and $\sum_{pqrs\in\textrm{occ}} f(|H_{pqrs}|)$ for each sampling determinant. The crucial point in making this efficient is the fact that once these quantities are computed for one determinant, computing the corresponding quantities for a new determinant that is a single or double excitation away can be performed in $\mathcal{O}(N^3)$ time. (An analogous method is used for the diagonal elements of the Hamiltonian: only one diagonal element ever needs to be computed in $\mathcal{O}(N^2)$ time, and then each new diagonal element can be computed in $\mathcal{O}(N)$ time.) Thus, the cost to maintain the relative probabilities of invalid excitations is only $\mathcal{O}(N^3)$ time and $\mathcal{O}(1)$ storage. 
+
 \section{Application to multireference perturbation theory}
+We now describe
 
 \section{Conclusion and future work}
 We have presented an efficient, unified approach to treating second-quantized operators semistochastically using importance sampling for the stochastic component. It uses an initial setup stage that takes $\mathcal{O}(M^4\log M)$ time and creates a data structure of size $\mathcal{O}(M^4)$ (the same scaling as the setup stage in the original HCI algorithm). After the setup, the Hamiltonian (or other second-quantized operator) can be applied semistochastically, by generating all excitations exceeding an arbitrary threshold $\epsilon$, and importance sampling the remaining excitations that don't meet the threshold. The time it takes to do so scales as $\mathcal{O}(N^2 + N_{|H|>\epsilon})$ for the deterministic component, and $\mathcal{O}(\log M)$ time per sample for the stochastic component.
