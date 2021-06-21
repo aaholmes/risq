@@ -7,7 +7,6 @@ use super::utils::ints::{combine_2, combine_4, permute, permute_2};
 use crate::wf::det::Config;
 use read_ints::Ints;
 use crate::utils::bits::bit_pairs;
-use crate::utils::display::fmt_det;
 
 // Hamiltonian, containing integrals and matrix element computing functions
 #[derive(Default)]
@@ -92,7 +91,6 @@ impl Ham {
                 out += self.direct(i, k, j, k);
             }
             out *= permute(det1.up, det2.up) as f64;
-            //  out *= permute(det1.up, [i, j]) as f64;
 
         } else {
 
@@ -110,7 +108,6 @@ impl Ham {
                 out += self.direct(i, k, j, k);
             }
             out *= permute(det1.dn, det2.dn) as f64;
-            //  out *= permute(det1.dn, [i, j]) as f64;
 
         }
 
@@ -178,8 +175,6 @@ impl Ham {
             }
             ((permute(det1.up, det2.up) * permute(det1.dn, det2.dn)) as f64)
                 * self.direct(ind1[0], ind2[0], ind1[1], ind2[1])
-            // ((permute(det1.up, ind1) * permute(det1.dn, ind2)) as f64)
-            //     * self.direct(ind1[0], ind2[0], ind1[1], ind2[1])
 
         }
     }
