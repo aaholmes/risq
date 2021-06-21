@@ -21,8 +21,8 @@ impl Iterator for Eps {
 
     fn next(&mut self) -> Option<f64> {
         let curr: f64 = self.next;
-        self.next = if self.next * 0.9 > self.target { self.next * 0.9 } else { self.target };
-        // self.next = if self.next / 2.0 > self.target { self.next / 2.0 } else { self.target };
+        self.next = if self.next / 2.0 > self.target { self.next / 2.0 } else { self.target };
+        // self.next = if self.next * 0.9 > self.target { self.next * 0.9 } else { self.target };
         Some(curr)
     }
 }

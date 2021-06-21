@@ -2,6 +2,6 @@
     "norb": 28,
     "nup": 6,
     "ndn": 6,
-    "eps": 1e-6,
+    "eps": 2e-2,
     "n_states": 2
 }

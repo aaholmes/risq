@@ -483,9 +483,10 @@ impl Wf {
         out
     }
 
-    pub fn get_new_dets(&mut self, ham: &Ham, excite_gen: &ExciteGenerator) {
+    pub fn get_new_dets(&mut self, ham: &Ham, excite_gen: &ExciteGenerator) -> bool {
         // Get new dets: iterate over all dets; for each, propose all excitations; for each, check if new;
         // if new, add to wf
+        // Returns true if no new dets (i.e., returns whether already converged)
 
         let eps: f64 = self.eps_iter.next().unwrap();
 
@@ -495,6 +496,8 @@ impl Wf {
         for det in new_dets.dets {
             self.push(det);
         }
+
+        new_dets.n == 0
     }
 
     fn iterate_excites(&mut self, ham: &Ham, excite_gen: &ExciteGenerator, eps: f64, matmul: bool) -> Wf {
