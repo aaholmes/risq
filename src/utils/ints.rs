@@ -4,6 +4,7 @@
 use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::Path;
+use crate::utils::display::fmt_det;
 
 use super::bits::parity;
 
@@ -40,15 +41,24 @@ pub fn combine_4(p: i32, q: i32, r: i32, s: i32) -> usize {
     combine_2_usize(combine_2(p, q), combine_2(r, s))
 }
 
-pub fn permute(det: u128, v: [i32; 2]) -> i32 {
+pub fn permute(det1: u128, det2: u128) -> i32 {
     // Expect Vec to be a 2-index vector
-    let diff: u128 = det & (((1 << v[0]) - 1) ^ ((1 << v[1]) - 1));
-    parity(diff)
+    if det1 > det2 {
+        parity(det1 & (det1 - det2))
+    } else {
+        parity(det2 & (det2 - det1))
+    }
 }
 
-pub fn permute_2(det: u128, v: [i32; 4]) -> i32 {
+// pub fn permute(det: u128, v: [i32; 2]) -> i32 {
+//     // Expect Vec to be a 2-index vector
+//     let diff: u128 = det & (((1 << v[0]) - 1) ^ ((1 << v[1]) - 1));
+//     parity(diff)
+// }
+
+pub fn permute_2(det1: u128, det2: u128, v: [i32; 4]) -> i32 {
     // Expect Vec to be a 4-index vector
     let diff: u128 =
-        det & (((1 << v[0]) - 1) ^ ((1 << v[1]) - 1) ^ ((1 << v[2]) - 1) ^ ((1 << v[3]) - 1));
+        det1 & det2 & (((1 << v[0]) - 1) ^ ((1 << v[1]) - 1) ^ ((1 << v[2]) - 1) ^ ((1 << v[3]) - 1));
     parity(diff)
 }

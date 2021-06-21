@@ -6,7 +6,7 @@ use crate::excite::Orbs;
 use crate::stoch::DetOrbSample;
 use crate::wf::Wf;
 
-fn fmt_det(d: u128) -> String {
+pub(crate) fn fmt_det(d: u128) -> String {
     let mut s = format!("{:#10b}", d);
     s = str::replace(&s, "0", "_");
     str::replace(&s, "_b", "")

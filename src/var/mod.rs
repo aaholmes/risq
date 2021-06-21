@@ -29,11 +29,11 @@ pub fn variational(ham: &Ham, excite_gen: &ExciteGenerator, wf: &mut Wf) {
 
         println!("End of iteration {}: Wavefunction has {} determinants with energy {:.4}", iter, wf.n, wf.energy);
 
-        if wf.n <= 200 {
+        //if wf.n <= 200 {
             wf.print();
-        }
+        //}
 
-        if wf.n > 10 {
+        if wf.n > 1000 {
             break;
         }
     }
