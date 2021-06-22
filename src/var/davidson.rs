@@ -144,7 +144,7 @@ pub fn dense_optimize(wf: &mut Wf, dav_eps: f64, ham: &Ham, excite_gen: &ExciteG
     println!("H to diagonalize: {}", ham_matrix);
 
     // Davidson
-    let dav = Davidson::new (ham_matrix, 1, DavidsonCorrection::DPR, SpectrumTarget::Lowest, dav_eps);
+    let dav = Davidson::new (ham_matrix, 1, DavidsonCorrection::DPR, SpectrumTarget::Lowest, dav_eps, dav_eps );
     match dav {
         Ok(eig) => {
             // println!("eigenvalues:{}", eig.eigenvalues);
