@@ -28,8 +28,9 @@ pub fn variational(ham: &Ham, excite_gen: &ExciteGenerator, wf: &mut Wf) {
         println!("Wf after add_new_dets:");
         wf.print();
 
-        let dav_eps: f64 = 1e-6; // Davidson convergence epsilon
-        dense_optimize(wf, dav_eps, &ham, &excite_gen);
+        let coeff_eps: f64 = 1e-3; // Davidson convergence epsilon for coefficients
+        let energy_eps: f64 = 1e-6; // Davidson convergence epsilon for energy
+        dense_optimize(wf, coeff_eps, energy_eps, &ham, &excite_gen);
 
         println!("End of iteration {}: Wavefunction has {} determinants with energy {:.4}", iter, wf.n, wf.energy);
 

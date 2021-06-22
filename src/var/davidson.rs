@@ -21,7 +21,7 @@ use eigenvalues::algorithms::davidson::DavidsonError;
 // //use sprs::io::SymmetryMode::Symmetric;
 // use nalgebra::DMatrix;
 
-pub fn dense_optimize(wf: &mut Wf, dav_eps: f64, ham: &Ham, excite_gen: &ExciteGenerator) {
+pub fn dense_optimize(wf: &mut Wf, coeff_eps: f64, energy_eps: f64, ham: &Ham, excite_gen: &ExciteGenerator) {
     // Generate Ham as a dense matrix
     // Optimize using davidson
     // Just to get something working - need to replace with efficient algorithm soon!
@@ -144,7 +144,7 @@ pub fn dense_optimize(wf: &mut Wf, dav_eps: f64, ham: &Ham, excite_gen: &ExciteG
     println!("H to diagonalize: {}", ham_matrix);
 
     // Davidson
-    let dav = Davidson::new (ham_matrix, 1, DavidsonCorrection::DPR, SpectrumTarget::Lowest, dav_eps, dav_eps );
+    let dav = Davidson::new (ham_matrix, 1, DavidsonCorrection::DPR, SpectrumTarget::Lowest, coeff_eps, energy_eps );
     match dav {
         Ok(eig) => {
             // println!("eigenvalues:{}", eig.eigenvalues);
