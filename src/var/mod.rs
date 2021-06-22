@@ -1,6 +1,7 @@
 // Variational stage
 
 mod davidson;
+mod ham_gen;
 
 use super::ham::Ham;
 use super::wf::Wf;
@@ -25,8 +26,10 @@ pub fn variational(ham: &Ham, excite_gen: &ExciteGenerator, wf: &mut Wf) {
             break;
         }
 
-        println!("Wf after add_new_dets:");
-        wf.print();
+        if wf.n <= 20 {
+            println!("Wf after add_new_dets:");
+            wf.print();
+        }
 
         let coeff_eps: f64 = 1e-3; // Davidson convergence epsilon for coefficients
         let energy_eps: f64 = 1e-6; // Davidson convergence epsilon for energy

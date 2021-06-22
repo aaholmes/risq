@@ -54,15 +54,15 @@ fn main() {
     println!("Variational stage");
     variational(&HAM, &EXCITE_GEN, &mut wf);
 
-    let eps = 1.0;
-    let n_samples = 1000;
-    // println!("Calling semistoch_matmul!");
-    // semistoch_matmul(wf, &HAM, &EXCITE_GEN, eps, n_samples);
-
-    println!("Calling semistoch ENPT2!");
-    let (e_pt2, std_dev) = semistoch_enpt2(&wf, &HAM, &EXCITE_GEN, eps, 100, 1000);
-    println!("Variational energy: {:.6}", wf.energy);
-    println!("PT energy: {:.6} +- {:.6}", e_pt2, std_dev);
-    println!("Total energy: {:.6} +- {:.6}", wf.energy + e_pt2, std_dev);
+    // let eps = 1.0;
+    // let n_samples = 1000;
+    // // println!("Calling semistoch_matmul!");
+    // // semistoch_matmul(wf, &HAM, &EXCITE_GEN, eps, n_samples);
+    //
+    // println!("Calling semistoch ENPT2!");
+    // let (e_pt2, std_dev) = semistoch_enpt2(&wf, &HAM, &EXCITE_GEN, eps, 100, 1000);
+    // println!("Variational energy: {:.6}", wf.energy);
+    // println!("PT energy: {:.6} +- {:.6}", e_pt2, std_dev);
+    // println!("Total energy: {:.6} +- {:.6}", wf.energy + e_pt2, std_dev);
 
 }

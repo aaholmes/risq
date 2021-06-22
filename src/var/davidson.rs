@@ -8,12 +8,11 @@ use crate::wf::Wf;
 use crate::excite::init::ExciteGenerator;
 use crate::ham::Ham;
 use eigenvalues::{Davidson, DavidsonCorrection, SpectrumTarget};
-use nalgebra::DMatrix;
-use crate::utils::bits::{bits, bit_pairs};
+// use nalgebra::DMatrix;
 use crate::excite::{Orbs, Excite};
 use crate::wf::det::Config;
-use eigenvalues::utils::generate_random_sparse_symmetric;
 use eigenvalues::algorithms::davidson::DavidsonError;
+use crate::var::ham_gen::gen_dense_ham_connections;
 // //use crate::wf::det::{Config, Det};
 // //use crate::excite::{Excite, Orbs};
 // //use crate::utils::bits::{bits, bit_pairs};
@@ -26,122 +25,11 @@ pub fn dense_optimize(wf: &mut Wf, coeff_eps: f64, energy_eps: f64, ham: &Ham, e
     // Optimize using davidson
     // Just to get something working - need to replace with efficient algorithm soon!
 
-    let mut excite: Excite;
-    let mut new_det: Option<Config>;
+    let ham_matrix = gen_dense_ham_connections(wf, ham, excite_gen);
 
-    // Generate Ham
-    let mut ham_matrix = generate_random_sparse_symmetric(wf.n, wf.n, 0.0); //DMatrix::<f64>::zeros(wf.n, wf.n);
-    for (i_det, det) in wf.dets.iter().enumerate() {
-
-        // Diagonal element
-        ham_matrix[(i_det, i_det)] = det.diag;
-
-        // Double excitations
-        // Opposite spin
-        // if excite_gen.max_opp_doub >= local_eps {
-            for i in bits(det.config.up) {
-                for j in bits(det.config.dn) {
-                    for stored_excite in excite_gen.opp_doub_generator.get(&Orbs::Double((i, j))).unwrap() {
-                        // if stored_excite.abs_h < local_eps { break; }
-                        excite = Excite {
-                            init: Orbs::Double((i, j)),
-                            target: stored_excite.target,
-                            abs_h: stored_excite.abs_h,
-                            is_alpha: None
-                        };
-                        new_det = det.config.safe_excite_det(&excite);
-                        match new_det {
-                            Some(d) => {
-                                // Valid excite: add to H*psi
-                                match wf.inds.get(&d) {
-                                    // TODO: Do this in a cache efficient way
-                                    Some(ind) => {
-                                        if *ind > i_det as usize {
-                                            ham_matrix[(i_det as usize, *ind)] = ham.ham_doub(&det.config, &d);
-                                            ham_matrix[(*ind, i_det as usize)] = ham_matrix[(i_det as usize, *ind)];
-                                        }
-                                    },
-                                    _ => {}
-                                }
-                            }
-                            None => {}
-                        }
-                    }
-                }
-            }
-        // }
-
-        // Same spin
-        // if excite_gen.max_same_doub >= local_eps {
-            for (config, is_alpha) in &[(det.config.up, true), (det.config.dn, false)] {
-                for (i, j) in bit_pairs(*config) {
-                    for stored_excite in excite_gen.same_doub_generator.get(&Orbs::Double((i, j))).unwrap() {
-                        // if stored_excite.abs_h < local_eps { break; }
-                        excite = Excite {
-                            init: Orbs::Double((i, j)),
-                            target: stored_excite.target,
-                            abs_h: stored_excite.abs_h,
-                            is_alpha: Some(*is_alpha)
-                        };
-                        new_det = det.config.safe_excite_det(&excite);
-                        match new_det {
-                            Some(d) => {
-                                // Valid excite: add to H*psi
-                                match wf.inds.get(&d) {
-                                    // TODO: Do this in a cache efficient way
-                                    Some(ind) => {
-                                        if *ind > i_det as usize {
-                                            ham_matrix[(i_det as usize, *ind)] = ham.ham_doub(&det.config, &d);
-                                            ham_matrix[(*ind, i_det as usize)] = ham_matrix[(i_det as usize, *ind)];
-                                        }
-                                    },
-                                    _ => {}
-                                }
-                            }
-                            None => {}
-                        }
-                    }
-                }
-            }
-        // }
-
-        // Single excitations
-        // if excite_gen.max_sing >= local_eps {
-            for (config, is_alpha) in &[(det.config.up, true), (det.config.dn, false)] {
-                for i in bits(*config) {
-                    for stored_excite in excite_gen.sing_generator.get(&Orbs::Single(i)).unwrap() {
-                        // if stored_excite.abs_h < local_eps { break; }
-                        excite = Excite {
-                            init: Orbs::Single(i),
-                            target: stored_excite.target,
-                            abs_h: stored_excite.abs_h,
-                            is_alpha: Some(*is_alpha)
-                        };
-                        new_det = det.config.safe_excite_det(&excite);
-                        match new_det {
-                            Some(d) => {
-                                // Valid excite: add to H*psi
-                                match wf.inds.get(&d) {
-                                    // Compute matrix element and add to H*psi
-                                    // TODO: Do this in a cache efficient way
-                                    Some(ind) => {
-                                        if *ind > i_det as usize {
-                                            ham_matrix[(i_det as usize, *ind)] = ham.ham_sing(&det.config, &d);
-                                            ham_matrix[(*ind, i_det as usize)] = ham_matrix[(i_det as usize, *ind)];
-                                        }
-                                    },
-                                    _ => {}
-                                }
-                            }
-                            None => {}
-                        }
-                    }
-                }
-            }
-        // }
+    if wf.n <= 8 {
+        println!("H to diagonalize: {}", ham_matrix);
     }
-
-    println!("H to diagonalize: {}", ham_matrix);
 
     // Davidson
     let dav = Davidson::new (ham_matrix, 1, DavidsonCorrection::DPR, SpectrumTarget::Lowest, coeff_eps, energy_eps );
