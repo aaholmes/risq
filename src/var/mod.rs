@@ -2,6 +2,7 @@
 
 mod davidson;
 mod ham_gen;
+mod sparse;
 
 use super::ham::Ham;
 use super::wf::Wf;
@@ -33,9 +34,10 @@ pub fn variational(ham: &Ham, excite_gen: &ExciteGenerator, wf: &mut Wf) {
 
         let coeff_eps: f64 = 1e-3; // Davidson convergence epsilon for coefficients
         let energy_eps: f64 = 1e-6; // Davidson convergence epsilon for energy
+
         dense_optimize(wf, coeff_eps, energy_eps, &ham, &excite_gen);
 
-        println!("End of iteration {}: Wavefunction has {} determinants with energy {:.4}", iter, wf.n, wf.energy);
+        println!("End of iteration {} (eps = {:.1e}): Wavefunction has {} determinants with energy {:.4}", iter, wf.eps, wf.n, wf.energy);
 
         if wf.n <= 20 {
             wf.print();

@@ -8,9 +8,11 @@ use crate::excite::{Excite, Orbs};
 use crate::wf::det::Config;
 use eigenvalues::utils::generate_random_sparse_symmetric;
 use crate::utils::bits::{bit_pairs, bits};
+use crate::var::sparse::SparseMat;
 
 pub fn gen_dense_ham_connections(wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerator) -> DMatrix<f64> {
     // Generate Ham as a dense matrix by using all connections to each variational determinant
+    // Simplest algorithm, very slow
 
     let mut excite: Excite;
     let mut new_det: Option<Config>;
@@ -119,3 +121,11 @@ pub fn gen_dense_ham_connections(wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerato
     }
     ham_matrix
 }
+
+
+// pub fn gen_sparse_ham_partial(wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerator) -> SparseMat {
+//     // Generate Ham as a sparse matrix by using partial connections (either as in "Fast SHCI" or in my faster notes)
+//
+//     let mut out: SparseMat = SparseMat::new(wf.n);
+//     out
+// }

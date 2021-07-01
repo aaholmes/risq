@@ -24,13 +24,22 @@ pub struct PtSamples {
 }
 
 impl PtSamples {
+    pub fn print(&self) {
+        for (pt_key, pt_val) in self.samples.iter() {
+            println!("Perturbative det: {} with diag elem: {}", pt_key, pt_val.0);
+            for (var_key, var_val) in pt_val.1.iter() {
+                println!("   Variational det: {}, H_ai c_i: {}, p_ai: {}, w_ai: {}", var_key, var_val.0, var_val.1, var_val.2)
+            }
+        }
+    }
+
     pub fn clear(&mut self) {
         // Clear data structure to start collecting a new batch of samples
         self.n = 0;
         self.samples = Default::default();
     }
 
-    pub fn add_sample(&mut self, var_det: Det, excite: &Excite, pt_det: Det, sampled_prob: f64, ham: &Ham) {
+    pub fn add_sample_compute_diag(&mut self, var_det: Det, excite: &Excite, pt_det: Det, sampled_prob: f64, ham: &Ham) {
         // Add a new sample to PtSamples
         // Compute diagonal element of perturbative determinant if it hasn't already been computed
         self.n += 1;
@@ -58,9 +67,38 @@ impl PtSamples {
         }
     }
 
-    pub fn pt_estimator(&self, e0: f64) -> f64 {
+    pub fn add_sample_diag_already_stored(&mut self, var_det: Det, pt_det: Det, sampled_prob: f64, ham: &Ham) {
+        // Add a new sample to PtSamples
+        // Assumes that pt_det's diagonal element already stored
+        self.n += 1;
+        match self.samples.get_mut(&pt_det.config) {
+            None => {
+                // New PT det was sampled
+                let mut var_det_map: HashMap<Config, (f64, f64, i32)> = Default::default();
+                var_det_map.insert(var_det.config, (pt_det.coeff, sampled_prob, 1));
+                self.samples.insert(pt_det.config, (pt_det.diag, var_det_map));
+            }
+            Some(pt_det_info) => {
+                // No need to recompute the diagonal element
+                match pt_det_info.1.get_mut(&var_det.config) {
+                    None => {
+                        // New var det to reach this PT det; add to variational det map
+                        pt_det_info.1.insert(var_det.config, (pt_det.coeff, sampled_prob, 1));
+                    }
+                    Some(var_det_info) => {
+                        // Already have this var det; just increment number of times it has been sampled
+                        var_det_info.2 += 1;
+                    }
+                }
+            }
+        }
+    }
+
+    pub fn pt_estimator(&self, e0: f64, n_det: i32) -> f64 {
         // Computes the unbiased PT estimator as in the original SHCI paper
         // Needs to input the variational energy e0
+        // n_det is either the number of sampled variational dets (old method),
+        // or the number of sampled perturbative dets (new method)
         // TODO: Figure out why PT energy is wrong and why contributions vary so much
 
         let mut out: f64 = 0.0;
@@ -79,19 +117,19 @@ impl PtSamples {
                 }
                 else {
                     w_over_p = (*w as f64) / p;
-                    println!("p = {:.2e}", p);
-                    println!("(H_ai c_i)^2 / p_i = {:.3}", hai_ci * hai_ci / p);
-                    diag_term += ((self.n - 1) as f64 - w_over_p) * w_over_p * hai_ci * hai_ci;
+                    // println!("p = {:.2e}", p);
+                    // println!("(H_ai c_i)^2 / p_i = {:.3}", hai_ci * hai_ci / p);
+                    diag_term += ((n_det - 1) as f64 - w_over_p) * w_over_p * hai_ci * hai_ci;
                     to_square += hai_ci * w_over_p;
                 }
             }
-            println!("Diag term = {:.3}, off-diag term = {:.3}, diag + off-diag^2 = {:.3}", diag_term, to_square, diag_term + to_square * to_square);
+            // println!("Diag term = {:.3}, off-diag term = {:.3}, diag + off-diag^2 = {:.3}", diag_term, to_square, diag_term + to_square * to_square);
             out += (diag_term + to_square * to_square) / (e0 - pt_det_diag);
             tmp += diag_term + to_square * to_square;
         }
 
-        println!("Unbiased estimator ({} samples) = {}", self.n, out / (self.n as f64 * (self.n - 1) as f64));
-        println!("Component of unbiased estimator that should be constant = {:.3}", tmp / (self.n as f64 * (self.n - 1) as f64));
-        out / (self.n as f64 * (self.n - 1) as f64)
+        println!("Unbiased estimator ({} sampled var dets, {} sampled PT dets) = {}", n_det, self.n, out / (n_det as f64 * (n_det - 1) as f64));
+        println!("Component of unbiased estimator that should be constant = {:.3}", tmp / (n_det as f64 * (n_det - 1) as f64));
+        out / (n_det as f64 * (n_det - 1) as f64)
     }
 }

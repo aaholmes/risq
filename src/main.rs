@@ -17,7 +17,6 @@ pub mod wf;
 use wf::{Wf, init_var_wf};
 
 mod var;
-// use var::variational;
 
 mod utils;
 mod stoch;
@@ -25,8 +24,8 @@ mod semistoch;
 mod pt;
 
 use utils::read_input::{Global, read_input};
-use crate::semistoch::semistoch_enpt2;
 use crate::var::variational;
+use crate::semistoch::{semistoch_enpt2, old_semistoch_enpt2};
 
 fn main() {
 
@@ -54,15 +53,20 @@ fn main() {
     println!("Variational stage");
     variational(&HAM, &EXCITE_GEN, &mut wf);
 
-    // let eps = 1.0;
-    // let n_samples = 1000;
-    // // println!("Calling semistoch_matmul!");
-    // // semistoch_matmul(wf, &HAM, &EXCITE_GEN, eps, n_samples);
-    //
-    // println!("Calling semistoch ENPT2!");
-    // let (e_pt2, std_dev) = semistoch_enpt2(&wf, &HAM, &EXCITE_GEN, eps, 100, 1000);
+    let eps_pt = GLOBAL.eps_pt;
+    let n_batches = 10;
+    let n_samples_per_batch = 10;
+
+    // println!("\nCalling semistoch ENPT2 the old way using eps_pt = {}", eps_pt);
+    // let (e_pt2, std_dev) = old_semistoch_enpt2(&wf, &HAM, &EXCITE_GEN, eps_pt, n_batches, n_samples_per_batch);
     // println!("Variational energy: {:.6}", wf.energy);
     // println!("PT energy: {:.6} +- {:.6}", e_pt2, std_dev);
-    // println!("Total energy: {:.6} +- {:.6}", wf.energy + e_pt2, std_dev);
+    // println!("Total energy (old): {:.6} +- {:.6}", wf.energy + e_pt2, std_dev);
+
+    println!("Calling semistoch ENPT2 the new way!");
+    let (e_pt2, std_dev) = semistoch_enpt2(&wf, &HAM, &EXCITE_GEN, eps_pt, n_batches, n_samples_per_batch);
+    println!("Variational energy: {:.6}", wf.energy);
+    println!("PT energy: {:.6} +- {:.6}", e_pt2, std_dev);
+    println!("Total energy (new): {:.6} +- {:.6}", wf.energy + e_pt2, std_dev);
 
 }

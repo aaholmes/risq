@@ -9,10 +9,12 @@ use crate::excite::init::ExciteGenerator;
 use crate::ham::Ham;
 use eigenvalues::{Davidson, DavidsonCorrection, SpectrumTarget};
 // use nalgebra::DMatrix;
-use crate::excite::{Orbs, Excite};
-use crate::wf::det::Config;
-use eigenvalues::algorithms::davidson::DavidsonError;
+// use crate::excite::{Orbs, Excite};
+// use crate::wf::det::Config;
+// use eigenvalues::algorithms::davidson::DavidsonError;
 use crate::var::ham_gen::gen_dense_ham_connections;
+// use crate::var::ham_gen::{gen_dense_ham_connections, gen_sparse_ham_partial};
+// use std::intrinsics::offset;
 // //use crate::wf::det::{Config, Det};
 // //use crate::excite::{Excite, Orbs};
 // //use crate::utils::bits::{bits, bit_pairs};
@@ -35,8 +37,6 @@ pub fn dense_optimize(wf: &mut Wf, coeff_eps: f64, energy_eps: f64, ham: &Ham, e
     let dav = Davidson::new (ham_matrix, 1, DavidsonCorrection::DPR, SpectrumTarget::Lowest, coeff_eps, energy_eps );
     match dav {
         Ok(eig) => {
-            // println!("eigenvalues:{}", eig.eigenvalues);
-            // println!("eigenvectors:{}", eig.eigenvectors);
             wf.energy = eig.eigenvalues[0];
             for i in 0..wf.n {
                 wf.dets[i].coeff = eig.eigenvectors[(i, 0)];
@@ -47,6 +47,28 @@ pub fn dense_optimize(wf: &mut Wf, coeff_eps: f64, energy_eps: f64, ham: &Ham, e
         }
     }
 }
+
+// pub fn sparse_optimize(wf: &mut Wf, coeff_eps: f64, energy_eps: f64, ham: &Ham, excite_gen: &ExciteGenerator) {
+//     // Generate Ham as a sparse matrix
+//     // Optimize using davidson
+//
+//     let ham_matrix = gen_sparse_ham_partial(wf, ham, excite_gen);
+//
+//     // Davidson
+//     let dav = Davidson::new (ham_matrix, 1, DavidsonCorrection::DPR, SpectrumTarget::Lowest, coeff_eps, energy_eps );
+//     match dav {
+//         Ok(eig) => {
+//             wf.energy = eig.eigenvalues[0];
+//             for i in 0..wf.n {
+//                 wf.dets[i].coeff = eig.eigenvectors[(i, 0)];
+//             }
+//         }
+//         Err(err) => {
+//             println!("Error! {}", err);
+//         }
+//     }
+// }
+
 
 // pub fn optimize(&mut wf: Wf, hb_eps: f64, dav_eps: f64, ham: &Ham, excite_gen: &ExciteGenerator) {
 //     // Optimize coefficients of wf, and update its energy

@@ -39,7 +39,7 @@ pub fn init_eps(wf: &Wf, global: &Global, excite_gen: &ExciteGenerator) -> Eps {
     // Can't just use excite_gen.max_(same/opp)_spin_doub because we want to only consider
     // excitations coming from initial wf (usually HF det)
     let mut excite: &StoredExcite;
-    let mut max_doub: f64 = global.eps;
+    let mut max_doub: f64 = global.eps_var;
     let mut this_doub: f64;
     for det in &wf.dets {
         // Opposite spin
@@ -81,6 +81,6 @@ pub fn init_eps(wf: &Wf, global: &Global, excite_gen: &ExciteGenerator) -> Eps {
     println!("Setting initial eps = {:.4}", max_doub);
     Eps {
         next: max_doub - 1e-9, // Slightly less than max_doub in case there are two or more elements that are off by machine precision
-        target: global.eps,
+        target: global.eps_var,
     }
 }

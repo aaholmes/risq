@@ -57,18 +57,22 @@ impl Hash for DetOrbSample<'_> {
 pub fn generate_screened_sampler(eps: f64, det_orbs: Vec<DetOrbSample>) -> ScreenedSampler {
     // Generate a screened sampler object (using Alias)
 
-    // Normalize probs
-    let sum_hc_all_dets_orbs: f64 = det_orbs.iter().fold(0f64, |sum, &val| sum + val.sum_abs_hc);
-    let mut probs_abs_hc: Vec<f32> = vec![];
-    for prob in det_orbs.iter() {
-        probs_abs_hc.push((prob.sum_abs_hc / sum_hc_all_dets_orbs) as f32);
+    // Normalize probs (both |Hc| and (Hc)^2)
+    let sum_hc_all_dets_orbs: f64 = det_orbs.iter().fold(0f64, |sum, &val| sum + val.sum_abs_hc as f64);
+    // let sum_hc_all_dets_orbs: f64 = det_orbs.iter().fold(0f64, |sum, &val| sum + val.sum_abs_hc as f64);
+    let mut probs_abs_hc: Vec<f64> = vec![];
+    for val in det_orbs.iter() {
+        probs_abs_hc.push(val.sum_abs_hc / sum_hc_all_dets_orbs);
     }
 
-    let sum_hc_squared_all_dets_orbs: f64 = det_orbs.iter().fold(0f64, |sum, &val| sum + val.sum_hc_squared);
-    let mut probs_hc_squared: Vec<f32> = vec![];
-    for prob in det_orbs.iter() {
-        probs_hc_squared.push((prob.sum_hc_squared / sum_hc_squared_all_dets_orbs) as f32);
+    let sum_hc_squared_all_dets_orbs: f64 = det_orbs.iter().fold(0f64, |sum, &val| sum + val.sum_hc_squared as f64);
+    let mut probs_hc_squared: Vec<f64> = vec![];
+    for val in det_orbs.iter() {
+        probs_hc_squared.push(val.sum_hc_squared / sum_hc_squared_all_dets_orbs);
     }
+
+    println!("Normalization abs: {}", probs_abs_hc.iter().sum::<f64>());
+    println!("Normalization sq: {}", probs_hc_squared.iter().sum::<f64>());
 
     ScreenedSampler{
         eps: eps,
