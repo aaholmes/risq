@@ -66,6 +66,14 @@ pub fn semistoch_enpt2(input_wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerator, e
                     // This contribution tends to be small, as it is the (>eps)/(<eps) cross term,
                     // so for now we don't worry about whether sampling is optimal distribution,
                     // but could easily change that
+
+                    // For this term: Sample the dtm_result with probability |coeff / (E_0 - E_a)|
+                    // Then, sample an H to apply to it
+                    // Finally, the sampled value will be proportional to |c| of the variational wf
+                    // (but only if |Hc| < eps; otherwise, it's 0)
+                    // This is a weird approach, but the sampled values will all be 0 or bounded by
+                    // a multiple of eps
+
                     //println!("Sampled config: {} with probability = {}", target_det.config, sampled_prob);
                     //println!("Coeff/sampled_prob = {}", target_det.coeff / sampled_prob);
                     // If sampled_det is in dtm_result, then update the stoch_enpt2 energy
@@ -74,7 +82,7 @@ pub fn semistoch_enpt2(input_wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerator, e
                         Some(ind) => {
                             energy_sample = dtm_result.dets[*ind].coeff * target_det.coeff /
                                 sampled_prob / (input_wf.energy - dtm_result.dets[*ind].diag);
-                            //println!("Sampled energy: {}", energy_sample);
+                            println!("Sampled energy: {}", energy_sample);
                             stoch_enpt2.update(energy_sample);
                         }
                     }
@@ -107,11 +115,13 @@ pub fn semistoch_enpt2(input_wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerator, e
 }
 
 
-pub fn old_semistoch_enpt2(input_wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerator, eps: f64, n_batches: i32, n_samples_per_batch: i32) -> (f64, f64) {
+pub fn old_semistoch_enpt2(input_wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerator, eps: f64, n_batches: i32, n_samples_per_batch: i32, use_optimal_probs: bool) -> (f64, f64) {
     // Old algorithm (2017) for semistochastic ENPT2
+    // If use_optimal_probs, then sample with probability proportional to sum of remaining (Hc)^2;
+    // else, use probability proportional to |c|
 
     // Compute deterministic approximation to H psi using large eps
-    let dtm_result = input_wf.approx_matmul_external_dtm_only(ham, excite_gen, eps);
+    let (dtm_result, optimal_probs) = input_wf.approx_matmul_external_dtm_only(ham, excite_gen, eps);
 
     // Compute approximate delta E using approx H psi
     let mut dtm_enpt2: f64 = 0.0;
@@ -127,21 +137,24 @@ pub fn old_semistoch_enpt2(input_wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerato
     let mut samples_all: PtSamples = Default::default(); // data structure to contain sampled contributions to PT
     let mut samples_large_eps: PtSamples = Default::default(); // data structure to contain sampled contributions to PT that exceed eps
 
-    // Setup Alias sampling of wf with p_i = |c_i|
-    let mut probs_abs_c : Vec<f64> = vec![0.0; input_wf.n];
-    // let mut prob_norm: f64 = 0.0;
+    // Setup Alias sampling of var wf
+    let mut var_probs: Vec<f64> = vec![0.0; input_wf.n];
     for (i_det, det) in input_wf.dets.iter().enumerate() {
-        // prob_norm += det.coeff.abs() as f64;
-        probs_abs_c[i_det] = det.coeff.abs() as f64;
+        if use_optimal_probs {
+            // P ~ sum_remaining (Hc)^2
+            var_probs[i_det] = optimal_probs[i_det];
+        } else {
+            // P ~ |c|
+            var_probs[i_det] = det.coeff.abs() as f64;
+        }
     }
-    let prob_norm:f64 = probs_abs_c.iter().sum::<f64>();
+    let prob_norm:f64 = var_probs.iter().sum::<f64>();
     for i_prob in 0..input_wf.n {
-        probs_abs_c[i_prob] = probs_abs_c[i_prob] / prob_norm;
-        // probs_abs_c[i_prob] = (probs_abs_c[i_prob] as f64 / prob_norm) as f64;
+        var_probs[i_prob] = var_probs[i_prob] / prob_norm;
     }
     println!("Setting up wf sampler");
-    println!("Normalization: {}", probs_abs_c.iter().sum::<f64>());
-    let wf_sampler: VoseAlias<Det> = VoseAlias::new(input_wf.dets.clone(), probs_abs_c);
+    println!("Normalization: {}", var_probs.iter().sum::<f64>());
+    let wf_sampler: VoseAlias<Det> = VoseAlias::new(input_wf.dets.clone(), var_probs);
     println!("Done setting up wf sampler");
     // println!("Alias sampler:");
     // wf_sampler.print();
@@ -158,9 +171,10 @@ pub fn old_semistoch_enpt2(input_wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerato
         samples_large_eps.clear();
 
         for i_sample in 0..n_samples_per_batch {
-            // Sample with prob |c|
-            let sampled_var_det = wf_sampler.sample();
-            let sampled_prob = sampled_var_det.coeff.abs() / prob_norm;
+            // Sample with prob var_probs(:)
+            let (sampled_var_det, sampled_prob) = wf_sampler.sample_with_prob();
+            // let sampled_var_det = wf_sampler.sample();
+            // let sampled_prob = sampled_var_det.coeff.abs() / prob_norm;
 
             // Generate (wastefully) all PT dets connected to the sampled variational det
 

@@ -4,5 +4,5 @@
     "ndn": 6,
     "n_states": 2,
     "eps_var": 5e-2,
-    "eps_pt": 1e-2
+    "eps_pt": 1e-4
 }

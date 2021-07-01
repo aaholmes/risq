@@ -1,7 +1,7 @@
 // Module containing stochastic functions
 
 use vose_alias::VoseAlias;
-use crate::wf::det::Det;
+use crate::wf::det::{Det, Config};
 use crate::excite::{Orbs, Excite, StoredExcite};
 use crate::excite::init::ExciteGenerator;
 use crate::stoch::utils::sample_cdf;
@@ -31,6 +31,8 @@ pub struct DetOrbSample<'a> {
     pub det: &'a Det,
     pub init: Orbs,
     pub is_alpha: Option<bool>,
+    pub sum_abs_h: f64,
+    pub sum_h_squared: f64,
     pub sum_abs_hc: f64,
     pub sum_hc_squared: f64
 }
@@ -94,59 +96,100 @@ pub fn matmul_sample_remaining(screened_sampler: &ScreenedSampler, imp_sample_di
     // Returns tuple containing (option(exciting det, excitation, and sampled determinant (with coeff attached)), and probability of that sample
     // O(log M) time
 
-    let det_orb_sample: DetOrbSample;
-    let sampled_excite: &StoredExcite;
+    let mut det_orb_sample: DetOrbSample = DetOrbSample {
+        det: &Det {
+            config: Config { up: 0, dn: 0 },
+            coeff: 0.0,
+            diag: 0.0
+        },
+        init: Orbs::Single(0),
+        is_alpha: None,
+        sum_abs_h: 0.0,
+        sum_h_squared: 0.0,
+        sum_abs_hc: 0.0,
+        sum_hc_squared: 0.0
+    };
+    let mut det_orb_prob: f64 = 0.0;
+    let mut sampled_excite: &StoredExcite = &StoredExcite {
+        target: Orbs::Single(0),
+        abs_h: 0.0,
+        sum_remaining_abs_h: 0.0,
+        sum_remaining_h_squared: 0.0
+    };
+    let mut sampled_excite_prob: f64 = 0.0;
 
     match imp_sample_dist {
         ImpSampleDist::AbsHc => {
-            // First, sample a (determinant, orbs) pair using Alias sampling
-            det_orb_sample = screened_sampler.det_orb_sampler_abs_hc.sample();
+            // First, sample a (determinant, orbs) pair using Alias sampling with prob |Hc|
+            // (det_orb_sample, det_orb_prob) = screened_sampler.det_orb_sampler_abs_hc.sample_with_prob();
+            let sample = screened_sampler.det_orb_sampler_abs_hc.sample_with_prob();
+            det_orb_sample = sample.0;
+            det_orb_prob = sample.1;
+            println!("Det orb prob: {}", det_orb_prob);
 
-            // Sample excitation from this det/orb pair by binary search the stored cdf
+            // Sample excitation from this det/orb pair by binary search the stored cdf with prob |H|
             match det_orb_sample.is_alpha {
                 None => {
                     // Opposite spin double
-                    sampled_excite = sample_cdf(excite_gen.opp_doub_generator.get(&det_orb_sample.init).unwrap(), det_orb_sample.sum_abs_hc);
+                    let sample2 = sample_cdf(excite_gen.opp_doub_generator.get(&det_orb_sample.init).unwrap(), ImpSampleDist::AbsHc, det_orb_sample.sum_abs_h);
+                    sampled_excite = sample2.0;
+                    sampled_excite_prob = sample2.1;
                 },
                 Some(_) => {
                     match det_orb_sample.init {
                         Orbs::Double(_) => {
                             // Same spin double
-                            sampled_excite = sample_cdf(excite_gen.same_doub_generator.get(&det_orb_sample.init).unwrap(), det_orb_sample.sum_abs_hc);
+                            let sample2 = sample_cdf(excite_gen.same_doub_generator.get(&det_orb_sample.init).unwrap(), ImpSampleDist::AbsHc, det_orb_sample.sum_abs_h);
+                            sampled_excite = sample2.0;
+                            sampled_excite_prob = sample2.1;
                         },
                         Orbs::Single(_) => {
                             // Single
-                            sampled_excite = sample_cdf(excite_gen.sing_generator.get(&det_orb_sample.init).unwrap(), det_orb_sample.sum_abs_hc);
+                            let sample2 = sample_cdf(excite_gen.sing_generator.get(&det_orb_sample.init).unwrap(), ImpSampleDist::AbsHc, det_orb_sample.sum_abs_h);
+                            sampled_excite = sample2.0;
+                            sampled_excite_prob = sample2.1;
                         }
                     }
                 }
             }
         }
         ImpSampleDist::HcSquared => {
-            // First, sample a (determinant, orbs) pair using Alias sampling
-            det_orb_sample = screened_sampler.det_orb_sampler_hc_squared.sample();
+            // First, sample a (determinant, orbs) pair using Alias sampling with prob (Hc)^2
+            // (det_orb_sample, det_orb_prob) = screened_sampler.det_orb_sampler_hc_squared.sample_with_prob();
+            let sample = screened_sampler.det_orb_sampler_hc_squared.sample_with_prob();
+            det_orb_sample = sample.0;
+            det_orb_prob = sample.1;
+            println!("Det orb prob: {}", det_orb_prob);
 
-            // Sample excitation from this det/orb pair by binary search the stored cdf
+            // Sample excitation from this det/orb pair by binary search the stored cdf with prob H^2
             match det_orb_sample.is_alpha {
                 None => {
                     // Opposite spin double
-                    sampled_excite = sample_cdf(excite_gen.opp_doub_generator.get(&det_orb_sample.init).unwrap(), det_orb_sample.sum_hc_squared);
+                    let sample2 = sample_cdf(excite_gen.opp_doub_generator.get(&det_orb_sample.init).unwrap(), ImpSampleDist::HcSquared, det_orb_sample.sum_h_squared);
+                    sampled_excite = sample2.0;
+                    sampled_excite_prob = sample2.1;
                 },
                 Some(_) => {
                     match det_orb_sample.init {
                         Orbs::Double(_) => {
                             // Same spin double
-                            sampled_excite = sample_cdf(excite_gen.same_doub_generator.get(&det_orb_sample.init).unwrap(), det_orb_sample.sum_hc_squared);
+                            let sample2 = sample_cdf(excite_gen.same_doub_generator.get(&det_orb_sample.init).unwrap(), ImpSampleDist::HcSquared, det_orb_sample.sum_h_squared);
+                            sampled_excite = sample2.0;
+                            sampled_excite_prob = sample2.1;
                         },
                         Orbs::Single(_) => {
                             // Single
-                            sampled_excite = sample_cdf(excite_gen.sing_generator.get(&det_orb_sample.init).unwrap(), det_orb_sample.sum_hc_squared);
+                            let sample2 = sample_cdf(excite_gen.sing_generator.get(&det_orb_sample.init).unwrap(), ImpSampleDist::HcSquared, det_orb_sample.sum_h_squared);
+                            sampled_excite = sample2.0;
+                            sampled_excite_prob = sample2.1;
                         }
                     }
                 }
             }
         }
     }
+
+    println!("Sampled excite prob: {}", sampled_excite_prob);
 
     // Construct the excitation (for output)
     let excite = Excite {
@@ -160,17 +203,22 @@ pub fn matmul_sample_remaining(screened_sampler: &ScreenedSampler, imp_sample_di
     let sampled_det = det_orb_sample.det.config.safe_excite_det(&excite);
 
     // Compute total probability
-    let prob_sampled_det: f64;
-    match imp_sample_dist {
-        ImpSampleDist::AbsHc => {
-            prob_sampled_det = sampled_excite.abs_h * det_orb_sample.det.coeff.abs() / screened_sampler.sum_abs_hc_all_dets_orbs;
-        }
-        ImpSampleDist::HcSquared => {
-            prob_sampled_det = sampled_excite.abs_h * sampled_excite.abs_h * det_orb_sample.det.coeff * det_orb_sample.det.coeff / screened_sampler.sum_hc_squared_all_dets_orbs;
-            println!("Sampled abs_h = {}, sampled coeff = {}", sampled_excite.abs_h, det_orb_sample.det.coeff);
-            // println!("Probability of this det_orb pair: {}, Probability of this target pair: {}, total probability of this excitation: {}", );
-        }
-    }
+    let prob_sampled_det: f64 = det_orb_prob * sampled_excite_prob;
+    // match imp_sample_dist {
+    //     ImpSampleDist::AbsHc => {
+    //         println!("Prob det_orbs: {}, prob excite: {}, product: {}, |H|: {}, |c|: {}, sum|Hc|: {}, overall prob: {}",
+    //         det_orb_prob, sampled_excite_prob, det_orb_prob * sampled_excite_prob, sampled_excite.abs_h, det_orb_sample.det.coeff.abs(),
+    //         screened_sampler.sum_abs_hc_all_dets_orbs, sampled_excite.abs_h * det_orb_sample.det.coeff.abs() / screened_sampler.sum_abs_hc_all_dets_orbs);
+    //         prob_sampled_det = det_orb_prob * sampled_excite_prob;
+    //         // prob_sampled_det = sampled_excite.abs_h * det_orb_sample.det.coeff.abs() / screened_sampler.sum_abs_hc_all_dets_orbs;
+    //     }
+    //     ImpSampleDist::HcSquared => {
+    //         prob_sampled_det = det_orb_prob * sampled_excite_prob;
+    //         // prob_sampled_det = sampled_excite.abs_h * sampled_excite.abs_h * det_orb_sample.det.coeff * det_orb_sample.det.coeff / screened_sampler.sum_hc_squared_all_dets_orbs;
+    //         println!("Sampled abs_h = {}, sampled coeff = {}", sampled_excite.abs_h, det_orb_sample.det.coeff);
+    //         // println!("Probability of this det_orb pair: {}, Probability of this target pair: {}, total probability of this excitation: {}", );
+    //     }
+    // }
 
     match sampled_det {
         None => (None, prob_sampled_det), // Proposed excitation would excite to already-occupied orbs

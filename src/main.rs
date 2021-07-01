@@ -54,11 +54,17 @@ fn main() {
     variational(&HAM, &EXCITE_GEN, &mut wf);
 
     let eps_pt = GLOBAL.eps_pt;
-    let n_batches = 10;
-    let n_samples_per_batch = 10;
+    let n_batches = 4;
+    let n_samples_per_batch = 2000;
 
-    // println!("\nCalling semistoch ENPT2 the old way using eps_pt = {}", eps_pt);
-    // let (e_pt2, std_dev) = old_semistoch_enpt2(&wf, &HAM, &EXCITE_GEN, eps_pt, n_batches, n_samples_per_batch);
+    // println!("\nCalling semistoch ENPT2 the old way with p ~ |c| using eps_pt = {}", eps_pt);
+    // let (e_pt2, std_dev) = old_semistoch_enpt2(&wf, &HAM, &EXCITE_GEN, eps_pt, n_batches, n_samples_per_batch, false);
+    // println!("Variational energy: {:.6}", wf.energy);
+    // println!("PT energy: {:.6} +- {:.6}", e_pt2, std_dev);
+    // println!("Total energy (old): {:.6} +- {:.6}", wf.energy + e_pt2, std_dev);
+    //
+    // println!("\nCalling semistoch ENPT2 the old way with smart probs using eps_pt = {}", eps_pt);
+    // let (e_pt2, std_dev) = old_semistoch_enpt2(&wf, &HAM, &EXCITE_GEN, eps_pt, n_batches, n_samples_per_batch, true);
     // println!("Variational energy: {:.6}", wf.energy);
     // println!("PT energy: {:.6} +- {:.6}", e_pt2, std_dev);
     // println!("Total energy (old): {:.6} +- {:.6}", wf.energy + e_pt2, std_dev);

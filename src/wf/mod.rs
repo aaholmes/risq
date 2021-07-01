@@ -60,10 +60,12 @@ impl Wf {
         }
     }
 
-    pub fn approx_matmul_external_dtm_only(&self, ham: &Ham, excite_gen: &ExciteGenerator, eps: f64) -> Wf {
+    pub fn approx_matmul_external_dtm_only(&self, ham: &Ham, excite_gen: &ExciteGenerator, eps: f64) -> (Wf, Vec<f64>) {
         // Approximate matrix-vector multiplication
         // Uses eps as a cutoff for both singles and doubles, as in SHCI (but faster of course)
         // Only returns dets that are "external" to self, i.e., dets not in self (variational space)
+        // Also returns a vector of sum of remaining (Hc)^2 for each input det, since this is the
+        // optimal probability for sampling variational dets in the old SHCI algorithm (rather than |c|)
 
         // Iterate over all dets; for each, use eps to truncate the excitations; for each excitation,
         // add to output wf
@@ -72,7 +74,7 @@ impl Wf {
         let mut new_det: Option<Config>;
 
         // For making screened sampler
-        let mut det_orbs: Vec<DetOrbSample> = vec![];
+        let mut out_sum_remaining: Vec<f64> = vec![];
 
         // Diagonal component - none because this is 'external' to the current wf (i.e., perturbative space rather than variational space)
         let mut out_wf: Wf = Wf::default();
@@ -80,6 +82,7 @@ impl Wf {
         // Off-diagonal component
         for det in &self.dets {
             local_eps = eps / det.coeff.abs();
+            let mut sum_remaining_this_det: f64 = 0.0;
             // Double excitations
             // Opposite spin
             if excite_gen.max_opp_doub >= local_eps {
@@ -88,6 +91,7 @@ impl Wf {
                         for stored_excite in excite_gen.opp_doub_generator.get(&Orbs::Double((i, j))).unwrap() {
                             if stored_excite.abs_h < local_eps {
                                 // No more deterministic excitations will meet the eps cutoff
+                                sum_remaining_this_det += stored_excite.sum_remaining_h_squared;
                                 break;
                             }
                             excite = Excite {
@@ -120,6 +124,7 @@ impl Wf {
                         for stored_excite in excite_gen.same_doub_generator.get(&Orbs::Double((i, j))).unwrap() {
                             if stored_excite.abs_h < local_eps {
                                 // No more deterministic excitations will meet the eps cutoff
+                                sum_remaining_this_det += stored_excite.sum_remaining_h_squared;
                                 break;
                             }
                             excite = Excite {
@@ -152,6 +157,7 @@ impl Wf {
                         for stored_excite in excite_gen.sing_generator.get(&Orbs::Single(i)).unwrap() {
                             if stored_excite.abs_h < local_eps {
                                 // No more deterministic excitations will meet the eps cutoff
+                                sum_remaining_this_det += stored_excite.sum_remaining_h_squared;
                                 break;
                             }
                             excite = Excite {
@@ -179,9 +185,10 @@ impl Wf {
                     }
                 }
             }
+            out_sum_remaining.push(det.coeff * det.coeff * sum_remaining_this_det);
         } // for det in self.dets
 
-        out_wf
+        (out_wf, out_sum_remaining)
     }
 
     pub fn approx_matmul_external(&self, ham: &Ham, excite_gen: &ExciteGenerator, eps: f64) -> (Wf, ScreenedSampler) {
@@ -221,6 +228,8 @@ impl Wf {
                                     det: det,
                                     init: Orbs::Double((i, j)),
                                     is_alpha: None,
+                                    sum_abs_h: stored_excite.sum_remaining_abs_h,
+                                    sum_h_squared: stored_excite.sum_remaining_h_squared,
                                     sum_abs_hc: det.coeff.abs() * stored_excite.sum_remaining_abs_h,
                                     sum_hc_squared: det.coeff * det.coeff * stored_excite.sum_remaining_h_squared,
                                 });
@@ -261,6 +270,8 @@ impl Wf {
                                     det: det,
                                     init: Orbs::Double((i, j)),
                                     is_alpha: Some(*is_alpha),
+                                    sum_abs_h: stored_excite.sum_remaining_abs_h,
+                                    sum_h_squared: stored_excite.sum_remaining_h_squared,
                                     sum_abs_hc: det.coeff.abs() * stored_excite.sum_remaining_abs_h,
                                     sum_hc_squared: det.coeff * det.coeff * stored_excite.sum_remaining_h_squared,
                                 });
@@ -301,6 +312,8 @@ impl Wf {
                                     det: det,
                                     init: Orbs::Single(i),
                                     is_alpha: Some(*is_alpha),
+                                    sum_abs_h: stored_excite.sum_remaining_abs_h,
+                                    sum_h_squared: stored_excite.sum_remaining_h_squared,
                                     sum_abs_hc: det.coeff.abs() * stored_excite.sum_remaining_abs_h,
                                     sum_hc_squared: det.coeff * det.coeff * stored_excite.sum_remaining_h_squared,
                                 });
@@ -377,6 +390,8 @@ impl Wf {
                                 det: det,
                                 init: Orbs::Double((i, j)),
                                 is_alpha: None,
+                                sum_abs_h: stored_excite.sum_remaining_abs_h,
+                                sum_h_squared: stored_excite.sum_remaining_h_squared,
                                 sum_abs_hc: det.coeff.abs() * stored_excite.sum_remaining_abs_h,
                                 sum_hc_squared: det.coeff * det.coeff * stored_excite.sum_remaining_h_squared,
                             });
@@ -424,6 +439,8 @@ impl Wf {
                                 det: det,
                                 init: Orbs::Double((i, j)),
                                 is_alpha: Some(*is_alpha),
+                                sum_abs_h: stored_excite.sum_remaining_abs_h,
+                                sum_h_squared: stored_excite.sum_remaining_h_squared,
                                 sum_abs_hc: det.coeff.abs() * stored_excite.sum_remaining_abs_h,
                                 sum_hc_squared: det.coeff * det.coeff * stored_excite.sum_remaining_h_squared,
                             });
@@ -469,6 +486,8 @@ impl Wf {
                         det: det,
                         init: Orbs::Single(i),
                         is_alpha: Some(*is_alpha),
+                        sum_abs_h: stored_excite.sum_remaining_abs_h,
+                        sum_h_squared: stored_excite.sum_remaining_h_squared,
                         sum_abs_hc: det.coeff.abs() * stored_excite.sum_remaining_abs_h,
                         sum_hc_squared: det.coeff * det.coeff * stored_excite.sum_remaining_h_squared,
                     });
