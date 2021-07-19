@@ -461,65 +461,94 @@ impl Wf {
 
             // Set up sampling *all* remaining single excitations starting from the first one whose value (not max value!)
             // is smaller than eps
+            // For the sampler, also keep going (after max |H| < eps) to skip over the invalid excitations here so they won't be sampled later!
             if excite_gen.max_sing >= local_eps {
                 for (config, is_alpha) in &[(det.config.up, true), (det.config.dn, false)] {
                     for i in bits(*config) {
                         let mut stored_sampler: bool = false;
                         for stored_excite in excite_gen.sing_sorted_list.get(&Orbs::Single(i)).unwrap() {
-                            if stored_excite.abs_h < local_eps {
-                                // No more deterministic excitations will meet the eps cutoff
-                                // Update the screened sampler if we haven't already, then break
-                                // TODO: Note that we can also keep going to skip over the invalid excitations here so they won't be sampled later!
-                                if !stored_sampler {
-                                    println!("Setup single det_orb sampler when max |H| < eps");
-                                    det_orbs.push(DetOrbSample {
-                                        det: det,
-                                        init: Orbs::Single(i),
-                                        is_alpha: Some(*is_alpha),
-                                        sum_abs_h: stored_excite.sum_remaining_abs_h,
-                                        sum_h_squared: stored_excite.sum_remaining_h_squared,
-                                        sum_abs_hc: det.coeff.abs() * stored_excite.sum_remaining_abs_h,
-                                        sum_hc_squared: det.coeff * det.coeff * stored_excite.sum_remaining_h_squared,
-                                    });
-                                }
-                                break;
-                            }
-                            excite = Excite {
-                                init: Orbs::Single(i),
-                                target: stored_excite.target,
-                                abs_h: stored_excite.abs_h,
-                                is_alpha: Some(*is_alpha)
-                            };
-                            new_det = det.config.safe_excite_det(&excite);
-                            match new_det {
-                                Some(d) => {
-                                    if !self.inds.contains_key(&d) {
-                                        // Valid excite: add to H*psi
-                                        // Compute matrix element and add to H*psi
-                                        let sing: f64 = ham.ham_sing(&det.config, &d);
-                                        if sing.abs() >= local_eps {
-                                            // Single exceeds eps; add to output wf
-                                            // TODO: Do this in a cache efficient way
-                                            out_wf.add_det_with_coeff(det, ham, &excite, d, ham.ham_sing(&det.config, &d) * det.coeff);
-                                        } else {
-                                            // Single does not exceed eps; store remaining excites in sampler if we haven't already
-                                            if !stored_sampler {
-                                                println!("Setup single det_orb sampler when exact |H| < eps");
-                                                det_orbs.push(DetOrbSample {
-                                                    det: det,
-                                                    init: Orbs::Single(i),
-                                                    is_alpha: Some(*is_alpha),
-                                                    sum_abs_h: stored_excite.sum_remaining_abs_h,
-                                                    sum_h_squared: stored_excite.sum_remaining_h_squared,
-                                                    sum_abs_hc: det.coeff.abs() * stored_excite.sum_remaining_abs_h,
-                                                    sum_hc_squared: det.coeff * det.coeff * stored_excite.sum_remaining_h_squared,
-                                                });
-                                                stored_sampler = true;
+                            if stored_excite.abs_h >= local_eps {
+                                // max |H| >= eps: deterministic component
+                                excite = Excite {
+                                    init: Orbs::Single(i),
+                                    target: stored_excite.target,
+                                    abs_h: stored_excite.abs_h,
+                                    is_alpha: Some(*is_alpha)
+                                };
+                                // First check whether this is a valid excite
+                                new_det = det.config.safe_excite_det(&excite);
+                                match new_det {
+                                    Some(d) => {
+                                        // Make sure excite is to a perturbative det (not a variational one)
+                                        if !self.inds.contains_key(&d) {
+                                            // Valid excite: add to H*psi
+                                            // Compute matrix element and compare its magnitude to eps
+                                            let sing: f64 = ham.ham_sing(&det.config, &d);
+                                            if sing.abs() >= local_eps {
+                                                // |H| >= eps; add to output wf
+                                                // TODO: Do this in a cache efficient way
+                                                out_wf.add_det_with_coeff(det, ham, &excite, d, ham.ham_sing(&det.config, &d) * det.coeff);
+                                            } else {
+                                                // |H| < eps; store remaining excites in sampler so this valid excite and subsequent ones can be sampled
+                                                if !stored_sampler {
+                                                    println!("Setup single det_orb sampler when exact |H| < eps, orb = {}", i);
+                                                    det_orbs.push(DetOrbSample {
+                                                        det: det,
+                                                        init: Orbs::Single(i),
+                                                        is_alpha: Some(*is_alpha),
+                                                        sum_abs_h: stored_excite.sum_remaining_abs_h,
+                                                        sum_h_squared: stored_excite.sum_remaining_h_squared,
+                                                        sum_abs_hc: det.coeff.abs() * stored_excite.sum_remaining_abs_h,
+                                                        sum_hc_squared: det.coeff * det.coeff * stored_excite.sum_remaining_h_squared,
+                                                    });
+                                                    stored_sampler = true;
+                                                }
                                             }
                                         }
                                     }
+                                    None => {}
                                 }
-                                None => {}
+                            } else if stored_sampler {
+
+                                // max |H| < eps: no more deterministic pieces allowed, and stochastic sampler
+                                // already stored, so done with this orb
+                                break;
+
+                            } else {
+
+                                // max |H| < eps: no more deterministic pieces allowed
+
+                                // Update the screened sampler if this excite is valid and points to
+                                // a perturbative det (else, skip until we reach an excite that fits those criteria!)
+
+                                excite = Excite {
+                                    init: Orbs::Single(i),
+                                    target: stored_excite.target,
+                                    abs_h: stored_excite.abs_h,
+                                    is_alpha: Some(*is_alpha)
+                                };
+
+                                // First check whether this is a valid excite
+                                new_det = det.config.safe_excite_det(&excite);
+                                match new_det {
+                                    None => {},
+                                    Some(d) => {
+                                        // Make sure excite is to a perturbative det (not a variational one)
+                                        if !self.inds.contains_key(&d) {
+                                            println!("Setup single det_orb sampler when max |H| < eps, orb = {}", i);
+                                            det_orbs.push(DetOrbSample {
+                                                det: det,
+                                                init: Orbs::Single(i),
+                                                is_alpha: Some(*is_alpha),
+                                                sum_abs_h: stored_excite.sum_remaining_abs_h,
+                                                sum_h_squared: stored_excite.sum_remaining_h_squared,
+                                                sum_abs_hc: det.coeff.abs() * stored_excite.sum_remaining_abs_h,
+                                                sum_hc_squared: det.coeff * det.coeff * stored_excite.sum_remaining_h_squared,
+                                            });
+                                            break;
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
