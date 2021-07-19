@@ -25,7 +25,7 @@ mod pt;
 
 use utils::read_input::{Global, read_input};
 use crate::var::variational;
-use crate::semistoch::{semistoch_enpt2, old_semistoch_enpt2, fast_semistoch_enpt2};
+use crate::semistoch::{semistoch_enpt2, old_semistoch_enpt2, fast_semistoch_enpt2, faster_semistoch_enpt2};
 
 fn main() {
 
@@ -55,23 +55,17 @@ fn main() {
 
     let eps_pt = GLOBAL.eps_pt;
     let n_batches = 10;
-    let n_samples_per_batch_old = 10;
-    let n_samples_per_batch_new = 20000;
+    // let n_samples_per_batch_old = 10;
+    let n_samples_per_batch_new = 20;
 
-    println!("\nCalling semistoch ENPT2 the old way with p ~ |c| using eps_pt = {}", eps_pt);
-    let (e_pt2, std_dev) = old_semistoch_enpt2(&wf, &HAM, &EXCITE_GEN, eps_pt, n_batches, n_samples_per_batch_old, false);
-    println!("Variational energy: {:.6}", wf.energy);
-    println!("PT energy: {:.6} +- {:.6}", e_pt2, std_dev);
-    println!("Total energy (old): {:.6} +- {:.6}", wf.energy + e_pt2, std_dev);
-    //
-    // println!("\nCalling semistoch ENPT2 the old way with smart probs using eps_pt = {}", eps_pt);
-    // let (e_pt2, std_dev) = old_semistoch_enpt2(&wf, &HAM, &EXCITE_GEN, eps_pt, n_batches, n_samples_per_batch, true);
+    // println!("\nCalling semistoch ENPT2 the old way with p ~ |c| using eps_pt = {}", eps_pt);
+    // let (e_pt2, std_dev) = old_semistoch_enpt2(&wf, &HAM, &EXCITE_GEN, eps_pt, n_batches, n_samples_per_batch_old, false);
     // println!("Variational energy: {:.6}", wf.energy);
     // println!("PT energy: {:.6} +- {:.6}", e_pt2, std_dev);
     // println!("Total energy (old): {:.6} +- {:.6}", wf.energy + e_pt2, std_dev);
 
     println!("Calling semistoch ENPT2 the new way!");
-    let (e_pt2, std_dev) = fast_semistoch_enpt2(&wf, &HAM, &EXCITE_GEN, eps_pt, n_batches, n_samples_per_batch_new);
+    let (e_pt2, std_dev) = faster_semistoch_enpt2(&wf, &HAM, &EXCITE_GEN, eps_pt, n_batches, n_samples_per_batch_new);
     println!("Variational energy: {:.6}", wf.energy);
     println!("PT energy: {:.6} +- {:.6}", e_pt2, std_dev);
     println!("Total energy (new): {:.6} +- {:.6}", wf.energy + e_pt2, std_dev);
