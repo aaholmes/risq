@@ -180,7 +180,15 @@ However, it is not easy to efficiently compute the probability in that case. The
 %Next, we store the quantities $\sum_{pqs\in \textrm{occ}} A_{pqs}$, $\sum_{pqr\in\textrm{occ}} B_{pqr}$, and $\sum_{pqrs\in\textrm{occ}} f(|H_{pqrs}|)$ for each sampling determinant. The crucial point in making this efficient is the fact that once these quantities are computed for one determinant, computing the corresponding quantities for a new determinant that is a single or double excitation away can be performed in $\mathcal{O}(N^3)$ time. (An analogous method is used for the diagonal elements of the Hamiltonian: only one diagonal element ever needs to be computed in $\mathcal{O}(N^2)$ time, and then each new diagonal element can be computed in $\mathcal{O}(N)$ time.) Thus, the cost to maintain the relative probabilities of invalid excitations is only $\mathcal{O}(N^3)$ time and $\mathcal{O}(1)$ storage. 
 
 \section{Application to multireference perturbation theory}
-We now describe
+We now describe the application of our algorithm to multireference Epstein-Nesbet perturbation theory. 
+
+\begin{enumerate}
+	\item Compute the deterministic component of the $\sigma$-vector, $\sigma^{(\epsilon)} = \sum^{(\epsilon)}_i H_{ai} c_i$, as well as its energy,
+	\begin{eqnarray}
+		\Delta E_{\textrm{determ.}} = \sum_a \sigma^{(\epsilon)}_a \frac{1}{E_0 - E_a} \sigma^{(\epsilon)}_a
+	\end{eqnarray}
+	\item Importance-sample the remaining components of the $\sigma$-vector
+\end{enumerate}
 
 \section{Conclusion and future work}
 We have presented an efficient, unified approach to treating second-quantized operators semistochastically using importance sampling for the stochastic component. It uses an initial setup stage that takes $\mathcal{O}(M^4\log M)$ time and creates a data structure of size $\mathcal{O}(M^4)$ (the same scaling as the setup stage in the original HCI algorithm). After the setup, the Hamiltonian (or other second-quantized operator) can be applied semistochastically, by generating all excitations exceeding an arbitrary threshold $\epsilon$, and importance sampling the remaining excitations that don't meet the threshold. The time it takes to do so scales as $\mathcal{O}(N^2 + N_{|H|>\epsilon})$ for the deterministic component, and $\mathcal{O}(\log M)$ time per sample for the stochastic component.

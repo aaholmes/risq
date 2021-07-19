@@ -28,7 +28,7 @@ pub fn gen_dense_ham_connections(wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerato
         // Opposite spin
         for i in bits(det.config.up) {
             for j in bits(det.config.dn) {
-                for stored_excite in excite_gen.opp_doub_generator.get(&Orbs::Double((i, j))).unwrap() {
+                for stored_excite in excite_gen.opp_doub_sorted_list.get(&Orbs::Double((i, j))).unwrap() {
                     excite = Excite {
                         init: Orbs::Double((i, j)),
                         target: stored_excite.target,
@@ -59,7 +59,7 @@ pub fn gen_dense_ham_connections(wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerato
         // Same spin
         for (config, is_alpha) in &[(det.config.up, true), (det.config.dn, false)] {
             for (i, j) in bit_pairs(*config) {
-                for stored_excite in excite_gen.same_doub_generator.get(&Orbs::Double((i, j))).unwrap() {
+                for stored_excite in excite_gen.same_doub_sorted_list.get(&Orbs::Double((i, j))).unwrap() {
                     excite = Excite {
                         init: Orbs::Double((i, j)),
                         target: stored_excite.target,
@@ -90,7 +90,7 @@ pub fn gen_dense_ham_connections(wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerato
         // Single excitations
         for (config, is_alpha) in &[(det.config.up, true), (det.config.dn, false)] {
             for i in bits(*config) {
-                for stored_excite in excite_gen.sing_generator.get(&Orbs::Single(i)).unwrap() {
+                for stored_excite in excite_gen.sing_sorted_list.get(&Orbs::Single(i)).unwrap() {
                     excite = Excite {
                         init: Orbs::Single(i),
                         target: stored_excite.target,

@@ -321,7 +321,7 @@ impl Det {
             if excite_gen.max_opp_doub >= local_eps {
                 for i in bits(self.config.up) {
                     for j in bits(self.config.dn) {
-                        for stored_excite in excite_gen.opp_doub_generator.get(&Orbs::Double((i, j))).unwrap() {
+                        for stored_excite in excite_gen.opp_doub_sorted_list.get(&Orbs::Double((i, j))).unwrap() {
                             if stored_excite.abs_h < local_eps {
                                 // No more deterministic excitations will meet the eps cutoff
                                 break;
@@ -353,7 +353,7 @@ impl Det {
             if excite_gen.max_same_doub >= local_eps {
                 for (config, is_alpha) in &[(self.config.up, true), (self.config.dn, false)] {
                     for (i, j) in bit_pairs(*config) {
-                        for stored_excite in excite_gen.same_doub_generator.get(&Orbs::Double((i, j))).unwrap() {
+                        for stored_excite in excite_gen.same_doub_sorted_list.get(&Orbs::Double((i, j))).unwrap() {
                             if stored_excite.abs_h < local_eps {
                                 // No more deterministic excitations will meet the eps cutoff
                                 break;
@@ -385,7 +385,7 @@ impl Det {
             if excite_gen.max_sing >= local_eps {
                 for (config, is_alpha) in &[(self.config.up, true), (self.config.dn, false)] {
                     for i in bits(*config) {
-                        for stored_excite in excite_gen.sing_generator.get(&Orbs::Single(i)).unwrap() {
+                        for stored_excite in excite_gen.sing_sorted_list.get(&Orbs::Single(i)).unwrap() {
                             if stored_excite.abs_h < local_eps {
                                 // No more deterministic excitations will meet the eps cutoff
                                 break;

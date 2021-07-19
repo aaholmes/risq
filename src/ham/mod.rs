@@ -7,6 +7,7 @@ use super::utils::ints::{combine_2, combine_4, permute, permute_2};
 use crate::wf::det::Config;
 use read_ints::Ints;
 use crate::utils::bits::bit_pairs;
+use crate::excite::{Orbs, Excite};
 
 // Hamiltonian, containing integrals and matrix element computing functions
 #[derive(Default)]
@@ -176,6 +177,15 @@ impl Ham {
             ((permute(det1.up, det2.up) * permute(det1.dn, det2.dn)) as f64)
                 * self.direct(ind1[0], ind2[0], ind1[1], ind2[1])
 
+        }
+    }
+
+    pub fn ham_off_diag(&self, det1: &Config, det2: &Config, excite: &Excite) -> f64 {
+        // Compute an off-diagonal matrix element (either single or double),
+        // using the information stored in excite
+        match excite.init {
+            Orbs::Double(_) => self.ham_doub(det1, det2),
+            Orbs::Single(_) => self.ham_sing(det1, det2)
         }
     }
 
