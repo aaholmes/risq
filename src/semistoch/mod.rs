@@ -9,9 +9,10 @@ use crate::pt::PtSamples;
 use vose_alias::VoseAlias;
 use crate::wf::det::Det;
 use serde::de::Expected;
+use crate::utils::read_input::Global;
 // use rand::seq::index::sample;
 
-pub fn faster_semistoch_enpt2(input_wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerator, eps: f64, n_batches: i32, n_samples_per_batch: i32) -> (f64, f64) {
+pub fn faster_semistoch_enpt2(input_wf: &Wf, global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, eps: f64, n_batches: i32, n_samples_per_batch: i32) -> (f64, f64) {
     // Semistochastic Epstein-Nesbet PT2
     // In earlier SHCI paper, used the following strategy:
     // 1. Compute ENPT2 deterministically using large eps
@@ -36,7 +37,7 @@ pub fn faster_semistoch_enpt2(input_wf: &Wf, ham: &Ham, excite_gen: &ExciteGener
     for det in &dtm_result.dets {
         dtm_enpt2 += (det.coeff * det.coeff) / (input_wf.energy - det.diag);
     }
-    println!("Deterministic approximation to Delta E using eps = {}: {:.4}", eps, dtm_enpt2);
+    println!("Deterministic approximation to Delta E using eps = {}: {:.6}", eps, dtm_enpt2);
 
     // Stochastic component
     let mut stoch_enpt2_cross_term: Stats<f64> = Stats::new(); // samples overlap with deterministic part
@@ -97,7 +98,11 @@ pub fn faster_semistoch_enpt2(input_wf: &Wf, ham: &Ham, excite_gen: &ExciteGener
     // 2. Iterate over all pairs of occupied orbitals in sampled_det. For each, importance sample an excitation. This gives us O(N^2) samples
     // 3. Check each one to see whether it excites to a variational det; if so, update energy estimator
 
-    for _i_sample in 0..n_batches * n_samples_per_batch {
+    let n_e: i32 = global.nup + global.ndn;
+    let n_cross_term_samples = (n_batches * n_samples_per_batch) / ( (n_e * (n_e + 1)) / 2 );
+    println!("Taking {} samples for cross-term", n_cross_term_samples);
+
+    for _i_sample in 0..n_cross_term_samples {
         // Sample a det in dtm_result
         let (sampled_dtm_det, sampled_dtm_det_prob) = dtm_result_sampler.sample_with_prob();
 
@@ -122,7 +127,9 @@ pub fn faster_semistoch_enpt2(input_wf: &Wf, ham: &Ham, excite_gen: &ExciteGener
                             // Screen for terms <eps
                             let sampled_e: f64 =
                                 if excite.abs_h * input_wf.dets[*ind].coeff.abs() < eps {
+                                    println!("|H|, |c| = {}, {}", excite.abs_h, input_wf.dets[*ind].coeff.abs());
                                     let h: f64 = ham.ham_off_diag(&sampled_dtm_det.config, &exc_det, &excite);
+                                    println!("Found nonzero contribution to cross term: {}", (sampled_dtm_det.coeff / (input_wf.energy - sampled_dtm_det.diag)) * h * input_wf.dets[*ind].coeff / (sampled_dtm_det_prob * excite_prob));
                                     (sampled_dtm_det.coeff / (input_wf.energy - sampled_dtm_det.diag)) * h * input_wf.dets[*ind].coeff / (sampled_dtm_det_prob * excite_prob)
                                 } else {
                                     0.0
@@ -172,7 +179,7 @@ pub fn fast_semistoch_enpt2(input_wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerat
     for det in &dtm_result.dets {
         dtm_enpt2 += (det.coeff * det.coeff) / (input_wf.energy - det.diag);
     }
-    println!("Deterministic approximation to Delta E using eps = {} (no singles): {:.4}", eps, dtm_enpt2);
+    println!("Deterministic approximation to Delta E using eps = {} (no singles): {:.6}", eps, dtm_enpt2);
 
     // Stochastic component
     let mut stoch_enpt2_cross_term: Stats<f64> = Stats::new(); // samples overlap with deterministic part
@@ -309,7 +316,7 @@ pub fn semistoch_enpt2(input_wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerator, e
     for det in &dtm_result.dets {
         dtm_enpt2 += (det.coeff * det.coeff) / (input_wf.energy - det.diag);
     }
-    println!("Deterministic approximation to Delta E using eps = {}: {:.4}", eps, dtm_enpt2);
+    println!("Deterministic approximation to Delta E using eps = {}: {:.6}", eps, dtm_enpt2);
 
     // Stochastic component
     let mut stoch_enpt2: Stats<f64> = Stats::new(); // samples overlap with deterministic part
@@ -398,7 +405,7 @@ pub fn old_semistoch_enpt2(input_wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerato
     for det in dtm_result.dets {
         dtm_enpt2 += det.coeff * det.coeff / (input_wf.energy - det.diag);
     }
-    println!("Deterministic approximation to Delta E using eps = {}: {:.4}", eps, dtm_enpt2);
+    println!("Deterministic approximation to Delta E using eps = {}: {:.6}", eps, dtm_enpt2);
 
     // Sample dets from wf with probability |c|
     // Update estimate of difference between exact and approximate delta E using deterministic application of H
