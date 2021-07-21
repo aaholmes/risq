@@ -14,6 +14,7 @@ use eigenvalues::{Davidson, DavidsonCorrection, SpectrumTarget};
 // use eigenvalues::algorithms::davidson::DavidsonError;
 use crate::var::ham_gen::gen_dense_ham_connections;
 // use crate::var::ham_gen::{gen_dense_ham_connections, gen_sparse_ham_partial};
+use std::time::Instant;
 // use std::intrinsics::offset;
 // //use crate::wf::det::{Config, Det};
 // //use crate::excite::{Excite, Orbs};
@@ -27,7 +28,9 @@ pub fn dense_optimize(wf: &mut Wf, coeff_eps: f64, energy_eps: f64, ham: &Ham, e
     // Optimize using davidson
     // Just to get something working - need to replace with efficient algorithm soon!
 
+    let start: Instant = Instant::now();
     let ham_matrix = gen_dense_ham_connections(wf, ham, excite_gen);
+    println!("Time for Ham gen with dim = {}: {:?}", wf.n, start.elapsed());
 
     if wf.n <= 8 {
         println!("H to diagonalize: {}", ham_matrix);
