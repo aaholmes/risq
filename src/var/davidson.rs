@@ -15,6 +15,7 @@ use eigenvalues::{Davidson, DavidsonCorrection, SpectrumTarget};
 use crate::var::ham_gen::gen_dense_ham_connections;
 // use crate::var::ham_gen::{gen_dense_ham_connections, gen_sparse_ham_partial};
 use std::time::Instant;
+use crate::var::sparse::SparseMat;
 // use std::intrinsics::offset;
 // //use crate::wf::det::{Config, Det};
 // //use crate::excite::{Excite, Orbs};
@@ -51,26 +52,30 @@ pub fn dense_optimize(wf: &mut Wf, coeff_eps: f64, energy_eps: f64, ham: &Ham, e
     }
 }
 
-// pub fn sparse_optimize(wf: &mut Wf, coeff_eps: f64, energy_eps: f64, ham: &Ham, excite_gen: &ExciteGenerator) {
-//     // Generate Ham as a sparse matrix
-//     // Optimize using davidson
-//
-//     let ham_matrix = gen_sparse_ham_partial(wf, ham, excite_gen);
-//
-//     // Davidson
-//     let dav = Davidson::new (ham_matrix, 1, DavidsonCorrection::DPR, SpectrumTarget::Lowest, coeff_eps, energy_eps );
-//     match dav {
-//         Ok(eig) => {
-//             wf.energy = eig.eigenvalues[0];
-//             for i in 0..wf.n {
-//                 wf.dets[i].coeff = eig.eigenvectors[(i, 0)];
-//             }
-//         }
-//         Err(err) => {
-//             println!("Error! {}", err);
-//         }
-//     }
-// }
+pub fn sparse_optimize(wf: &mut Wf, coeff_eps: f64, energy_eps: f64, ham: &Ham, excite_gen: &ExciteGenerator) {
+    // Generate Ham as a sparse matrix
+    // Optimize using davidson
+
+    // Generate dense Ham
+    let dense_ham = gen_dense_ham_connections(wf, ham, excite_gen);;
+
+    // Convert to sparse ham
+    let sparse_ham = SparseMat::from_dense(dense_ham);
+
+    // Davidson
+    let dav = Davidson::new (sparse_ham, 1, DavidsonCorrection::DPR, SpectrumTarget::Lowest, coeff_eps, energy_eps );
+    match dav {
+        Ok(eig) => {
+            wf.energy = eig.eigenvalues[0];
+            for i in 0..wf.n {
+                wf.dets[i].coeff = eig.eigenvectors[(i, 0)];
+            }
+        }
+        Err(err) => {
+            println!("Error! {}", err);
+        }
+    }
+}
 
 
 // pub fn optimize(&mut wf: Wf, hb_eps: f64, dav_eps: f64, ham: &Ham, excite_gen: &ExciteGenerator) {

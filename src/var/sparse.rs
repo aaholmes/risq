@@ -15,16 +15,48 @@ pub struct SparseMat{
     off_diag: CsMat<f64>,
 }
 
-// impl SparseMat {
-//     pub fn new(n: usize) -> Self {
-//         // Initialize to an empty SparseMat of size n
-//         Self{
-//             n,
-//             diag: DVector::<f64>::new(n),
-//             off_diag: CsMat::default()
-//         }
-//     }
-// }
+impl SparseMat {
+    pub fn from_dense(mtx: DMatrix<f64>) -> Self {
+        // Convert a dense matrix to a sparse matrix
+        // (for testing only)
+
+        let n = mtx.ncols();
+        println!("n = {}", n);
+
+        // Diag part
+        let mut diag = Vec::with_capacity(n);
+        for i in 0..n {
+            diag.push(mtx[(i, i)]);
+        }
+
+        // Off-diag part
+        let mut indptr = Vec::with_capacity(n + 1);
+        let mut indices = Vec::with_capacity(n);
+        let mut data = Vec::with_capacity(n);
+        let mut nnz = 0;
+
+        for i in 0..n {
+            indptr.push(nnz);
+            for j in 0..n {
+                if i != j {
+                    if mtx[(i, j)] != 0.0 {
+                        indices.push(j);
+                        data.push(mtx[(i, j)]);
+                        nnz += 1;
+                    }
+                }
+            }
+        }
+        indptr.push(nnz);
+
+        println!("Constructing {} x {} matrix with {} nonzero elements", n, n, nnz);
+        SparseMat{
+            n,
+            diag: DVector::from(diag),
+            off_diag: sprs::CsMat::new((n, n), indptr, indices, data)
+        }
+    }
+}
 
 impl MatrixOperations for SparseMat {
     fn matrix_vector_prod(&self, vs: DVectorSlice<'_, f64>) -> DVector<f64> {
