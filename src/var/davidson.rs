@@ -57,13 +57,17 @@ pub fn sparse_optimize(wf: &mut Wf, coeff_eps: f64, energy_eps: f64, ham: &Ham, 
     // Optimize using davidson
 
     // Generate dense Ham
-    let dense_ham = gen_dense_ham_connections(wf, ham, excite_gen);;
+    let dense_ham = gen_dense_ham_connections(wf, ham, excite_gen);
 
     // Convert to sparse ham
     let sparse_ham = SparseMat::from_dense(dense_ham);
 
     // Davidson
-    let dav = Davidson::new (sparse_ham, 1, DavidsonCorrection::DPR, SpectrumTarget::Lowest, coeff_eps, energy_eps );
+    let dav = Davidson::new (
+        sparse_ham, 1, DavidsonCorrection::DPR,
+        SpectrumTarget::Lowest, coeff_eps,
+        energy_eps
+    );
     match dav {
         Ok(eig) => {
             wf.energy = eig.eigenvalues[0];

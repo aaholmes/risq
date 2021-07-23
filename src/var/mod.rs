@@ -3,6 +3,7 @@
 mod davidson;
 mod ham_gen;
 mod sparse;
+mod utils;
 
 use super::ham::Ham;
 use super::wf::Wf;
