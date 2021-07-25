@@ -11,7 +11,7 @@ use nalgebra::DMatrix;
 #[derive(Clone)]
 pub struct SparseMat{
     n: usize,
-    diag: DVector<f64>,
+    pub(crate) diag: DVector<f64>,
     off_diag: CsMat<f64>,
 }
 

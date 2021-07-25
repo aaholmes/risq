@@ -14,6 +14,7 @@ use std::cmp::Ordering::Equal;
 // use std::ptr::Unique;
 use crate::var::utils::{remove_1e, remove_2e};
 use crate::utils::read_input::Global;
+use sprs::CsMat;
 // use std::iter::Repeat;
 
 pub fn gen_dense_ham_connections(wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerator) -> DMatrix<f64> {
@@ -129,7 +130,7 @@ pub fn gen_dense_ham_connections(wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerato
 }
 
 
-pub fn gen_sparse_ham_fast(global: &Global, wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerator) -> SparseMat {
+pub fn gen_sparse_ham_fast(global: &Global, wf: &Wf, ham: &Ham) -> SparseMat {
     // Generate Ham as a sparse matrix using my 2019 notes when I was working pro bono
     // For now, assumes that nup == ndn
 
@@ -137,13 +138,13 @@ pub fn gen_sparse_ham_fast(global: &Global, wf: &Wf, ham: &Ham, excite_gen: &Exc
 
     // 1. Find all unique up dets, and create a map from each to the indices of its corresponding determinants
     let mut unique_up_dict: HashMap<u128, Vec<(usize, u128)>> = HashMap::default();
-    for (config, ind) in wf.inds {
+    for (config, ind) in &wf.inds {
         match unique_up_dict.get(&config.up) {
             None => {
-                unique_up_dict.insert(config.up, vec![(ind, config.dn)]);
+                unique_up_dict.insert(config.up, vec![(*ind, config.dn)]);
             },
             Some(_) => {
-                unique_up_dict[&config.up].push((ind, config.dn));
+                unique_up_dict.get_mut(&config.up).unwrap().push((*ind, config.dn));
             }
         }
     }
@@ -155,13 +156,13 @@ pub fn gen_sparse_ham_fast(global: &Global, wf: &Wf, ham: &Ham, excite_gen: &Exc
         n_dets_remaining: usize
     }
     let mut unique_ups_sorted: Vec<Unique> = Vec::with_capacity(unique_up_dict.len());
-    for (up, dets) in unique_up_dict {
-        unique_ups_sorted.push(Unique{up, n_dets: dets.len(), n_dets_remaining: 0});
+    for (up, dets) in &unique_up_dict {
+        unique_ups_sorted.push(Unique{up: *up, n_dets: dets.len(), n_dets_remaining: 0});
     }
     unique_ups_sorted.sort_by(|a, b| b.n_dets.partial_cmp(&a.n_dets).unwrap_or(Equal));
 
     // 3. Compute the cumulative number of determinants left for each unique det in sorted order.
-    unique_ups_sorted.iter_mut().rev().fold(0, |mut acc, x| {
+    unique_ups_sorted.iter_mut().rev().fold(0, |acc, x| {
         x.n_dets_remaining = acc;
         acc + x.n_dets
     });
@@ -172,18 +173,18 @@ pub fn gen_sparse_ham_fast(global: &Global, wf: &Wf, ham: &Ham, excite_gen: &Exc
         for up_r1 in remove_1e(unique.up) {
             match up_single_excite_constructor.get(&up_r1) {
                 None => { up_single_excite_constructor.insert(up_r1, vec![ind]); },
-                Some(_) => { up_single_excite_constructor[&up_r1].push(ind); }
+                Some(_) => { up_single_excite_constructor.get_mut(&up_r1).unwrap().push(ind); }
             }
         }
     }
     let mut up_singles: HashMap<u128, Vec<u128>> = HashMap::default();
     for (ind, unique) in unique_ups_sorted.iter().enumerate() {
         for up_r1 in remove_1e(unique.up) {
-            for connected_ind in up_single_excite_constructor[&up_r1] {
-                if connected_ind > ind {
+            for connected_ind in &up_single_excite_constructor[&up_r1] {
+                if *connected_ind > ind {
                     match up_singles.get(&unique.up) {
-                        None => { up_singles.insert(unique.up, vec![unique_ups_sorted[connected_ind].up]); },
-                        Some(_) => { up_singles[&unique.up].push(unique_ups_sorted[connected_ind].up); }
+                        None => { up_singles.insert(unique.up, vec![unique_ups_sorted[*connected_ind].up]); },
+                        Some(_) => { up_singles.get_mut(&unique.up).unwrap().push(unique_ups_sorted[*connected_ind].up); }
                     }
                 }
             }
@@ -206,17 +207,17 @@ pub fn gen_sparse_ham_fast(global: &Global, wf: &Wf, ham: &Ham, excite_gen: &Exc
         for dn_r1 in remove_1e(*dn) {
             match dn_single_excite_constructor.get(&dn_r1) {
                 None => { dn_single_excite_constructor.insert(dn_r1, vec![ind]); },
-                Some(_) => { dn_single_excite_constructor[&dn_r1].push(ind); }
+                Some(_) => { dn_single_excite_constructor.get_mut(&dn_r1).unwrap().push(ind); }
             }
         }
     }
     let mut dn_singles: HashMap<u128, Vec<u128>> = HashMap::default();
-    for dn in unique_dns_vec {
-        for dn_r1 in remove_1e(dn) {
-            for connected_ind in dn_single_excite_constructor[&dn_r1] {
+    for dn in &unique_dns_vec {
+        for dn_r1 in remove_1e(*dn) {
+            for connected_ind in &dn_single_excite_constructor[&dn_r1] {
                 match dn_singles.get(&dn) {
-                    None => { dn_singles.insert(dn, vec![unique_dns_vec[connected_ind]]); },
-                    Some(_) => { dn_singles[&dn].push(unique_dns_vec[connected_ind]); }
+                    None => { dn_singles.insert(*dn, vec![unique_dns_vec[*connected_ind]]); },
+                    Some(_) => { dn_singles.get_mut(dn).unwrap().push(unique_dns_vec[*connected_ind]); }
                 }
             }
         }
@@ -230,7 +231,7 @@ pub fn gen_sparse_ham_fast(global: &Global, wf: &Wf, ham: &Ham, excite_gen: &Exc
 
     // Opposite-spin excitations
 
-    for unique in unique_ups_sorted {
+    for unique in &unique_ups_sorted {
         let first_algo_complexity = unique.n_dets * (global.ndn * global.ndn) as usize + unique.n_dets_remaining; // Term in parentheses is an estimate
         let second_algo_complexity = global.ndn as usize * (unique.n_dets + unique.n_dets_remaining);
         let third_algo_complexity = unique.n_dets * unique.n_dets_remaining;
@@ -244,46 +245,52 @@ pub fn gen_sparse_ham_fast(global: &Global, wf: &Wf, ham: &Ham, excite_gen: &Exc
         if first_algo_fastest {
             // Use a single for-loop version of the double for-loop algorithm from "Fast SHCI"
             let mut dn_candidates: HashMap<u128, Vec<usize>> = HashMap::default();
-            for dn in unique_up_dict[&unique.up] {
-                for dn2 in dn_singles[&dn.1] {
+            for dn in &unique_up_dict[&unique.up] {
+                for dn2 in &dn_singles[&dn.1] {
                     match dn_candidates.get(&dn2) {
-                        None => { dn_candidates.insert(dn2, vec![dn.0]); },
-                        Some(_) => { dn_candidates[&dn2].push(dn.0); }
+                        None => { dn_candidates.insert(*dn2, vec![dn.0]); },
+                        Some(_) => { dn_candidates.get_mut(dn2).unwrap().push(dn.0); }
                     }
                 }
             }
-            for up in up_singles[&unique.up] {
-                for dn in unique_up_dict[&up] {
+            for up in &up_singles[&unique.up] {
+                for dn in &unique_up_dict[&up] {
                     match dn_candidates.get(&dn.1) {
-                        // TODO: We need to do this one in terms of up config rather than ind
-                        None => { add_el(wf, ham, &mut off_diag_elems, *ind1.0, *ind2.0); }, // only adds if elem != 0
-                        Some(_) => {}
+                        None => {},
+                        Some(dn_connections) => {
+                            // We need to do this one in terms of up config rather than ind
+                            let ind1 = wf.inds[&Config { up: *up, dn: dn.1 }];
+                            for dn_connection_ind in dn_connections {
+                                let ind2 = wf.inds[&Config { up: *up, dn: unique_dns_vec[*dn_connection_ind] }];
+                                add_el(wf, ham, &mut off_diag_elems, ind1, ind2); // only adds if elem != 0
+                            }
+                        }
                     }
                 }
             }
         } else if second_algo_fastest {
             // Loop over ways to remove an electron to get all connected dets
             let mut dn_single_excite_constructor: HashMap<u128, Vec<usize>> = HashMap::default();
-            for dn in unique_up_dict[&unique.up] {
+            for dn in &unique_up_dict[&unique.up] {
                 for dn_r1 in remove_1e(dn.1) {
                     match dn_single_excite_constructor.get(&dn_r1) {
                         None => { dn_single_excite_constructor.insert(dn_r1, vec![dn.0]); },
-                        Some(_) => { dn_single_excite_constructor[&dn_r1].push(dn.0); }
+                        Some(_) => { dn_single_excite_constructor.get_mut(&dn_r1).unwrap().push(dn.0); }
                     }
                 }
             }
-            for up in up_singles[&unique.up] {
-                for dn in unique_up_dict[&up] {
+            for up in &up_singles[&unique.up] {
+                for dn in &unique_up_dict[&up] {
                     for dn_r1 in remove_1e(dn.1) {
-                        for connected_ind in dn_single_excite_constructor[&dn_r1] {
-                            add_el(wf, ham, &mut off_diag_elems, dn.0, connected_ind)
+                        for connected_ind in &dn_single_excite_constructor[&dn_r1] {
+                            add_el(wf, ham, &mut off_diag_elems, dn.0, *connected_ind)
                         }
                     }
                 }
             }
         } else {
             // Loop over all pairs of dn dets
-            for up in up_singles[&unique.up] {
+            for up in &up_singles[&unique.up] {
                 for (i_ind, ind1) in unique_up_dict[&up].iter().enumerate() {
                     for ind2 in unique_up_dict[&up][i_ind + 1 ..].iter() {
                         // Found dn-spin excitations:
@@ -300,7 +307,7 @@ pub fn gen_sparse_ham_fast(global: &Global, wf: &Wf, ham: &Ham, excite_gen: &Exc
     // Parameter for choosing which of the two algorithms to use
     let max_n_dets_double_loop = (global.ndn * (global.ndn - 1)) as usize;
 
-    for unique in unique_ups_sorted {
+    for unique in &unique_ups_sorted {
         if unique.n_dets <= max_n_dets_double_loop {
             // Use the double for-loop algorithm from "Fast SHCI"
             for (i_ind, ind1) in unique_up_dict[&unique.up].iter().enumerate() {
@@ -312,20 +319,20 @@ pub fn gen_sparse_ham_fast(global: &Global, wf: &Wf, ham: &Ham, excite_gen: &Exc
         } else {
             // Loop over all pairs of electrons to get all connections (asymptotically optimal in Full CI limit)
             let mut double_excite_constructor: HashMap<u128, Vec<usize>> = HashMap::default();
-            for dn in unique_up_dict[&unique.up] {
+            for dn in &unique_up_dict[&unique.up] {
                 for dn_r2 in remove_2e(dn.1) {
                     match double_excite_constructor.get(&dn_r2) {
                         None => { double_excite_constructor.insert(dn_r2, vec![dn.0]); },
-                        Some(_) => { double_excite_constructor[&dn_r2].push(dn.0); }
+                        Some(_) => { double_excite_constructor.get_mut(&dn_r2).unwrap().push(dn.0); }
                     }
                 }
             }
-            for dn in unique_up_dict[&unique.up] {
+            for dn in &unique_up_dict[&unique.up] {
                 for dn_r2 in remove_2e(dn.1) {
-                    for dn2 in double_excite_constructor[&dn_r2] {
-                        if dn.0 != dn2 {
+                    for dn2 in &double_excite_constructor[&dn_r2] {
+                        if dn.0 != *dn2 {
                             // Found dn-spin excitations (and their spin-flipped up-spin excitations):
-                            add_el_and_spin_flipped(wf, ham, &mut off_diag_elems, dn.0, dn2); // only adds if elem != 0
+                            add_el_and_spin_flipped(wf, ham, &mut off_diag_elems, dn.0, *dn2); // only adds if elem != 0
                         }
                     }
                 }
@@ -333,49 +340,84 @@ pub fn gen_sparse_ham_fast(global: &Global, wf: &Wf, ham: &Ham, excite_gen: &Exc
         }
     }
 
-    todo!()
+
+    // Finally, put collected off-diag elems into a sparse matrix
+    to_sparse(wf, &mut off_diag_elems)
 }
 
 
-fn add_el(wf: &Wf, ham: &Ham, off_diag_elems: &mut HashMap<(usize, usize), f64>, i: usize, j: usize) {
-    // Add an off-diagonal element H_{ij} to off_diag_elems
-    // i and j can be of any order
+// Off-diag elems data structure
+struct OffDiagElems {
+    nonzero_inds: HashSet<(usize, usize)>, // index of nonzero elements in the upper triangular half of the matrix
+    nnz: Vec<usize>, // number of nonzero values for each row
+    indices: Vec<Vec<usize>>, // vector of indices for each row
+    values: Vec<Vec<f64>>, // vector of values for each row
+}
 
-    if i == j { return; }
-    let key = {
-        if i < j {
-            (i, j)
-        } else {
-            (j, i)
-        }
-    };
-    match off_diag_elems.get(&key) {
-        None => {
-            let elem = ham.ham_off_diag_no_excite(wf.dets[i].config, wf.dets[j].config);
-            if elem != 0.0 {
-                off_diag_elems.insert(key, elem);
+impl OffDiagElems {
+    fn add_el(&mut self, wf: &Wf, ham: &Ham, i: usize, j: usize) {
+        // Add an off-diagonal element H_{ij} to off_diag_elems
+        // i and j can be of any order
+
+        if i == j { return; }
+        let key = {
+            if i < j {
+                (i, j)
+            } else {
+                (j, i)
             }
-        },
-        Some(_) => {}
+        };
+        match self.nonzero_inds.get(&key) {
+            None => {
+                let elem = ham.ham_off_diag_no_excite(&wf.dets[i].config, &wf.dets[j].config);
+                if elem != 0.0 {
+                    self.nonzero_inds.insert(key);
+
+                    self.nnz[&i] += 1;
+                    self.indices[&i].push(j);
+                    self.values[&i].push(elem);
+
+                    self.nnz[&j] += 1;
+                    self.indices[&j].push(i);
+                    self.values[&j].push(elem);
+                }
+            },
+            Some(_) => {}
+        }
     }
-}
 
-fn add_el_and_spin_flipped(wf: &Wf, ham: &Ham, off_diag_elems: &mut HashMap<(usize, usize), f64>, i: usize, j: usize) {
-    // Add an off-diagonal element H_{ij}, as well as its spin-flipped counterpart, to off_diag_elems
-    // i and j can be of any order
-    // TODO: Can speed up by skipping the second part if the first part is skipped
+    fn add_el_and_spin_flipped(&mut self, wf: &Wf, ham: &Ham, i: usize, j: usize) {
+        // Add an off-diagonal element H_{ij}, as well as its spin-flipped counterpart, to off_diag_elems
+        // i and j can be of any order
+        // TODO: Can speed up by skipping the second part if the first part is skipped
 
-    // Element
-    add_el(wf, ham, off_diag_elems, i, j);
+        // Element
+        self.add_el(wf, ham, i, j);
 
-    // Spin-flipped element
-    let i_spin_flipped = {
-        let config = wf.dets[i].config;
-        wf.inds[&Config{up: config.dn, dn: config.up}]
-    };
-    let j_spin_flipped = {
-        let config = wf.dets[j].config;
-        wf.inds[&Config{up: config.dn, dn: config.up}]
-    };
-    add_el(wf, ham, off_diag_elems, i_spin_flipped, j_spin_flipped);
+        // Spin-flipped element
+        let i_spin_flipped = {
+            let config = wf.dets[i].config;
+            wf.inds[&Config { up: config.dn, dn: config.up }]
+        };
+        let j_spin_flipped = {
+            let config = wf.dets[j].config;
+            wf.inds[&Config { up: config.dn, dn: config.up }]
+        };
+        self.add_el(wf, ham, i_spin_flipped, j_spin_flipped);
+    }
+
+    fn to_sparse(&self, wf: &Wf) -> SparseMat {
+        // Put the matrix elements into a sparse matrix
+        let n = wf.n;
+
+        // Diagonal component
+        let mut diag = Vec::with_capacity(n);
+        for det in wf.dets {
+            diag.push(det.diag);
+        }
+
+        // Off-diagonal component
+        let off_diag = CsMat::<f64>::new((n, n), self.nnz, self.indices, self.values);
+        SparseMat{n, diag: DVector::from(diag), off_diag}
+    }
 }

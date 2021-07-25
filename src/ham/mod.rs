@@ -189,4 +189,32 @@ impl Ham {
         }
     }
 
+    pub fn ham_off_diag_no_excite(&self, det1: &Config, det2: &Config) -> f64 {
+        // Compute off-diagonal element (either single or double),
+        // without excite information
+        match (det1.up == det2.up, det1.dn == det2.dn) {
+            (true, true) => { 0.0 }
+            (false, false) => {
+                // Opposite spin double
+                for det in &[det1.up & !det2.up, det1.dn & !det2.dn] {
+                    let mut n = 0;
+                    for _ in bits(*det) {
+                        n += 1;
+                        if n > 1 { 0.0 }
+                    }
+                }
+                self.ham_doub(det1, det2)
+            }
+            (false, true) | (true, false) => {
+                let mut n = 0;
+                for _ in bits(*det) {
+                    n += 1;
+                    if n > 2 { 0.0 }
+                }
+                if n == 1 { ham_sing(det1, det2) } else { ham_doub(det1, det2) }
+            }
+            //(true, false) => {}
+        }
+    }
+
 }
