@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use crate::excite::{StoredExcite, Orbs, Excite};
 use crate::utils::read_input::Global;
 use crate::ham::Ham;
-use vose_alias::VoseAlias;
+// use vose_alias::VoseAlias;
 use crate::wf::det::Config;
 use crate::stoch::ImpSampleDist;
 use crate::stoch::utils::sample_cdf;

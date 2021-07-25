@@ -74,9 +74,9 @@ impl IntoIterator for Remove2 {
     type IntoIter = Remove2IntoIterator;
 
     fn into_iter(self) -> Self::IntoIter {
-        let bit: i32 = self.det.trailing_zeros() as i32;
-        let init: u128 = self.det & !(1 << bit);
-        BitPairsIntoIterator {
+        let bit: i32 = self.config.trailing_zeros() as i32;
+        let init: u128 = self.config & !(1 << bit);
+        Remove2IntoIterator {
             config: self.config,
             first_bits_left: init,
             second_bits_left: init,
@@ -85,14 +85,14 @@ impl IntoIterator for Remove2 {
     }
 }
 
-struct BitPairsIntoIterator {
+struct Remove2IntoIterator {
     config: u128,
     first_bits_left: u128,
     second_bits_left: u128,
     first_bit: i32,
 }
 
-impl Iterator for BitPairsIntoIterator {
+impl Iterator for Remove2IntoIterator {
     type Item = u128;
 
     fn next(&mut self) -> Option<u128> {

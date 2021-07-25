@@ -4,7 +4,7 @@ use vose_alias::VoseAlias;
 use crate::wf::det::{Det, Config};
 use crate::excite::{Orbs, Excite, StoredExcite};
 use crate::excite::init::ExciteGenerator;
-use crate::stoch::utils::{sample_cdf, test_cdf};
+use crate::stoch::utils::sample_cdf;
 use crate::ham::Ham;
 use std::hash::{Hash, Hasher};
 

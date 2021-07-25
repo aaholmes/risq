@@ -9,12 +9,12 @@ use crate::wf::det::Config;
 use eigenvalues::utils::generate_random_sparse_symmetric;
 use crate::utils::bits::{bit_pairs, bits};
 use crate::var::sparse::SparseMat;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::cmp::Ordering::Equal;
 // use std::ptr::Unique;
 use crate::var::utils::{remove_1e, remove_2e};
 use crate::utils::read_input::Global;
-use std::iter::Repeat;
+// use std::iter::Repeat;
 
 pub fn gen_dense_ham_connections(wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerator) -> DMatrix<f64> {
     // Generate Ham as a dense matrix by using all connections to each variational determinant
@@ -149,14 +149,14 @@ pub fn gen_sparse_ham_fast(global: &Global, wf: &Wf, ham: &Ham, excite_gen: &Exc
     }
 
     // 2. Sort the unique up dets in decreasing order by corresponding number of determinants.
-    struct UniqueUp {
+    struct Unique {
         up: u128,
         n_dets: usize,
         n_dets_remaining: usize
     }
-    let mut unique_ups_sorted: Vec<UniqueUp> = Vec::with_capacity(unique_up_dict.len());
+    let mut unique_ups_sorted: Vec<Unique> = Vec::with_capacity(unique_up_dict.len());
     for (up, dets) in unique_up_dict {
-        unique_ups_sorted.push(UniqueUp{up, n_dets: dets.len(), n_dets_remaining: 0});
+        unique_ups_sorted.push(Unique{up, n_dets: dets.len(), n_dets_remaining: 0});
     }
     unique_ups_sorted.sort_by(|a, b| b.n_dets.partial_cmp(&a.n_dets).unwrap_or(Equal));
 
@@ -192,14 +192,41 @@ pub fn gen_sparse_ham_fast(global: &Global, wf: &Wf, ham: &Ham, excite_gen: &Exc
 
     // 5. Find the unique dn dets, a map from each dn det to its index in the unique dn det list, and a map dnSingles
     // (analogous to upSingles, except want all excitations, not just to later unique dets)
+    let mut unique_dns_set: HashSet<u128> = HashSet::default();
+    for config in wf.inds.keys() {
+        unique_dns_set.insert(config.dn);
+    }
+    let mut unique_dns_vec: Vec<u128> = Vec::with_capacity(unique_dns_set.len());
+    for dn in unique_dns_set {
+        unique_dns_vec.push(dn);
+    }
 
-    // TODO
-
+    let mut dn_single_excite_constructor: HashMap<u128, Vec<usize>> = HashMap::default();
+    for (ind, dn) in unique_dns_vec.iter().enumerate() {
+        for dn_r1 in remove_1e(*dn) {
+            match dn_single_excite_constructor.get(&dn_r1) {
+                None => { dn_single_excite_constructor.insert(dn_r1, vec![ind]); },
+                Some(_) => { dn_single_excite_constructor[&dn_r1].push(ind); }
+            }
+        }
+    }
+    let mut dn_singles: HashMap<u128, Vec<u128>> = HashMap::default();
+    for dn in unique_dns_vec {
+        for dn_r1 in remove_1e(dn) {
+            for connected_ind in dn_single_excite_constructor[&dn_r1] {
+                match dn_singles.get(&dn) {
+                    None => { dn_singles.insert(dn, vec![unique_dns_vec[connected_ind]]); },
+                    Some(_) => { dn_singles[&dn].push(unique_dns_vec[connected_ind]); }
+                }
+            }
+        }
+    }
 
     // Accumulator of off-diagonal elements
     // key is the (row, col) where row < col, and value is the element
     // Will put them in the SparseMat data structure later
     let mut off_diag_elems: HashMap<(usize, usize), f64> = HashMap::default();
+
 
     // Opposite-spin excitations
 
@@ -220,14 +247,15 @@ pub fn gen_sparse_ham_fast(global: &Global, wf: &Wf, ham: &Ham, excite_gen: &Exc
             for dn in unique_up_dict[&unique.up] {
                 for dn2 in dn_singles[&dn.1] {
                     match dn_candidates.get(&dn2) {
-                        None => { dn_candidates.insert(dn2, vec![dn.0]) },
-                        Some(_) => { dn_candidates[&dn2].push(dn.0) }
+                        None => { dn_candidates.insert(dn2, vec![dn.0]); },
+                        Some(_) => { dn_candidates[&dn2].push(dn.0); }
                     }
                 }
             }
             for up in up_singles[&unique.up] {
                 for dn in unique_up_dict[&up] {
                     match dn_candidates.get(&dn.1) {
+                        // TODO: We need to do this one in terms of up config rather than ind
                         None => { add_el(wf, ham, &mut off_diag_elems, *ind1.0, *ind2.0); }, // only adds if elem != 0
                         Some(_) => {}
                     }
@@ -239,8 +267,8 @@ pub fn gen_sparse_ham_fast(global: &Global, wf: &Wf, ham: &Ham, excite_gen: &Exc
             for dn in unique_up_dict[&unique.up] {
                 for dn_r1 in remove_1e(dn.1) {
                     match dn_single_excite_constructor.get(&dn_r1) {
-                        None => { dn_candidates.insert(dn_r1, vec![dn.0]) },
-                        Some(_) => { dn_candidates[&dn_r1].push(dn.0) }
+                        None => { dn_single_excite_constructor.insert(dn_r1, vec![dn.0]); },
+                        Some(_) => { dn_single_excite_constructor[&dn_r1].push(dn.0); }
                     }
                 }
             }
@@ -248,7 +276,7 @@ pub fn gen_sparse_ham_fast(global: &Global, wf: &Wf, ham: &Ham, excite_gen: &Exc
                 for dn in unique_up_dict[&up] {
                     for dn_r1 in remove_1e(dn.1) {
                         for connected_ind in dn_single_excite_constructor[&dn_r1] {
-                            add_el(wf, ham, &mut off_diag_elems, *dn.0, *connected_ind)
+                            add_el(wf, ham, &mut off_diag_elems, dn.0, connected_ind)
                         }
                     }
                 }
@@ -259,7 +287,7 @@ pub fn gen_sparse_ham_fast(global: &Global, wf: &Wf, ham: &Ham, excite_gen: &Exc
                 for (i_ind, ind1) in unique_up_dict[&up].iter().enumerate() {
                     for ind2 in unique_up_dict[&up][i_ind + 1 ..].iter() {
                         // Found dn-spin excitations:
-                        add_el(wf, ham, &mut off_diag_elems, *ind1.0, *ind2.0); // only adds if elem != 0
+                        add_el(wf, ham, &mut off_diag_elems, ind1.0, ind2.0); // only adds if elem != 0
                     }
                 }
             }
@@ -278,7 +306,7 @@ pub fn gen_sparse_ham_fast(global: &Global, wf: &Wf, ham: &Ham, excite_gen: &Exc
             for (i_ind, ind1) in unique_up_dict[&unique.up].iter().enumerate() {
                 for ind2 in unique_up_dict[&unique.up][i_ind + 1 ..].iter() {
                     // Found dn-spin excitations (and their spin-flipped up-spin excitations):
-                    add_el_and_spin_flipped(wf, ham, &mut off_diag_elems, *ind1.0, *ind2.0); // only adds if elem != 0
+                    add_el_and_spin_flipped(wf, ham, &mut off_diag_elems, ind1.0, ind2.0); // only adds if elem != 0
                 }
             }
         } else {
@@ -297,7 +325,7 @@ pub fn gen_sparse_ham_fast(global: &Global, wf: &Wf, ham: &Ham, excite_gen: &Exc
                     for dn2 in double_excite_constructor[&dn_r2] {
                         if dn.0 != dn2 {
                             // Found dn-spin excitations (and their spin-flipped up-spin excitations):
-                            add_el_and_spin_flipped(wf, ham, &mut off_diag_elems, *dn.0, *dn2); // only adds if elem != 0
+                            add_el_and_spin_flipped(wf, ham, &mut off_diag_elems, dn.0, dn2); // only adds if elem != 0
                         }
                     }
                 }
@@ -323,7 +351,7 @@ fn add_el(wf: &Wf, ham: &Ham, off_diag_elems: &mut HashMap<(usize, usize), f64>,
     };
     match off_diag_elems.get(&key) {
         None => {
-            let elem = ham.ham_off_diag_no_excite(wf.dets[&i].config, wf.dets[&j].config);
+            let elem = ham.ham_off_diag_no_excite(wf.dets[i].config, wf.dets[j].config);
             if elem != 0.0 {
                 off_diag_elems.insert(key, elem);
             }
@@ -341,7 +369,13 @@ fn add_el_and_spin_flipped(wf: &Wf, ham: &Ham, off_diag_elems: &mut HashMap<(usi
     add_el(wf, ham, off_diag_elems, i, j);
 
     // Spin-flipped element
-    let i_spin_flipped = wf.inds[&wf.dets[i].config];
-    let j_spin_flipped = wf.inds[&wf.dets[j].config];
+    let i_spin_flipped = {
+        let config = wf.dets[i].config;
+        wf.inds[&Config{up: config.dn, dn: config.up}]
+    };
+    let j_spin_flipped = {
+        let config = wf.dets[j].config;
+        wf.inds[&Config{up: config.dn, dn: config.up}]
+    };
     add_el(wf, ham, off_diag_elems, i_spin_flipped, j_spin_flipped);
 }
