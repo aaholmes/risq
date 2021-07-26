@@ -10,9 +10,9 @@ use nalgebra::DMatrix;
 
 #[derive(Clone)]
 pub struct SparseMat{
-    n: usize,
-    pub(crate) diag: DVector<f64>,
-    off_diag: CsMat<f64>,
+    pub n: usize,
+    pub diag: DVector<f64>,
+    pub off_diag: CsMat<f64>,
 }
 
 impl SparseMat {

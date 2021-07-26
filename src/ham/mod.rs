@@ -200,20 +200,27 @@ impl Ham {
                     let mut n = 0;
                     for _ in bits(*det) {
                         n += 1;
-                        if n > 1 { 0.0 }
+                        if n > 1 { return 0.0; }
                     }
                 }
                 self.ham_doub(det1, det2)
             }
-            (false, true) | (true, false) => {
+            (true, false) => {
                 let mut n = 0;
-                for _ in bits(*det) {
+                for _ in bits(det1.dn & !det2.dn) {
                     n += 1;
-                    if n > 2 { 0.0 }
+                    if n > 2 { return 0.0; }
                 }
-                if n == 1 { ham_sing(det1, det2) } else { ham_doub(det1, det2) }
+                if n == 1 { self.ham_sing(det1, det2) } else { self.ham_doub(det1, det2) }
             }
-            //(true, false) => {}
+            (false, true) => {
+                let mut n = 0;
+                for _ in bits(det1.up & !det2.up) {
+                    n += 1;
+                    if n > 2 { return 0.0; }
+                }
+                if n == 1 { self.ham_sing(det1, det2) } else { self.ham_doub(det1, det2) }
+            }
         }
     }
 

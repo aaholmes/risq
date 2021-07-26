@@ -15,6 +15,7 @@ use std::cmp::Ordering::Equal;
 use crate::var::utils::{remove_1e, remove_2e};
 use crate::utils::read_input::Global;
 use sprs::CsMat;
+use nalgebra::base::DVector;
 // use std::iter::Repeat;
 
 pub fn gen_dense_ham_connections(wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerator) -> DMatrix<f64> {
@@ -226,7 +227,7 @@ pub fn gen_sparse_ham_fast(global: &Global, wf: &Wf, ham: &Ham) -> SparseMat {
     // Accumulator of off-diagonal elements
     // key is the (row, col) where row < col, and value is the element
     // Will put them in the SparseMat data structure later
-    let mut off_diag_elems: HashMap<(usize, usize), f64> = HashMap::default();
+    let mut off_diag_elems = OffDiagElems::new(wf.n);
 
 
     // Opposite-spin excitations
@@ -262,7 +263,7 @@ pub fn gen_sparse_ham_fast(global: &Global, wf: &Wf, ham: &Ham) -> SparseMat {
                             let ind1 = wf.inds[&Config { up: *up, dn: dn.1 }];
                             for dn_connection_ind in dn_connections {
                                 let ind2 = wf.inds[&Config { up: *up, dn: unique_dns_vec[*dn_connection_ind] }];
-                                add_el(wf, ham, &mut off_diag_elems, ind1, ind2); // only adds if elem != 0
+                                off_diag_elems.add_el(wf, ham, ind1, ind2); // only adds if elem != 0
                             }
                         }
                     }
@@ -283,7 +284,7 @@ pub fn gen_sparse_ham_fast(global: &Global, wf: &Wf, ham: &Ham) -> SparseMat {
                 for dn in &unique_up_dict[&up] {
                     for dn_r1 in remove_1e(dn.1) {
                         for connected_ind in &dn_single_excite_constructor[&dn_r1] {
-                            add_el(wf, ham, &mut off_diag_elems, dn.0, *connected_ind)
+                            off_diag_elems.add_el(wf, ham, dn.0, *connected_ind)
                         }
                     }
                 }
@@ -294,7 +295,7 @@ pub fn gen_sparse_ham_fast(global: &Global, wf: &Wf, ham: &Ham) -> SparseMat {
                 for (i_ind, ind1) in unique_up_dict[&up].iter().enumerate() {
                     for ind2 in unique_up_dict[&up][i_ind + 1 ..].iter() {
                         // Found dn-spin excitations:
-                        add_el(wf, ham, &mut off_diag_elems, ind1.0, ind2.0); // only adds if elem != 0
+                        off_diag_elems.add_el(wf, ham, ind1.0, ind2.0); // only adds if elem != 0
                     }
                 }
             }
@@ -313,7 +314,7 @@ pub fn gen_sparse_ham_fast(global: &Global, wf: &Wf, ham: &Ham) -> SparseMat {
             for (i_ind, ind1) in unique_up_dict[&unique.up].iter().enumerate() {
                 for ind2 in unique_up_dict[&unique.up][i_ind + 1 ..].iter() {
                     // Found dn-spin excitations (and their spin-flipped up-spin excitations):
-                    add_el_and_spin_flipped(wf, ham, &mut off_diag_elems, ind1.0, ind2.0); // only adds if elem != 0
+                    off_diag_elems.add_el_and_spin_flipped(wf, ham, ind1.0, ind2.0); // only adds if elem != 0
                 }
             }
         } else {
@@ -332,7 +333,7 @@ pub fn gen_sparse_ham_fast(global: &Global, wf: &Wf, ham: &Ham) -> SparseMat {
                     for dn2 in &double_excite_constructor[&dn_r2] {
                         if dn.0 != *dn2 {
                             // Found dn-spin excitations (and their spin-flipped up-spin excitations):
-                            add_el_and_spin_flipped(wf, ham, &mut off_diag_elems, dn.0, *dn2); // only adds if elem != 0
+                            off_diag_elems.add_el_and_spin_flipped(wf, ham, dn.0, *dn2); // only adds if elem != 0
                         }
                     }
                 }
@@ -342,20 +343,29 @@ pub fn gen_sparse_ham_fast(global: &Global, wf: &Wf, ham: &Ham) -> SparseMat {
 
 
     // Finally, put collected off-diag elems into a sparse matrix
-    to_sparse(wf, &mut off_diag_elems)
+    off_diag_elems.to_sparse(wf)
 }
 
 
 // Off-diag elems data structure
 struct OffDiagElems {
-    nonzero_inds: HashSet<(usize, usize)>, // index of nonzero elements in the upper triangular half of the matrix
+    nonzero_inds: HashSet<(usize, usize)>, // number of nonzero elements in the upper triangular half of the matrix
     nnz: Vec<usize>, // number of nonzero values for each row
     indices: Vec<Vec<usize>>, // vector of indices for each row
     values: Vec<Vec<f64>>, // vector of values for each row
 }
 
 impl OffDiagElems {
-    fn add_el(&mut self, wf: &Wf, ham: &Ham, i: usize, j: usize) {
+    pub fn new(n: usize) -> Self {
+        Self{
+            nonzero_inds: HashSet::default(),
+            nnz: Vec::with_capacity(n),
+            indices: vec![vec![]; n],
+            values: vec![vec![]; n]
+        }
+    }
+
+    pub fn add_el(&mut self, wf: &Wf, ham: &Ham, i: usize, j: usize) {
         // Add an off-diagonal element H_{ij} to off_diag_elems
         // i and j can be of any order
 
@@ -373,20 +383,20 @@ impl OffDiagElems {
                 if elem != 0.0 {
                     self.nonzero_inds.insert(key);
 
-                    self.nnz[&i] += 1;
-                    self.indices[&i].push(j);
-                    self.values[&i].push(elem);
+                    self.nnz[i] += 1;
+                    self.indices[i].push(j);
+                    self.values[i].push(elem);
 
-                    self.nnz[&j] += 1;
-                    self.indices[&j].push(i);
-                    self.values[&j].push(elem);
+                    self.nnz[j] += 1;
+                    self.indices[j].push(i);
+                    self.values[j].push(elem);
                 }
             },
             Some(_) => {}
         }
     }
 
-    fn add_el_and_spin_flipped(&mut self, wf: &Wf, ham: &Ham, i: usize, j: usize) {
+    pub fn add_el_and_spin_flipped(&mut self, wf: &Wf, ham: &Ham, i: usize, j: usize) {
         // Add an off-diagonal element H_{ij}, as well as its spin-flipped counterpart, to off_diag_elems
         // i and j can be of any order
         // TODO: Can speed up by skipping the second part if the first part is skipped
@@ -406,18 +416,24 @@ impl OffDiagElems {
         self.add_el(wf, ham, i_spin_flipped, j_spin_flipped);
     }
 
-    fn to_sparse(&self, wf: &Wf) -> SparseMat {
+    pub fn to_sparse(&self, wf: &Wf) -> SparseMat {
         // Put the matrix elements into a sparse matrix
         let n = wf.n;
 
         // Diagonal component
         let mut diag = Vec::with_capacity(n);
-        for det in wf.dets {
+        for det in &wf.dets {
             diag.push(det.diag);
         }
 
         // Off-diagonal component
-        let off_diag = CsMat::<f64>::new((n, n), self.nnz, self.indices, self.values);
+        let off_diag = CsMat::<f64>::new(
+            (n, n),
+            self.nnz.clone(),
+            self.indices.clone().into_iter().flatten().collect(),
+            self.values.clone().into_iter().flatten().collect()
+        );
+
         SparseMat{n, diag: DVector::from(diag), off_diag}
     }
 }
