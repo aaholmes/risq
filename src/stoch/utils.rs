@@ -114,7 +114,7 @@ pub fn test_cdf(cdf: &Vec<StoredExcite>, imp_sample_dist: &ImpSampleDist, max_cd
         freq.insert(*i, 0);
     }
     for _i_sample in 0..n_samples {
-        let mut sample = sample_cdf(cdf, imp_sample_dist, max_cdf).unwrap();
+        let sample = sample_cdf(cdf, imp_sample_dist, max_cdf).unwrap();
         *freq.get_mut(&sample.0).unwrap() += 1;
     }
     println!("Target prob, sampled prob");

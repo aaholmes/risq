@@ -11,12 +11,10 @@ use crate::utils::bits::{bit_pairs, bits};
 use crate::var::sparse::SparseMat;
 use std::collections::{HashMap, HashSet};
 use std::cmp::Ordering::Equal;
-// use std::ptr::Unique;
 use crate::var::utils::{remove_1e, remove_2e};
 use crate::utils::read_input::Global;
 use sprs::CsMat;
 use nalgebra::base::DVector;
-// use std::iter::Repeat;
 
 pub fn gen_dense_ham_connections(wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerator) -> DMatrix<f64> {
     // Generate Ham as a dense matrix by using all connections to each variational determinant
@@ -485,7 +483,7 @@ impl OffDiagElems {
         // Off-diagonal component
         let off_diag_component = CsMat::<f64>::new_from_unsorted(shape, indptr, indices, data);
         match off_diag_component {
-            Err(e) => { panic!("Error in constructing CsMat"); }
+            Err(_) => { panic!("Error in constructing CsMat"); }
             Ok(off_diag) => { return SparseMat{n, diag: DVector::from(diag), off_diag}; }
         }
     }

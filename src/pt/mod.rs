@@ -67,7 +67,7 @@ impl PtSamples {
         }
     }
 
-    pub fn add_sample_diag_already_stored(&mut self, var_det: Det, pt_det: Det, sampled_prob: f64, ham: &Ham) {
+    pub fn add_sample_diag_already_stored(&mut self, var_det: Det, pt_det: Det, sampled_prob: f64) {
         // Add a new sample to PtSamples
         // Assumes that pt_det's diagonal element already stored
         self.n += 1;

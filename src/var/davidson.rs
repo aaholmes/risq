@@ -1,29 +1,14 @@
-// // Module for just performing matrix-free Davidson
-// // For now, just use simple diagonal preconditioning
-//
+// Davidson module
+// For now, just use simple diagonal preconditioning
+
 use crate::wf::Wf;
-// use itertools::enumerate;
-// use std::cmp::min;
-// // use std::intrinsics::sqrtf64;
 use crate::excite::init::ExciteGenerator;
 use crate::ham::Ham;
 use eigenvalues::{Davidson, DavidsonCorrection, SpectrumTarget};
-// use nalgebra::DMatrix;
-// use crate::excite::{Orbs, Excite};
-// use crate::wf::det::Config;
-// use eigenvalues::algorithms::davidson::DavidsonError;
 use crate::var::ham_gen::{gen_dense_ham_connections, gen_sparse_ham_fast};
-// use crate::var::ham_gen::{gen_dense_ham_connections, gen_sparse_ham_partial};
 use std::time::Instant;
-use crate::var::sparse::SparseMat;
 use crate::utils::read_input::Global;
-// use std::intrinsics::offset;
-// //use crate::wf::det::{Config, Det};
-// //use crate::excite::{Excite, Orbs};
-// //use crate::utils::bits::{bits, bit_pairs};
-// use nalgebra::linalg::SymmetricEigen;
-// //use sprs::io::SymmetryMode::Symmetric;
-// use nalgebra::DMatrix;
+
 
 pub fn dense_optimize(wf: &mut Wf, coeff_eps: f64, energy_eps: f64, ham: &Ham, excite_gen: &ExciteGenerator) {
     // Generate Ham as a dense matrix
@@ -53,7 +38,7 @@ pub fn dense_optimize(wf: &mut Wf, coeff_eps: f64, energy_eps: f64, ham: &Ham, e
     }
 }
 
-pub fn sparse_optimize(global: &Global, wf: &mut Wf, coeff_eps: f64, energy_eps: f64, ham: &Ham, excite_gen: &ExciteGenerator) {
+pub fn sparse_optimize(global: &Global, wf: &mut Wf, coeff_eps: f64, energy_eps: f64, ham: &Ham) {
     // Generate Ham as a sparse matrix
     // Optimize using davidson
 

@@ -198,7 +198,7 @@ impl ExciteGenerator {
         // Sample an excitation from the selected orbs with probability proportional to |H|
         // Returns an excite and the sample probability
         // Can sample an invalid excitation
-        let mut sample: Option<(&StoredExcite, f64)>;
+        let sample: Option<(&StoredExcite, f64)>;
         match is_alpha {
             None => {
                 // Opposite-spin double

@@ -304,12 +304,9 @@ impl Det {
 
         // Iterate over all dets; for each, use eps to truncate the excitations; for each excitation,
         // add to output wf
-        let mut local_eps: f64;
+        let local_eps: f64;
         let mut excite: Excite;
         let mut new_det: Option<Config>;
-
-        // For making screened sampler
-        let mut det_orbs: Vec<DetOrbSample> = vec![];
 
         // Diagonal component - none because this is 'external' to the current wf (i.e., perturbative space rather than variational space)
         let mut out_wf: Wf = Wf::default();

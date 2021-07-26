@@ -175,7 +175,6 @@ pub fn fast_semistoch_enpt2(input_wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerat
     // Compute dtm approx to observable using dtm_result
     // Simple ENPT2
     let mut dtm_enpt2: f64 = 0.0;
-    let mut energy_sample: f64 = 0.0;
     for det in &dtm_result.dets {
         dtm_enpt2 += (det.coeff * det.coeff) / (input_wf.energy - det.diag);
     }
@@ -327,7 +326,7 @@ pub fn semistoch_enpt2(input_wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerator, e
         // Sample a batch of samples, updating the stoch component of the energy for each sample
         println!("\n Starting batch {}", i_batch);
         samples.clear();
-        for i_sample in 0..n_samples_per_batch {
+        for _i_sample in 0..n_samples_per_batch {
 
             // Sample with probability proportional to (Hc)^2
             let (sampled_det_info, sampled_prob) = matmul_sample_remaining(
@@ -447,7 +446,7 @@ pub fn old_semistoch_enpt2(input_wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerato
         samples_all.clear();
         samples_large_eps.clear();
 
-        for i_sample in 0..n_samples_per_batch {
+        for _i_sample in 0..n_samples_per_batch {
             // Sample with prob var_probs(:)
             let (sampled_var_det, sampled_prob) = wf_sampler.sample_with_prob();
             // let sampled_var_det = wf_sampler.sample();
@@ -458,17 +457,17 @@ pub fn old_semistoch_enpt2(input_wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerato
             // Collect samples using small eps (eps_pt)
             let mut v_times_sampled_var_det = sampled_var_det.approx_matmul_external_dtm_only_compute_diags(input_wf, ham, excite_gen, eps_pt);
             for target_det in v_times_sampled_var_det.dets {
-                samples_all.add_sample_diag_already_stored(sampled_var_det, target_det, sampled_prob, ham);
+                samples_all.add_sample_diag_already_stored(sampled_var_det, target_det, sampled_prob);
             }
 
             // Collect samples using large eps (eps) corresponding to deterministic part
             v_times_sampled_var_det = sampled_var_det.approx_matmul_external_dtm_only_compute_diags(input_wf, ham, excite_gen, eps);
             for target_det in v_times_sampled_var_det.dets {
-                samples_large_eps.add_sample_diag_already_stored(sampled_var_det, target_det, sampled_prob, ham);
+                samples_large_eps.add_sample_diag_already_stored(sampled_var_det, target_det, sampled_prob);
             }
         }
 
-        let mut sampled_e: f64 = samples_all.pt_estimator(input_wf.energy, n_samples_per_batch)
+        let sampled_e: f64 = samples_all.pt_estimator(input_wf.energy, n_samples_per_batch)
             - samples_large_eps.pt_estimator(input_wf.energy, n_samples_per_batch);
 
         println!("Sampled energy this batch = {}", sampled_e);

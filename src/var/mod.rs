@@ -37,7 +37,7 @@ pub fn variational(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, wf:
         let coeff_eps: f64 = 1e-3; // Davidson convergence epsilon for coefficients
         let energy_eps: f64 = 1e-6; // Davidson convergence epsilon for energy
 
-        sparse_optimize(&global, wf, coeff_eps, energy_eps, &ham, &excite_gen);
+        sparse_optimize(&global, wf, coeff_eps, energy_eps, &ham);
         // dense_optimize(wf, coeff_eps, energy_eps, &ham, &excite_gen);
 
         println!("End of iteration {} (eps = {:.1e}): Wavefunction has {} determinants with energy {:.4}", iter, wf.eps, wf.n, wf.energy);
