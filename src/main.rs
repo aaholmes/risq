@@ -34,7 +34,7 @@ fn main() {
     let start: Instant = Instant::now();
     let start_setup: Instant = Instant::now();
 
-    println!("ESP - Electronic Structure Package\nAdam A Holmes, 2021\n");
+    println!("Rust Implementation of Semistochastic Quantum chemistry (RISQ)\nAdam A Holmes, 2021\n");
 
     println!("Reading input file");
     lazy_static! {
@@ -63,8 +63,8 @@ fn main() {
 
     let eps_pt = GLOBAL.eps_pt;
     let n_batches = 2;
-    let n_samples_per_batch_old = 100;
-    let n_samples_per_batch_new = 4000;
+    let n_samples_per_batch_old = 10;
+    let n_samples_per_batch_new = 400;
 
     let start_old_enpt2: Instant = Instant::now();
     println!("\nCalling semistoch ENPT2 the old way with p ~ |c| using eps_pt = {}", eps_pt);
