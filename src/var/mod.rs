@@ -10,7 +10,6 @@ use super::wf::Wf;
 use crate::excite::init::ExciteGenerator;
 use crate::var::davidson::{dense_optimize, sparse_optimize};
 use crate::utils::read_input::Global;
-// use crate::var::davidson::optimize;
 
 
 pub fn variational(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, wf: &mut Wf) {
@@ -18,6 +17,9 @@ pub fn variational(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, wf:
     let mut iter: i32 = 0;
 
     println!("Start of variational stage: Wavefunction has {} det with energy {:.4}", wf.n, wf.energy);
+
+    let eps_energy_converged: f64 = 2.5e-4;
+    let mut last_energy: Option<f64> = None;
 
     while !wf.converged {
 
@@ -29,10 +31,7 @@ pub fn variational(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, wf:
             break;
         }
 
-        if wf.n <= 20 {
-            println!("Wf after add_new_dets:");
-            wf.print();
-        }
+        last_energy = Some(wf.energy);
 
         let coeff_eps: f64 = 1e-3; // Davidson convergence epsilon for coefficients
         let energy_eps: f64 = 1e-6; // Davidson convergence epsilon for energy
@@ -40,15 +39,21 @@ pub fn variational(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, wf:
         sparse_optimize(&global, wf, coeff_eps, energy_eps, &ham);
         // dense_optimize(wf, coeff_eps, energy_eps, &ham, &excite_gen);
 
-        println!("End of iteration {} (eps = {:.1e}): Wavefunction has {} determinants with energy {:.4}", iter, wf.eps, wf.n, wf.energy);
-
+        println!("End of iteration {} (eps = {:.1e}): Wavefunction has {} determinants with energy {:.6}", iter, wf.eps, wf.n, wf.energy);
         if wf.n <= 20 {
             wf.print();
         }
 
-        // if wf.n > 1000 {
-        //     break;
-        // }
+        match last_energy {
+            None => {},
+            Some(e) => {
+                if (e - wf.energy).abs() < eps_energy_converged {
+                    println!("Variational energy did not change much; wf converged");
+                    wf.converged = true;
+                    break;
+                }
+            }
+        }
     }
 
 }
