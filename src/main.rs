@@ -58,7 +58,7 @@ fn main() {
 
     println!("Variational stage");
     let start_var: Instant = Instant::now();
-    variational(&HAM, &EXCITE_GEN, &mut wf);
+    variational(&GLOBAL, &HAM, &EXCITE_GEN, &mut wf);
     println!("Time for variational stage: {:?}", start_var.elapsed());
 
     let eps_pt = GLOBAL.eps_pt;

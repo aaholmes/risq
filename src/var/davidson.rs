@@ -12,10 +12,11 @@ use eigenvalues::{Davidson, DavidsonCorrection, SpectrumTarget};
 // use crate::excite::{Orbs, Excite};
 // use crate::wf::det::Config;
 // use eigenvalues::algorithms::davidson::DavidsonError;
-use crate::var::ham_gen::gen_dense_ham_connections;
+use crate::var::ham_gen::{gen_dense_ham_connections, gen_sparse_ham_fast};
 // use crate::var::ham_gen::{gen_dense_ham_connections, gen_sparse_ham_partial};
 use std::time::Instant;
 use crate::var::sparse::SparseMat;
+use crate::utils::read_input::Global;
 // use std::intrinsics::offset;
 // //use crate::wf::det::{Config, Det};
 // //use crate::excite::{Excite, Orbs};
@@ -52,15 +53,17 @@ pub fn dense_optimize(wf: &mut Wf, coeff_eps: f64, energy_eps: f64, ham: &Ham, e
     }
 }
 
-pub fn sparse_optimize(wf: &mut Wf, coeff_eps: f64, energy_eps: f64, ham: &Ham, excite_gen: &ExciteGenerator) {
+pub fn sparse_optimize(global: &Global, wf: &mut Wf, coeff_eps: f64, energy_eps: f64, ham: &Ham, excite_gen: &ExciteGenerator) {
     // Generate Ham as a sparse matrix
     // Optimize using davidson
 
-    // Generate dense Ham
-    let dense_ham = gen_dense_ham_connections(wf, ham, excite_gen);
+    // // Generate dense Ham
+    // let dense_ham = gen_dense_ham_connections(wf, ham, excite_gen);
+    //
+    // // Convert to sparse ham
+    // let sparse_ham = SparseMat::from_dense(dense_ham);
 
-    // Convert to sparse ham
-    let sparse_ham = SparseMat::from_dense(dense_ham);
+    let sparse_ham = gen_sparse_ham_fast(global, wf, ham, false);
 
     // Davidson
     let dav = Davidson::new (

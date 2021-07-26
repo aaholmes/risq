@@ -9,10 +9,11 @@ use super::ham::Ham;
 use super::wf::Wf;
 use crate::excite::init::ExciteGenerator;
 use crate::var::davidson::{dense_optimize, sparse_optimize};
+use crate::utils::read_input::Global;
 // use crate::var::davidson::optimize;
 
 
-pub fn variational(ham: &Ham, excite_gen: &ExciteGenerator, wf: &mut Wf) {
+pub fn variational(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, wf: &mut Wf) {
 
     let mut iter: i32 = 0;
 
@@ -36,7 +37,7 @@ pub fn variational(ham: &Ham, excite_gen: &ExciteGenerator, wf: &mut Wf) {
         let coeff_eps: f64 = 1e-3; // Davidson convergence epsilon for coefficients
         let energy_eps: f64 = 1e-6; // Davidson convergence epsilon for energy
 
-        sparse_optimize(wf, coeff_eps, energy_eps, &ham, &excite_gen);
+        sparse_optimize(&global, wf, coeff_eps, energy_eps, &ham, &excite_gen);
         // dense_optimize(wf, coeff_eps, energy_eps, &ham, &excite_gen);
 
         println!("End of iteration {} (eps = {:.1e}): Wavefunction has {} determinants with energy {:.4}", iter, wf.eps, wf.n, wf.energy);
