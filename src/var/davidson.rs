@@ -48,14 +48,19 @@ pub fn sparse_optimize(global: &Global, wf: &mut Wf, coeff_eps: f64, energy_eps:
     // // Convert to sparse ham
     // let sparse_ham = SparseMat::from_dense(dense_ham);
 
+    let start_gen_sparse_ham: Instant = Instant::now();
     let sparse_ham = gen_sparse_ham_fast(global, wf, ham, false);
+    println!("Time to generate sparse H: {:?}", start_gen_sparse_ham.elapsed());
 
     // Davidson
+    let start_dav: Instant = Instant::now();
     let dav = Davidson::new (
         sparse_ham, 1, DavidsonCorrection::DPR,
         SpectrumTarget::Lowest, coeff_eps,
         energy_eps
     );
+    println!("Time to perform Davidson diagonalization: {:?}", start_dav.elapsed());
+
     match dav {
         Ok(eig) => {
             wf.energy = eig.eigenvalues[0];
