@@ -187,8 +187,8 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
     // Finally, get the global max_sing by taking max_p over the above
     excite_gen.max_sing = max_sing_list.iter().cloned().fold(0./0., f64::max);
 
-    println!("Largest magnitude opposite-spin double excitation in H: {}", excite_gen.max_opp_doub);
-    println!("Largest magnitude same-spin double excitation in H: {}", excite_gen.max_same_doub);
+    println!("Largest magnitude opposite-spin double excitation in H: {:.4}", excite_gen.max_opp_doub);
+    println!("Largest magnitude same-spin double excitation in H: {:.4}", excite_gen.max_same_doub);
 
     excite_gen
 }

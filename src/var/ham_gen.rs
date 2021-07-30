@@ -16,6 +16,7 @@ use crate::utils::read_input::Global;
 use sprs::CsMat;
 use nalgebra::base::DVector;
 use std::time::Instant;
+use itertools::Itertools;
 // extern crate threads_pool;
 // use threads_pool::ThreadPool;
 // use std::thread;
@@ -139,6 +140,7 @@ pub fn gen_sparse_ham_fast(global: &Global, wf: &Wf, ham: &Ham, verbose: bool) -
     // For now, assumes that nup == ndn
 
     // Setup
+    let start_setup: Instant = Instant::now();
 
     // 1. Find all unique up dets, and create a map from each to the (indices, dn dets) of its corresponding determinants
     let mut unique_up_dict: HashMap<u128, Vec<(usize, u128)>> = HashMap::default();
@@ -245,6 +247,7 @@ pub fn gen_sparse_ham_fast(global: &Global, wf: &Wf, ham: &Ham, verbose: bool) -
     // key is the (row, col) where row < col, and value is the element
     // Will put them in the SparseMat data structure later
     let mut off_diag_elems = OffDiagElems::new(wf.n);
+    println!("Time for H gen setup: {:?}", start_setup.elapsed());
 
     // Thread pool
     // let mut pool = ThreadPool::new(4);
@@ -395,7 +398,7 @@ pub fn opposite_spin_excites(global: &Global, wf: &Wf, ham: &Ham, verbose: bool,
 
 
 pub fn same_spin_excites(wf: &Wf, ham: &Ham, verbose: bool, unique_up_dict: &mut HashMap<u128, Vec<(usize, u128)>>, max_n_dets_double_loop: usize, off_diag_elems: &mut OffDiagElems, unique: &Unique) {
-    if true { // unique.n_dets <= max_n_dets_double_loop {
+    if false { // unique.n_dets <= max_n_dets_double_loop {
         // if verbose { println!("Same-spin first algo fastest"); }
         // Use the double for-loop algorithm from "Fast SHCI"
         for (i_ind, ind1) in unique_up_dict[&unique.up].iter().enumerate() {
@@ -429,6 +432,112 @@ pub fn same_spin_excites(wf: &Wf, ham: &Ham, verbose: bool, unique_up_dict: &mut
     }
 }
 
+//
+// // Off-diag elems data structure
+// pub struct OffDiagElems {
+//     rows: Vec<usize>,
+//     indices: Vec<usize>, // vector of indices for each row
+//     values: Vec<f64>, // vector of values for each row
+// }
+//
+//
+// impl OffDiagElems {
+//     pub fn new(n: usize) -> Self {
+//         Self{
+//             rows: Vec::with_capacity(100 * n),
+//             indices: Vec::with_capacity(100 * n),
+//             values: Vec::with_capacity(100 * n)
+//         }
+//     }
+//
+//     pub fn add_el(&mut self, wf: &Wf, ham: &Ham, i: usize, j: usize) {
+//         // Add an off-diagonal element H_{ij} to off_diag_elems
+//         // i and j can be of any order
+//         // For now, assumes no repeats
+//         // TODO: fix this if we start using the 2nd algorithm for same-spin excites!
+//
+//         if i == j { return; }
+//         if i < j {
+//             self.rows.push(i);
+//             self.indices.push(j);
+//         } else {
+//             self.rows.push(j);
+//             self.indices.push(i);
+//         }
+//         let elem = ham.ham_off_diag_no_excite(&wf.dets[i].config, &wf.dets[j].config);
+//         if elem != 0.0 {
+//             self.values.push(elem);
+//         }
+//     }
+//
+//     pub fn add_el_and_spin_flipped(&mut self, wf: &Wf, ham: &Ham, i: usize, j: usize) {
+//         // Add an off-diagonal element H_{ij}, as well as its spin-flipped counterpart, to off_diag_elems
+//         // i and j can be of any order
+//         // TODO: Can speed up by skipping the second part if the first part is skipped
+//
+//         // Element
+//         self.add_el(wf, ham, i, j);
+//
+//         // Spin-flipped element
+//         let i_spin_flipped = {
+//             let config = wf.dets[i].config;
+//             wf.inds[&Config { up: config.dn, dn: config.up }]
+//         };
+//         let j_spin_flipped = {
+//             let config = wf.dets[j].config;
+//             wf.inds[&Config { up: config.dn, dn: config.up }]
+//         };
+//         self.add_el(wf, ham, i_spin_flipped, j_spin_flipped);
+//     }
+//
+//     pub fn to_sparse(&self, wf: &Wf, verbose: bool) -> SparseMat {
+//         // Put the matrix elements into a sparse matrix
+//         let n = wf.n;
+//
+//         // Diagonal component
+//         let mut diag = Vec::with_capacity(n);
+//         for det in &wf.dets {
+//             diag.push(det.diag);
+//         }
+//
+//         // Off-diagonal component
+//         let shape = (n, n);
+//
+//         // Sort by row then by index, remove duplicates, duplicate each one, then sort again
+//
+//
+//
+//
+//         let indptr: Vec<usize> = self.nnz
+//             .iter()
+//             .scan(0, |acc, &x| {
+//                 *acc = *acc + x;
+//                 Some(*acc)
+//             })
+//             .collect();
+//         if verbose { println!("indptr:"); }
+//         for i in &indptr {
+//             if verbose { println!("{}", i); }
+//         }
+//
+//         let indices: Vec<usize> = self.indices.clone().into_iter().flatten().collect();
+//         let data: Vec<f64> = self.values.clone().into_iter().flatten().collect();
+//
+//         if verbose { println!("indices, data:"); }
+//         for (i, j) in indices.iter().zip(data.iter()) {
+//             if verbose { println!("{}, {}", i, j); }
+//         }
+//
+//         // Off-diagonal component
+//         let off_diag_component = CsMat::<f64>::new_from_unsorted(shape, indptr, indices, data);
+//         match off_diag_component {
+//             Err(_) => { panic!("Error in constructing CsMat"); }
+//             Ok(off_diag) => { return SparseMat{n, diag: DVector::from(diag), off_diag}; }
+//         }
+//     }
+// }
+
+
 
 // Off-diag elems data structure
 pub struct OffDiagElems {
@@ -437,6 +546,7 @@ pub struct OffDiagElems {
     indices: Vec<Vec<usize>>, // vector of indices for each row
     values: Vec<Vec<f64>>, // vector of values for each row
 }
+
 
 impl OffDiagElems {
     pub fn new(n: usize) -> Self {
@@ -555,3 +665,116 @@ impl OffDiagElems {
         }
     }
 }
+
+
+// // Faster (?) off-diag elems data structure - fewer hash lookups, vectors of vectors, etc
+// // Just add elements to a vector of (ind1, ind2) where ind1 < ind2
+// // After they're all added, merge sort, then compute matrix elements
+// struct FastOffDiagElems {
+//     nonzero_inds: Vec<(usize, usize)>
+// }
+//
+// impl FastOffDiagElems {
+//     pub fn new(n: usize) -> Self {
+//         Self{
+//             nonzero_inds: Vec::with_capacity(100 * n),
+//         }
+//     }
+//
+//     pub fn add_el(&mut self, i: usize, j: usize) {
+//         // Add an off-diagonal element H_{ij} to off_diag_elems
+//         // i and j can be of any order
+//
+//         if i < j {
+//             self.nonzero_inds.push((i, j));
+//         } else {
+//             self.nonzero_inds.push((j, i));
+//         }
+//     }
+//
+//     pub fn add_el_and_spin_flipped(&mut self, wf: &Wf, i: usize, j: usize) {
+//         // Add an off-diagonal element H_{ij}, as well as its spin-flipped counterpart, to off_diag_elems
+//         // i and j can be of any order
+//
+//         // Element
+//         self.add_el(i, j);
+//
+//         // Spin-flipped element
+//         let i_spin_flipped = {
+//             let config = wf.dets[i].config;
+//             wf.inds[&Config { up: config.dn, dn: config.up }]
+//         };
+//         let j_spin_flipped = {
+//             let config = wf.dets[j].config;
+//             wf.inds[&Config { up: config.dn, dn: config.up }]
+//         };
+//         self.add_el(i_spin_flipped, j_spin_flipped);
+//     }
+//
+//     pub fn to_sparse(&self, wf: &Wf, verbose: bool) -> SparseMat {
+//         // Put the matrix elements into a sparse matrix
+//
+//         // To do: Sort elements to find redundancies, then compute matrix elements, then
+//         // clone to lower triangular component, then sort again
+//
+//         let n = wf.n;
+//
+//         // Diagonal component
+//         let mut diag = Vec::with_capacity(n);
+//         for det in &wf.dets {
+//             diag.push(det.diag);
+//         }
+//         if verbose { println!("Ready to make sparse mat: n = {}", n); }
+//         if verbose { println!("nnz:"); }
+//         for i in &self.nnz {
+//             if verbose { println!("{}", i); }
+//         }
+//
+//         // Off-diagonal component
+//         let shape = (n, n);
+//
+//         // Sort indices by row, then by column
+//
+//         // Remove duplicates
+//
+//         // For each index: compute matrix element and
+//
+//
+//
+//
+//         let indptr: Vec<usize> = self.nnz
+//             .iter()
+//             .scan(0, |acc, &x| {
+//                 *acc = *acc + x;
+//                 Some(*acc)
+//             })
+//             .collect();
+//         if verbose { println!("indptr:"); }
+//         for i in &indptr {
+//             if verbose { println!("{}", i); }
+//         }
+//
+//         let indices: Vec<usize> = self.indices.clone().into_iter().flatten().collect();
+//         let data: Vec<f64> = self.values.clone().into_iter().flatten().collect();
+//
+//         if verbose { println!("indices, data:"); }
+//         for (i, j) in indices.iter().zip(data.iter()) {
+//             if verbose { println!("{}, {}", i, j); }
+//         }
+//
+//         // Off-diagonal component
+//         let off_diag_component = CsMat::<f64>::new_from_unsorted(shape, indptr, indices, data);
+//         match off_diag_component {
+//             Err(_) => { panic!("Error in constructing CsMat"); }
+//             Ok(off_diag) => {
+//                 return SparseMat{
+//                     n,
+//                     diag: DVector::from(diag),
+//                     off_diag
+//                 };
+//             }
+//         }
+//     }
+//
+// }
+

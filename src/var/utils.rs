@@ -9,7 +9,7 @@ pub fn remove_1e(config: u128) -> impl Iterator<Item = u128> {
 
 // Iterate over configs with 2 electrons moved:
 pub fn remove_2e(config: u128) -> impl Iterator<Item = u128> {
-    Remove1::new(config).into_iter()
+    Remove2::new(config).into_iter()
 }
 
 
