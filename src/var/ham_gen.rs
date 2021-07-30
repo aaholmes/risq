@@ -259,35 +259,28 @@ pub fn gen_sparse_ham_fast(global: &Global, wf: &Wf, ham: &Ham, verbose: bool) -
     let max_n_dets_double_loop = global.ndn as usize; // ((global.ndn * (global.ndn - 1)) / 2) as usize;
 
     let start_opp: Instant = Instant::now();
-    all_opposite_spin_excites(global, wf, ham, verbose, &mut unique_up_dict, &mut unique_ups_sorted, &mut up_singles, &mut unique_dns_vec, &mut dn_singles, &mut off_diag_elems, max_n_dets_double_loop);
+    all_opposite_spin_excites(global, wf, ham, &mut unique_up_dict, &mut unique_ups_sorted, &mut up_singles, &mut unique_dns_vec, &mut dn_singles, &mut off_diag_elems);
     println!("Time for opposite-spin: {:?}", start_opp.elapsed());
-    let start_same: Instant = Instant::now();
-    all_same_spin_excites(global, wf, ham, verbose, &mut unique_up_dict, &mut unique_ups_sorted, &mut up_singles, &mut unique_dns_vec, &mut dn_singles, &mut off_diag_elems, max_n_dets_double_loop);
-    println!("Time for same-spin: {:?}", start_same.elapsed());
 
-    // for unique in &unique_ups_sorted {
-    //     // Opposite-spin excitations
-    //     opposite_spin_excites(global, wf, ham, verbose, &mut unique_up_dict, &mut up_singles, &mut unique_dns_vec, &mut dn_singles, &mut off_diag_elems, &unique);
-    //
-    //     // Same-spin excitations
-    //     same_spin_excites(wf, ham, verbose, &mut unique_up_dict, max_n_dets_double_loop, &mut off_diag_elems, &unique);
-    // }
+    let start_same: Instant = Instant::now();
+    all_same_spin_excites(wf, ham, &mut unique_up_dict, &mut unique_ups_sorted, &mut off_diag_elems, max_n_dets_double_loop);
+    println!("Time for same-spin: {:?}", start_same.elapsed());
 
     // Finally, put collected off-diag elems into a sparse matrix
     off_diag_elems.to_sparse(wf, verbose)
 }
 
-fn all_opposite_spin_excites(global: &Global, wf: &Wf, ham: &Ham, verbose: bool, mut unique_up_dict: &mut HashMap<u128, Vec<(usize, u128)>>, unique_ups_sorted: &mut Vec<Unique>, mut up_singles: &mut HashMap<u128, Vec<u128>>, mut unique_dns_vec: &mut Vec<u128>, mut dn_singles: &mut HashMap<u128, Vec<u128>>, mut off_diag_elems: &mut OffDiagElems, max_n_dets_double_loop: usize) {
+fn all_opposite_spin_excites(global: &Global, wf: &Wf, ham: &Ham, mut unique_up_dict: &mut HashMap<u128, Vec<(usize, u128)>>, unique_ups_sorted: &mut Vec<Unique>, mut up_singles: &mut HashMap<u128, Vec<u128>>, mut unique_dns_vec: &mut Vec<u128>, mut dn_singles: &mut HashMap<u128, Vec<u128>>, mut off_diag_elems: &mut OffDiagElems) {
     for unique in unique_ups_sorted {
         // Opposite-spin excitations
-        opposite_spin_excites(global, wf, ham, verbose, &mut unique_up_dict, &mut up_singles, &mut unique_dns_vec, &mut dn_singles, &mut off_diag_elems, unique);
+        opposite_spin_excites(global, wf, ham, &mut unique_up_dict, &mut up_singles, &mut unique_dns_vec, &mut dn_singles, &mut off_diag_elems, unique);
     }
 }
 
-fn all_same_spin_excites(global: &Global, wf: &Wf, ham: &Ham, verbose: bool, mut unique_up_dict: &mut HashMap<u128, Vec<(usize, u128)>>, unique_ups_sorted: &mut Vec<Unique>, mut up_singles: &mut HashMap<u128, Vec<u128>>, mut unique_dns_vec: &mut Vec<u128>, mut dn_singles: &mut HashMap<u128, Vec<u128>>, mut off_diag_elems: &mut OffDiagElems, max_n_dets_double_loop: usize) {
+fn all_same_spin_excites(wf: &Wf, ham: &Ham, mut unique_up_dict: &mut HashMap<u128, Vec<(usize, u128)>>, unique_ups_sorted: &mut Vec<Unique>, mut off_diag_elems: &mut OffDiagElems, max_n_dets_double_loop: usize) {
     for unique in unique_ups_sorted {
         // Same-spin excitations
-        same_spin_excites(wf, ham, verbose, &mut unique_up_dict, max_n_dets_double_loop, &mut off_diag_elems, unique);
+        same_spin_excites(wf, ham, &mut unique_up_dict, max_n_dets_double_loop, &mut off_diag_elems, unique);
     }
 }
 
@@ -299,7 +292,7 @@ pub struct Unique {
 }
 
 
-pub fn opposite_spin_excites(global: &Global, wf: &Wf, ham: &Ham, verbose: bool, unique_up_dict: &mut HashMap<u128, Vec<(usize, u128)>>, up_singles: &mut HashMap<u128, Vec<u128>>, unique_dns_vec: &mut Vec<u128>, dn_singles: &mut HashMap<u128, Vec<u128>>, off_diag_elems: &mut OffDiagElems, unique: &Unique) {
+pub fn opposite_spin_excites(global: &Global, wf: &Wf, ham: &Ham, unique_up_dict: &mut HashMap<u128, Vec<(usize, u128)>>, up_singles: &mut HashMap<u128, Vec<u128>>, unique_dns_vec: &mut Vec<u128>, dn_singles: &mut HashMap<u128, Vec<u128>>, off_diag_elems: &mut OffDiagElems, unique: &Unique) {
     // Current status:
     // For the later iterations of C2 vdz, eps=1-4, first algo is ~10x faster than third algo
     // Second algo not yet implemented
@@ -402,7 +395,7 @@ pub fn opposite_spin_excites(global: &Global, wf: &Wf, ham: &Ham, verbose: bool,
 }
 
 
-pub fn same_spin_excites(wf: &Wf, ham: &Ham, verbose: bool, unique_up_dict: &mut HashMap<u128, Vec<(usize, u128)>>, max_n_dets_double_loop: usize, off_diag_elems: &mut OffDiagElems, unique: &Unique) {
+pub fn same_spin_excites(wf: &Wf, ham: &Ham, unique_up_dict: &mut HashMap<u128, Vec<(usize, u128)>>, max_n_dets_double_loop: usize, off_diag_elems: &mut OffDiagElems, unique: &Unique) {
     if unique.n_dets <= max_n_dets_double_loop {
         // if verbose { println!("Same-spin first algo fastest"); }
         // Use the double for-loop algorithm from "Fast SHCI"
@@ -656,6 +649,8 @@ impl OffDiagElems {
 
         let indices: Vec<usize> = self.indices.clone().into_iter().flatten().collect();
         let data: Vec<f64> = self.values.clone().into_iter().flatten().collect();
+
+        println!("Variational Hamiltonian has {} nonzero off-diagonal elements", indices.len());
 
         if verbose { println!("indices, data:"); }
         for (i, j) in indices.iter().zip(data.iter()) {
