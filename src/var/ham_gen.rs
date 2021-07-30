@@ -256,7 +256,7 @@ pub fn gen_sparse_ham_fast(global: &Global, wf: &Wf, ham: &Ham, verbose: bool) -
     // });
 
     // Parameter for choosing which of the two same-spin algorithms to use
-    let max_n_dets_double_loop = (global.ndn * (global.ndn - 1)) as usize;
+    let max_n_dets_double_loop = global.ndn as usize; // ((global.ndn * (global.ndn - 1)) / 2) as usize;
 
     let start_opp: Instant = Instant::now();
     all_opposite_spin_excites(global, wf, ham, verbose, &mut unique_up_dict, &mut unique_ups_sorted, &mut up_singles, &mut unique_dns_vec, &mut dn_singles, &mut off_diag_elems, max_n_dets_double_loop);
@@ -308,8 +308,8 @@ pub fn opposite_spin_excites(global: &Global, wf: &Wf, ham: &Ham, verbose: bool,
     let first_algo_complexity = unique.n_dets * (global.ndn * global.ndn) as usize + unique.n_dets_remaining; // Term in parentheses is an estimate
     let second_algo_complexity = global.ndn as usize * (unique.n_dets + unique.n_dets_remaining);
     let third_algo_complexity = unique.n_dets * unique.n_dets_remaining;
-    let mut first_algo_fastest = true;
-    let mut second_algo_fastest = false;
+    let mut first_algo_fastest = false;
+    let mut second_algo_fastest = true;
     // if first_algo_complexity <= second_algo_complexity {
     //     if first_algo_complexity <= third_algo_complexity { first_algo_fastest = true; }
     // } else {
@@ -365,8 +365,13 @@ pub fn opposite_spin_excites(global: &Global, wf: &Wf, ham: &Ham, verbose: bool,
                 for up in ups {
                     for dn in &unique_up_dict[&up] {
                         for dn_r1 in remove_1e(dn.1) {
-                            for connected_ind in &dn_single_excite_constructor[&dn_r1] {
-                                off_diag_elems.add_el(wf, ham, dn.0, *connected_ind)
+                            match dn_single_excite_constructor.get(&dn_r1) {
+                                None => {},
+                                Some(connected_inds) => {
+                                    for connected_ind in connected_inds {
+                                        off_diag_elems.add_el(wf, ham, dn.0, *connected_ind)
+                                    }
+                                }
                             }
                         }
                     }
@@ -398,7 +403,7 @@ pub fn opposite_spin_excites(global: &Global, wf: &Wf, ham: &Ham, verbose: bool,
 
 
 pub fn same_spin_excites(wf: &Wf, ham: &Ham, verbose: bool, unique_up_dict: &mut HashMap<u128, Vec<(usize, u128)>>, max_n_dets_double_loop: usize, off_diag_elems: &mut OffDiagElems, unique: &Unique) {
-    if false { // unique.n_dets <= max_n_dets_double_loop {
+    if unique.n_dets <= max_n_dets_double_loop {
         // if verbose { println!("Same-spin first algo fastest"); }
         // Use the double for-loop algorithm from "Fast SHCI"
         for (i_ind, ind1) in unique_up_dict[&unique.up].iter().enumerate() {
