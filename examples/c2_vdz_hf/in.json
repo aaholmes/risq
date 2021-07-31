@@ -3,6 +3,6 @@
     "nup": 6,
     "ndn": 6,
     "n_states": 2,
-    "eps_var": 3e-5,
+    "eps_var": 1e-4,
     "eps_pt": 1e-6
 }

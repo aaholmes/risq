@@ -8,6 +8,8 @@ use eigenvalues::{Davidson, DavidsonCorrection, SpectrumTarget};
 use crate::var::ham_gen::{gen_dense_ham_connections, gen_sparse_ham_fast};
 use std::time::Instant;
 use crate::utils::read_input::Global;
+use eigenvalues::algorithms::davidson::DavidsonError;
+use nalgebra::DMatrix;
 
 
 pub fn dense_optimize(wf: &mut Wf, coeff_eps: f64, energy_eps: f64, ham: &Ham, excite_gen: &ExciteGenerator) {
@@ -24,7 +26,7 @@ pub fn dense_optimize(wf: &mut Wf, coeff_eps: f64, energy_eps: f64, ham: &Ham, e
     }
 
     // Davidson
-    let dav = Davidson::new (ham_matrix, 1, DavidsonCorrection::DPR, SpectrumTarget::Lowest, coeff_eps, energy_eps );
+    let dav = Davidson::new (ham_matrix, 1, None, DavidsonCorrection::DPR, SpectrumTarget::Lowest, coeff_eps, energy_eps );
     match dav {
         Ok(eig) => {
             wf.energy = eig.eigenvalues[0];
@@ -54,11 +56,26 @@ pub fn sparse_optimize(global: &Global, wf: &mut Wf, coeff_eps: f64, energy_eps:
 
     // Davidson
     let start_dav: Instant = Instant::now();
-    let dav = Davidson::new (
-        sparse_ham, 1, DavidsonCorrection::DPR,
-        SpectrumTarget::Lowest, coeff_eps,
-        energy_eps
-    );
+    let mut dav: Result<Davidson, DavidsonError>;
+    if wf.n <= 10 {
+        // No initial guess
+        dav = Davidson::new(
+            sparse_ham, 1, None, DavidsonCorrection::DPR,
+            SpectrumTarget::Lowest, coeff_eps,
+            energy_eps
+        );
+    } else {
+        // Use inital guess
+        let mut init = DMatrix::from_vec(wf.n, 1, vec![0.0; wf.n]);
+        for (i, det) in wf.dets.iter().enumerate() {
+            init[(i, 0)] = det.coeff;
+        }
+        dav = Davidson::new(
+            sparse_ham, 1, Some(init), DavidsonCorrection::DPR,
+            SpectrumTarget::Lowest, coeff_eps,
+            energy_eps
+        );
+    }
     println!("Time to perform Davidson diagonalization: {:?}", start_dav.elapsed());
 
     match dav {
