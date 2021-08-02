@@ -27,7 +27,7 @@ pub fn variational(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, wf:
         iter += 1;
 
         let start_find_new_dets: Instant = Instant::now();
-        if wf.get_new_dets(&ham, &excite_gen) {
+        if (wf.eps == global.eps_var) & wf.get_new_dets(&ham, &excite_gen) {
             println!("No new dets added; wf converged");
             wf.converged = true;
             break;
@@ -49,13 +49,15 @@ pub fn variational(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, wf:
             wf.print();
         }
 
-        match last_energy {
-            None => {},
-            Some(e) => {
-                if (e - wf.energy).abs() < eps_energy_converged {
-                    println!("Variational energy did not change much; wf converged");
-                    wf.converged = true;
-                    break;
+        if wf.eps == global.eps_var {
+            match last_energy {
+                None => {},
+                Some(e) => {
+                    if (e - wf.energy).abs() < eps_energy_converged {
+                        println!("Variational energy did not change much; wf converged");
+                        wf.converged = true;
+                        break;
+                    }
                 }
             }
         }

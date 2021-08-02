@@ -6,6 +6,7 @@ use lexical::parse;
 use crate::utils::read_input::Global;
 use crate::ham::Ham;
 use crate::utils::ints::{read_lines, combine_2, combine_4};
+use std::cmp::Ordering::Equal;
 
 #[derive(Default)]
 pub struct Ints {
@@ -17,6 +18,8 @@ pub struct Ints {
 pub fn read_ints(global: &Global, filename: &str) -> Ham {
     // Read integrals, put them into self.ints
     // Ints are stored starting with index 1 (following the FCIDUMP file they're read from)
+    // Also, create core_orbs and valence_orbs lists using the diagonal Fock elements to determine
+    // which norb_core orbitals to freeze
     let mut ham: Ham = Ham::default();
     ham.ints.one_body = vec![0.0; combine_2(global.norb + 1, global.norb + 1)];
     ham.ints.two_body = vec![0.0; combine_4(global.norb + 1, global.norb + 1, global.norb + 1, global.norb + 1)];
@@ -43,6 +46,34 @@ pub fn read_ints(global: &Global, filename: &str) -> Ham {
                 }
             }
         }
+
+        // Determine core and valence orbs using the diagonal Fock elements
+        ham.core_orbs = Vec::with_capacity(global.norb as usize);
+        ham.valence_orbs = Vec::with_capacity(global.norb as usize);
+
+        // Sort diagonal elements in increasing order
+        let mut fock_diag: Vec<f64> = Vec::with_capacity(global.norb as usize);
+        let mut inds: Vec<i32> = Vec::with_capacity(global.norb as usize);
+        for i in 0..global.norb {
+            fock_diag.push(ham.one_body(i, i));
+            inds.push(i);
+        }
+        fock_diag.iter().zip(&inds)
+            .collect::<Vec<_>>()
+            .sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(Equal));
+
+        for (i, (_, ind)) in fock_diag.into_iter().zip(inds)
+            .collect::<Vec<_>>()
+            .iter()
+            .enumerate() {
+            if i < global.norb_core as usize {
+                ham.core_orbs.push(*ind);
+            } else {
+                ham.valence_orbs.push(*ind);
+            }
+        }
+        println!("Core orbs: {:?}", ham.core_orbs);
+        println!("Valence orbs: {:?}", ham.valence_orbs);
     }
     ham
 }

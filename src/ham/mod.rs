@@ -10,9 +10,12 @@ use crate::utils::bits::bit_pairs;
 use crate::excite::{Orbs, Excite};
 
 // Hamiltonian, containing integrals and matrix element computing functions
+// Also contains information about frozen orbitals
 #[derive(Default)]
 pub struct Ham {
     ints: Ints,
+    core_orbs: Vec<i32>,
+    valence_orbs: Vec<i32>
 }
 
 impl Ham {
