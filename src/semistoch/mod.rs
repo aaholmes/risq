@@ -148,7 +148,7 @@ pub fn faster_semistoch_enpt2(input_wf: &Wf, global: &Global, ham: &Ham, excite_
         }
     }
 
-    println!("Stochastic components: Cross term: {:.4} +- {:.4},   Quadratic term: {:.4} +- {:.4}", 2f64 * stoch_enpt2_cross_term.mean,
+    println!("Stochastic components: Cross term: {:.6} +- {:.6},   Quadratic term: {:.6} +- {:.6}", 2f64 * stoch_enpt2_cross_term.mean,
              2f64 * stoch_enpt2_cross_term.std_dev, stoch_enpt2_quadratic.mean, stoch_enpt2_quadratic.std_dev);
 
     (
