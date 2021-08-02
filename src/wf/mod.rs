@@ -410,7 +410,7 @@ impl Wf {
 
                                 } else {
 
-                                    // max |H| < eps: no more deterministic pieces allowed
+                                    // |H| < eps: no more deterministic pieces allowed
 
                                     // Update the screened sampler if this excite is valid and points to
                                     // a perturbative det (else, skip until we reach an excite that fits those criteria!)
@@ -470,7 +470,7 @@ impl Wf {
 
                                 } else {
 
-                                    // max |H| < eps: no more deterministic pieces allowed
+                                    // |H| < eps: no more deterministic pieces allowed
 
                                     // Update the screened sampler if this excite is valid and points to
                                     // a perturbative det (else, skip until we reach an excite that fits those criteria!)
@@ -508,7 +508,7 @@ impl Wf {
                         let mut stored_sampler: bool = false;
                         for stored_excite in excite_gen.sing_sorted_list.get(&Orbs::Single(i)).unwrap() {
                             if stored_excite.abs_h >= local_eps {
-                                // max |H| >= eps: deterministic component
+                                // *max* |H| >= eps: deterministic component
                                 excite = Excite {
                                     init: Orbs::Single(i),
                                     target: stored_excite.target,
@@ -525,11 +525,11 @@ impl Wf {
                                             // Compute matrix element and compare its magnitude to eps
                                             let sing: f64 = ham.ham_sing(&det.config, &d);
                                             if sing.abs() >= local_eps {
-                                                // |H| >= eps; add to output wf
+                                                // *exact* |H| >= eps; add to output wf
                                                 // TODO: Do this in a cache efficient way
                                                 out_wf.add_det_with_coeff(det, ham, &excite, d, ham.ham_sing(&det.config, &d) * det.coeff);
                                             } else {
-                                                // |H| < eps; store remaining excites in sampler so this valid excite and subsequent ones can be sampled
+                                                // *exact* |H| < eps; store remaining excites in sampler so this valid excite and subsequent ones can be sampled
                                                 if !stored_sampler {
                                                     // println!("Setup single det_orb sampler when exact |H| < eps, orb = {}", i);
                                                     det_orbs.push(DetOrbSample {

@@ -16,7 +16,6 @@ eigenvalues = { path = "../eigenvalues" }
 sprs = "0.10.0"
 ndarray = "0.14.0"
 itertools = "0.8.0"
-vose-alias = { path = "../vose-alias" }
 rand = "0.8.3"
 rolling-stats = "0.4.0"
 threads_pool = "0.2.6"

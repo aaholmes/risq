@@ -41,13 +41,13 @@ impl fmt::Display for DetOrbSample<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.is_alpha {
             None => {
-                write!(f, "{}, orbs = {}, opposite-spin double, sum_abs_hc = {}", self.det, self.init, self.sum_abs_hc)
+                write!(f, "{}, orbs = {}, opposite-spin double, sum_abs_hc = {}, sum_hc_squared = {}", self.det, self.init, self.sum_abs_hc, self.sum_hc_squared)
             },
             Some(is_alpha) => {
                 if is_alpha {
-                    write!(f, "{}, orbs = {}, spin = up, sum_abs_hc = {}", self.det, self.init, self.sum_abs_hc)
+                    write!(f, "{}, orbs = {}, spin = up, sum_abs_hc = {}, sum_hc_squared = {}", self.det, self.init, self.sum_abs_hc, self.sum_hc_squared)
                 } else {
-                    write!(f, "{}, orbs = {}, spin = dn, sum_abs_hc = {}", self.det, self.init, self.sum_abs_hc)
+                    write!(f, "{}, orbs = {}, spin = dn, sum_abs_hc = {}, sum_hc_squared = {}", self.det, self.init, self.sum_abs_hc, self.sum_hc_squared)
                 }
             }
         }

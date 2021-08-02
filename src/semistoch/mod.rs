@@ -6,11 +6,11 @@ use crate::excite::init::ExciteGenerator;
 use crate::stoch::{matmul_sample_remaining, ImpSampleDist};
 use rolling_stats::Stats;
 use crate::pt::PtSamples;
-use vose_alias::VoseAlias;
 use crate::wf::det::Det;
-// use serde::de::Expected;
 use crate::utils::read_input::Global;
-// use rand::seq::index::sample;
+use crate::stoch::alias::Alias;
+use std::time::Instant;
+
 
 pub fn faster_semistoch_enpt2(input_wf: &Wf, global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, eps: f64, n_batches: i32, n_samples_per_batch: i32) -> (f64, f64) {
     // Semistochastic Epstein-Nesbet PT2
@@ -29,7 +29,12 @@ pub fn faster_semistoch_enpt2(input_wf: &Wf, global: &Global, ham: &Ham, excite_
     // compute all connections, and makes use of stored approximate H*psi directly (rather than sampling it).
 
     // Compute deterministic component, and create sampler object for sampling remaining component
-    let (dtm_result, screened_sampler) = input_wf.approx_matmul_external_semistoch_singles(ham, excite_gen, eps);
+    let start_dtm_enpt2: Instant = Instant::now();
+    let (dtm_result, mut screened_sampler) = input_wf.approx_matmul_external_semistoch_singles(ham, excite_gen, eps);
+    // println!("Testing screened sampler!");
+    // let n_samples = 1000000;
+    // screened_sampler.det_orb_sampler_abs_hc.test(n_samples);
+    println!("Time for dtm ENPT2: {:?}", start_dtm_enpt2.elapsed());
 
     // Compute dtm approx to observable using dtm_result
     // Simple ENPT2
@@ -37,7 +42,7 @@ pub fn faster_semistoch_enpt2(input_wf: &Wf, global: &Global, ham: &Ham, excite_
     for det in &dtm_result.dets {
         dtm_enpt2 += (det.coeff * det.coeff) / (input_wf.energy - det.diag);
     }
-    println!("Deterministic approximation to Delta E using eps = {}: {:.6}", eps, dtm_enpt2);
+    println!("Deterministic approximation to Delta E using eps = {} ({} dets): {:.6}", eps, dtm_result.n, dtm_enpt2);
 
     // Stochastic component
     let mut stoch_enpt2_cross_term: Stats<f64> = Stats::new(); // samples overlap with deterministic part
@@ -52,7 +57,7 @@ pub fn faster_semistoch_enpt2(input_wf: &Wf, global: &Global, ham: &Ham, excite_
 
             // Sample with probability proportional to (Hc)^2
             let (sampled_det_info, sampled_prob) = matmul_sample_remaining(
-                &screened_sampler, ImpSampleDist::HcSquared, excite_gen, ham
+                &mut screened_sampler, ImpSampleDist::HcSquared, excite_gen, ham
             );
 
             match sampled_det_info {
@@ -91,7 +96,7 @@ pub fn faster_semistoch_enpt2(input_wf: &Wf, global: &Global, ham: &Ham, excite_
     for det in &dtm_result.dets {
         probs_dtm_result.push((det.coeff / (input_wf.energy - det.diag)).abs());
     }
-    let dtm_result_sampler: VoseAlias<Det> = VoseAlias::new(dtm_result.dets, probs_dtm_result);
+    let mut dtm_result_sampler: Alias = Alias::new(probs_dtm_result);
 
     // Here, we use the following sampling approach:
     // 1. Sample a det in dtm_result using dtm_result_sampler
@@ -104,7 +109,8 @@ pub fn faster_semistoch_enpt2(input_wf: &Wf, global: &Global, ham: &Ham, excite_
 
     for _i_sample in 0..n_cross_term_samples {
         // Sample a det in dtm_result
-        let (sampled_dtm_det, sampled_dtm_det_prob) = dtm_result_sampler.sample_with_prob();
+        let (sampled_dtm_det_ind, sampled_dtm_det_prob) = dtm_result_sampler.sample_with_prob();
+        let sampled_dtm_det = dtm_result.dets[sampled_dtm_det_ind];
 
         // Sample O(N^2) excitations from the sampled det, one for each occupied orb/pair
         let sampled_excites = excite_gen.sample_excites_from_all_pairs(sampled_dtm_det.config);
@@ -168,7 +174,8 @@ pub fn fast_semistoch_enpt2(input_wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerat
     // compute all connections, and makes use of stored approximate H*psi directly (rather than sampling it).
 
     // Compute deterministic component, and create sampler object for sampling remaining component
-    let (dtm_result, screened_sampler) = input_wf.approx_matmul_external_no_singles(ham, excite_gen, eps);
+    let (dtm_result, mut screened_sampler) = input_wf.approx_matmul_external_no_singles(ham, excite_gen, eps);
+
     // println!("Result of screened_matmul:");
     // dtm_result.print();
 
@@ -178,7 +185,7 @@ pub fn fast_semistoch_enpt2(input_wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerat
     for det in &dtm_result.dets {
         dtm_enpt2 += (det.coeff * det.coeff) / (input_wf.energy - det.diag);
     }
-    println!("Deterministic approximation to Delta E using eps = {} (no singles): {:.6}", eps, dtm_enpt2);
+    println!("Deterministic approximation to Delta E using eps = {} ({} dets): {:.6}", eps, dtm_result.n, dtm_enpt2);
 
     // Stochastic component
     let mut stoch_enpt2_cross_term: Stats<f64> = Stats::new(); // samples overlap with deterministic part
@@ -193,7 +200,7 @@ pub fn fast_semistoch_enpt2(input_wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerat
 
             // Sample with probability proportional to (Hc)^2
             let (sampled_det_info, sampled_prob) = matmul_sample_remaining(
-                &screened_sampler, ImpSampleDist::HcSquared, excite_gen, ham
+                &mut screened_sampler, ImpSampleDist::HcSquared, excite_gen, ham
             );
 
             match sampled_det_info {
@@ -232,7 +239,7 @@ pub fn fast_semistoch_enpt2(input_wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerat
     for det in &dtm_result.dets {
         probs_dtm_result.push((det.coeff / (input_wf.energy - det.diag)).abs());
     }
-    let dtm_result_sampler: VoseAlias<Det> = VoseAlias::new(dtm_result.dets, probs_dtm_result);
+    let mut dtm_result_sampler: Alias = Alias::new(probs_dtm_result);
 
     // Here, we use the following sampling approach:
     // 1. Sample a det in dtm_result using dtm_result_sampler
@@ -241,7 +248,8 @@ pub fn fast_semistoch_enpt2(input_wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerat
 
     for _i_sample in 0..n_batches * n_samples_per_batch {
         // Sample a det in dtm_result
-        let (sampled_dtm_det, sampled_dtm_det_prob) = dtm_result_sampler.sample_with_prob();
+        let (sampled_dtm_det_ind, sampled_dtm_det_prob) = dtm_result_sampler.sample_with_prob();
+        let sampled_dtm_det = dtm_result.dets[sampled_dtm_det_ind];
 
         // Sample O(N^2) excitations from the sampled det, one for each occupied orb/pair
         let sampled_excites = excite_gen.sample_excites_from_all_pairs(sampled_dtm_det.config);
@@ -304,7 +312,7 @@ pub fn semistoch_enpt2(input_wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerator, e
     // compute all connections, and makes use of stored approximate H*psi directly (rather than sampling it).
 
     // Compute deterministic component, and create sampler object for sampling remaining component
-    let (dtm_result, screened_sampler) = input_wf.approx_matmul_external_no_singles(ham, excite_gen, eps);
+    let (dtm_result, mut screened_sampler) = input_wf.approx_matmul_external_no_singles(ham, excite_gen, eps);
     // println!("Result of screened_matmul:");
     // dtm_result.print();
 
@@ -315,7 +323,7 @@ pub fn semistoch_enpt2(input_wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerator, e
     for det in &dtm_result.dets {
         dtm_enpt2 += (det.coeff * det.coeff) / (input_wf.energy - det.diag);
     }
-    println!("Deterministic approximation to Delta E using eps = {}: {:.6}", eps, dtm_enpt2);
+    println!("Deterministic approximation to Delta E using eps = {} ({} dets): {:.6}", eps, dtm_result.n, dtm_enpt2);
 
     // Stochastic component
     let mut stoch_enpt2: Stats<f64> = Stats::new(); // samples overlap with deterministic part
@@ -330,7 +338,7 @@ pub fn semistoch_enpt2(input_wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerator, e
 
             // Sample with probability proportional to (Hc)^2
             let (sampled_det_info, sampled_prob) = matmul_sample_remaining(
-                &screened_sampler, ImpSampleDist::HcSquared, excite_gen, ham
+                &mut screened_sampler, ImpSampleDist::HcSquared, excite_gen, ham
             );
 
             match sampled_det_info {
@@ -397,14 +405,16 @@ pub fn old_semistoch_enpt2(input_wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerato
     // else, use probability proportional to |c|
 
     // Compute deterministic approximation to H psi using large eps
+    let start_dtm_enpt2: Instant = Instant::now();
     let (dtm_result, optimal_probs) = input_wf.approx_matmul_external_dtm_only(ham, excite_gen, eps);
+    println!("Time for dtm ENPT2: {:?}", start_dtm_enpt2.elapsed());
 
     // Compute approximate delta E using approx H psi
     let mut dtm_enpt2: f64 = 0.0;
     for det in dtm_result.dets {
         dtm_enpt2 += det.coeff * det.coeff / (input_wf.energy - det.diag);
     }
-    println!("Deterministic approximation to Delta E using eps = {}: {:.6}", eps, dtm_enpt2);
+    println!("Deterministic approximation to Delta E using eps = {} ({} dets): {:.6}", eps, dtm_result.n, dtm_enpt2);
 
     // Sample dets from wf with probability |c|
     // Update estimate of difference between exact and approximate delta E using deterministic application of H
@@ -430,7 +440,7 @@ pub fn old_semistoch_enpt2(input_wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerato
     }
     println!("Setting up wf sampler");
     println!("Normalization: {}", var_probs.iter().sum::<f64>());
-    let wf_sampler: VoseAlias<Det> = VoseAlias::new(input_wf.dets.clone(), var_probs);
+    let mut wf_sampler: Alias = Alias::new( var_probs);
     println!("Done setting up wf sampler");
     // println!("Alias sampler:");
     // wf_sampler.print();
@@ -448,7 +458,8 @@ pub fn old_semistoch_enpt2(input_wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerato
 
         for _i_sample in 0..n_samples_per_batch {
             // Sample with prob var_probs(:)
-            let (sampled_var_det, sampled_prob) = wf_sampler.sample_with_prob();
+            let (sampled_var_det_ind, sampled_prob) = wf_sampler.sample_with_prob();
+            let sampled_var_det = input_wf.dets[sampled_var_det_ind];
             // let sampled_var_det = wf_sampler.sample();
             // let sampled_prob = sampled_var_det.coeff.abs() / prob_norm;
 

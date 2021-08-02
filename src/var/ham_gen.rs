@@ -621,6 +621,7 @@ impl OffDiagElems {
     }
 
     pub fn to_sparse(&self, wf: &Wf, verbose: bool) -> SparseMat {
+        let start_to_sparse: Instant = Instant::now();
         // Put the matrix elements into a sparse matrix
         let n = wf.n;
 
@@ -659,6 +660,7 @@ impl OffDiagElems {
 
         // Off-diagonal component
         let off_diag_component = CsMat::<f64>::new_from_unsorted(shape, indptr, indices, data);
+        println!("Time for converting stored nonzero indices to sparse H: {:?}", start_to_sparse.elapsed());
         match off_diag_component {
             Err(_) => { panic!("Error in constructing CsMat"); }
             Ok(off_diag) => { return SparseMat{n, diag: DVector::from(diag), off_diag}; }

@@ -58,11 +58,11 @@ fn main() {
     variational(&GLOBAL, &HAM, &EXCITE_GEN, &mut wf);
     println!("Time for variational stage: {:?}", start_var.elapsed());
 
-    // let eps_pt = GLOBAL.eps_pt;
-    // let n_batches = 2;
-    // let n_samples_per_batch_old = 10;
-    // let n_samples_per_batch_new = 400;
-    //
+    let eps_pt = GLOBAL.eps_pt;
+    let n_batches = 2;
+    let n_samples_per_batch_old = 10;
+    let n_samples_per_batch_new = 400;
+
     // let start_old_enpt2: Instant = Instant::now();
     // println!("\nCalling semistoch ENPT2 the old way with p ~ |c| using eps_pt = {}", eps_pt);
     // let (e_pt2, std_dev) = old_semistoch_enpt2(&wf, &HAM, &EXCITE_GEN, eps_pt, n_batches, n_samples_per_batch_old, false);
@@ -70,14 +70,14 @@ fn main() {
     // println!("PT energy: {:.6} +- {:.6}", e_pt2, std_dev);
     // println!("Total energy (old): {:.6} +- {:.6}", wf.energy + e_pt2, std_dev);
     // println!("Time for old ENPT2: {:?}", start_old_enpt2.elapsed());
-    //
-    // let start_new_enpt2: Instant = Instant::now();
-    // println!("Calling semistoch ENPT2 the new way!");
-    // let (e_pt2, std_dev) = faster_semistoch_enpt2(&wf, &GLOBAL, &HAM, &EXCITE_GEN, eps_pt, n_batches, n_samples_per_batch_new);
-    // println!("Variational energy: {:.6}", wf.energy);
-    // println!("PT energy: {:.6} +- {:.6}", e_pt2, std_dev);
-    // println!("Total energy (new): {:.6} +- {:.6}", wf.energy + e_pt2, std_dev);
-    // println!("Time for new ENPT2: {:?}", start_new_enpt2.elapsed());
+
+    let start_new_enpt2: Instant = Instant::now();
+    println!("Calling semistoch ENPT2 the new way!");
+    let (e_pt2, std_dev) = faster_semistoch_enpt2(&wf, &GLOBAL, &HAM, &EXCITE_GEN, eps_pt, n_batches, n_samples_per_batch_new);
+    println!("Variational energy: {:.6}", wf.energy);
+    println!("PT energy: {:.6} +- {:.6}", e_pt2, std_dev);
+    println!("Total energy (new): {:.6} +- {:.6}", wf.energy + e_pt2, std_dev);
+    println!("Time for new ENPT2: {:?}", start_new_enpt2.elapsed());
 
 
     println!("Total Time: {:?}", start.elapsed());
