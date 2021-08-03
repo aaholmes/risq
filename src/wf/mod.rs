@@ -86,8 +86,8 @@ impl Wf {
             // Double excitations
             // Opposite spin
             if excite_gen.max_opp_doub >= local_eps {
-                for i in bits(det.config.up) {
-                    for j in bits(det.config.dn) {
+                for i in bits(excite_gen.valence & det.config.up) {
+                    for j in bits(excite_gen.valence & det.config.dn) {
                         for stored_excite in excite_gen.opp_doub_sorted_list.get(&Orbs::Double((i, j))).unwrap() {
                             if stored_excite.abs_h < local_eps {
                                 // No more deterministic excitations will meet the eps cutoff
@@ -120,7 +120,7 @@ impl Wf {
             // Same spin
             if excite_gen.max_same_doub >= local_eps {
                 for (config, is_alpha) in &[(det.config.up, true), (det.config.dn, false)] {
-                    for (i, j) in bit_pairs(*config) {
+                    for (i, j) in bit_pairs(excite_gen.valence & *config) {
                         for stored_excite in excite_gen.same_doub_sorted_list.get(&Orbs::Double((i, j))).unwrap() {
                             if stored_excite.abs_h < local_eps {
                                 // No more deterministic excitations will meet the eps cutoff
@@ -153,7 +153,7 @@ impl Wf {
             // Single excitations
             if excite_gen.max_sing >= local_eps {
                 for (config, is_alpha) in &[(det.config.up, true), (det.config.dn, false)] {
-                    for i in bits(*config) {
+                    for i in bits(excite_gen.valence & *config) {
                         for stored_excite in excite_gen.sing_sorted_list.get(&Orbs::Single(i)).unwrap() {
                             if stored_excite.abs_h < local_eps {
                                 // No more deterministic excitations will meet the eps cutoff
@@ -218,8 +218,8 @@ impl Wf {
             // Double excitations
             // Opposite spin
             if excite_gen.max_opp_doub >= local_eps {
-                for i in bits(det.config.up) {
-                    for j in bits(det.config.dn) {
+                for i in bits(excite_gen.valence & det.config.up) {
+                    for j in bits(excite_gen.valence & det.config.dn) {
                         for stored_excite in excite_gen.opp_doub_sorted_list.get(&Orbs::Double((i, j))).unwrap() {
                             if stored_excite.abs_h < local_eps {
                                 // No more deterministic excitations will meet the eps cutoff
@@ -261,7 +261,7 @@ impl Wf {
             // Same spin
             if excite_gen.max_same_doub >= local_eps {
                 for (config, is_alpha) in &[(det.config.up, true), (det.config.dn, false)] {
-                    for (i, j) in bit_pairs(*config) {
+                    for (i, j) in bit_pairs(excite_gen.valence & *config) {
                         for stored_excite in excite_gen.same_doub_sorted_list.get(&Orbs::Double((i, j))).unwrap() {
                             if stored_excite.abs_h < local_eps {
                                 // No more deterministic excitations will meet the eps cutoff
@@ -303,7 +303,7 @@ impl Wf {
             // Single excitations
             if excite_gen.max_sing >= local_eps {
                 for (config, is_alpha) in &[(det.config.up, true), (det.config.dn, false)] {
-                    for i in bits(*config) {
+                    for i in bits(excite_gen.valence & *config) {
                         for stored_excite in excite_gen.sing_sorted_list.get(&Orbs::Single(i)).unwrap() {
                             if stored_excite.abs_h < local_eps {
                                 // No more deterministic excitations will meet the eps cutoff
@@ -377,8 +377,8 @@ impl Wf {
             // Double excitations
 
             // Opposite spin
-            for i in bits(det.config.up) {
-                for j in bits(det.config.dn) {
+            for i in bits(excite_gen.valence & det.config.up) {
+                for j in bits(excite_gen.valence & det.config.dn) {
                     for stored_excite in excite_gen.opp_doub_sorted_list.get(&Orbs::Double((i, j))).unwrap() {
 
                         excite = Excite {
@@ -438,7 +438,7 @@ impl Wf {
 
             // Same spin
             for (config, is_alpha) in &[(det.config.up, true), (det.config.dn, false)] {
-                for (i, j) in bit_pairs(*config) {
+                for (i, j) in bit_pairs(excite_gen.valence & *config) {
                     for stored_excite in excite_gen.same_doub_sorted_list.get(&Orbs::Double((i, j))).unwrap() {
 
                         excite = Excite {
@@ -504,7 +504,7 @@ impl Wf {
             // For the sampler, also keep going (after max |H| < eps) to skip over the invalid excitations here so they won't be sampled later!
             if excite_gen.max_sing >= local_eps {
                 for (config, is_alpha) in &[(det.config.up, true), (det.config.dn, false)] {
-                    for i in bits(*config) {
+                    for i in bits(excite_gen.valence & *config) {
                         let mut stored_sampler: bool = false;
                         for stored_excite in excite_gen.sing_sorted_list.get(&Orbs::Single(i)).unwrap() {
                             if stored_excite.abs_h >= local_eps {
@@ -636,8 +636,8 @@ impl Wf {
             local_eps = eps / det.coeff.abs();
             // Double excitations
             // Opposite spin
-            for i in bits(det.config.up) {
-                for j in bits(det.config.dn) {
+            for i in bits(excite_gen.valence & det.config.up) {
+                for j in bits(excite_gen.valence & det.config.dn) {
                     for stored_excite in excite_gen.opp_doub_sorted_list.get(&Orbs::Double((i, j))).unwrap() {
                         if stored_excite.abs_h < local_eps {
                             // No more deterministic excitations will meet the eps cutoff
@@ -686,7 +686,7 @@ impl Wf {
 
             // Same spin
             for (config, is_alpha) in &[(det.config.up, true), (det.config.dn, false)] {
-                for (i, j) in bit_pairs(*config) {
+                for (i, j) in bit_pairs(excite_gen.valence & *config) {
                     for stored_excite in excite_gen.same_doub_sorted_list.get(&Orbs::Double((i, j))).unwrap() {
                         if stored_excite.abs_h < local_eps {
                             // No more deterministic excitations will meet the eps cutoff
@@ -736,7 +736,7 @@ impl Wf {
 
             // Single excitations (no deterministic contribution - just set up for sampling later)
             for (config, is_alpha) in &[(det.config.up, true), (det.config.dn, false)] {
-                for i in bits(*config) {
+                for i in bits(excite_gen.valence & *config) {
                     let mut stored_excite = &excite_gen.sing_sorted_list.get(&Orbs::Single(i)).unwrap()[0];
                     det_orbs.push(DetOrbSample{
                         det: det,
@@ -784,8 +784,8 @@ impl Wf {
             // Double excitations
             // Opposite spin
             if excite_gen.max_opp_doub >= local_eps {
-                for i in bits(det.config.up) {
-                    for j in bits(det.config.dn) {
+                for i in bits(excite_gen.valence & det.config.up) {
+                    for j in bits(excite_gen.valence & det.config.dn) {
                         for stored_excite in excite_gen.opp_doub_sorted_list.get(&Orbs::Double((i, j))).unwrap() {
                             if stored_excite.abs_h < local_eps { break; }
                             excite = Excite {
@@ -817,7 +817,7 @@ impl Wf {
             // Same spin
             if excite_gen.max_same_doub >= local_eps {
                 for (config, is_alpha) in &[(det.config.up, true), (det.config.dn, false)] {
-                    for (i, j) in bit_pairs(*config) {
+                    for (i, j) in bit_pairs(excite_gen.valence & *config) {
                         for stored_excite in excite_gen.same_doub_sorted_list.get(&Orbs::Double((i, j))).unwrap() {
                             if stored_excite.abs_h < local_eps { break; }
                             excite = Excite {
@@ -850,7 +850,7 @@ impl Wf {
             // Single excitations
             if excite_gen.max_sing >= local_eps {
                 for (config, is_alpha) in &[(det.config.up, true), (det.config.dn, false)] {
-                    for i in bits(*config) {
+                    for i in bits(excite_gen.valence & *config) {
                         for stored_excite in excite_gen.sing_sorted_list.get(&Orbs::Single(i)).unwrap() {
                             if stored_excite.abs_h < local_eps { break; }
                             excite = Excite {
@@ -915,8 +915,8 @@ impl Wf {
             // Double excitations
             // Opposite spin
             if excite_gen.max_opp_doub >= local_eps {
-                for i in bits(det.config.up) {
-                    for j in bits(det.config.dn) {
+                for i in bits(excite_gen.valence & det.config.up) {
+                    for j in bits(excite_gen.valence & det.config.dn) {
                         for stored_excite in excite_gen.opp_doub_sorted_list.get(&Orbs::Double((i, j))).unwrap() {
                             if stored_excite.abs_h < local_eps { break; }
                             excite = Excite {
@@ -965,7 +965,7 @@ impl Wf {
             // Same spin
             if excite_gen.max_same_doub >= local_eps {
                 for (config, is_alpha) in &[(det.config.up, true), (det.config.dn, false)] {
-                    for (i, j) in bit_pairs(*config) {
+                    for (i, j) in bit_pairs(excite_gen.valence & *config) {
                         for stored_excite in excite_gen.same_doub_sorted_list.get(&Orbs::Double((i, j))).unwrap() {
                             if stored_excite.abs_h < local_eps { break; }
                             excite = Excite {
@@ -1012,7 +1012,7 @@ impl Wf {
             // Single excitations
             if excite_gen.max_sing >= local_eps {
                 for (config, is_alpha) in &[(det.config.up, true), (det.config.dn, false)] {
-                    for i in bits(*config) {
+                    for i in bits(excite_gen.valence & *config) {
                         for stored_excite in excite_gen.sing_sorted_list.get(&Orbs::Single(i)).unwrap() {
                             if stored_excite.abs_h < local_eps { break; }
                             excite = Excite {

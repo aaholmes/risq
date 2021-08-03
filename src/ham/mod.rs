@@ -14,8 +14,8 @@ use crate::excite::{Orbs, Excite};
 #[derive(Default)]
 pub struct Ham {
     ints: Ints,
-    core_orbs: Vec<i32>,
-    valence_orbs: Vec<i32>
+    pub(crate) core_orbs: Vec<i32>,
+    pub(crate) valence_orbs: Vec<i32>
 }
 
 impl Ham {

@@ -43,8 +43,8 @@ pub fn init_eps(wf: &Wf, global: &Global, excite_gen: &ExciteGenerator) -> Eps {
     let mut this_doub: f64;
     for det in &wf.dets {
         // Opposite spin
-        for i in bits(det.config.up) {
-            for j in bits(det.config.dn) {
+        for i in bits(excite_gen.valence & det.config.up) {
+            for j in bits(excite_gen.valence & det.config.dn) {
                 excite = &excite_gen.opp_doub_sorted_list.get(&Orbs::Double((i, j))).unwrap()[0];
                 match excite.target {
                     Orbs::Double(t) => {
@@ -61,7 +61,7 @@ pub fn init_eps(wf: &Wf, global: &Global, excite_gen: &ExciteGenerator) -> Eps {
         }
         // Same spin
         for config in &[det.config.up, det.config.dn] {
-            for (i, j) in bit_pairs(*config) {
+            for (i, j) in bit_pairs(excite_gen.valence & *config) {
                 excite = &excite_gen.same_doub_sorted_list.get(&Orbs::Double((i, j))).unwrap()[0];
                 match excite.target {
                     Orbs::Double(t) => {
