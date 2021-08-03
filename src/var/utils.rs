@@ -1,15 +1,22 @@
 // Module for utility functions useful for fast variational Hamiltonian generation
 
 use crate::utils::bits::ibclr;
+use crate::wf::det::Config;
+use std::intrinsics::ceilf32;
 
-// Iterate over configs with 1 electron moved:
+// Iterate over configs with 1 electron removed:
 pub fn remove_1e(config: u128) -> impl Iterator<Item = u128> {
     Remove1::new(config).into_iter()
 }
 
-// Iterate over configs with 2 electrons moved:
+// Iterate over configs with 2 electrons removed:
 pub fn remove_2e(config: u128) -> impl Iterator<Item = u128> {
     Remove2::new(config).into_iter()
+}
+
+// Iterate over intersection of 2 sorted lists:
+pub fn intersection(v1: &Vec<(Config, usize)>, v2: &Vec<(Config, usize)>) -> impl Iterator<Item = (usize, usize)> {
+    DoublesIntersection::new(v1, v2).into_iter()
 }
 
 
@@ -111,5 +118,91 @@ impl Iterator for Remove2IntoIterator {
         let second_bit: i32 = self.second_bits_left.trailing_zeros() as i32;
         self.second_bits_left &= !(1 << second_bit);
         Some(ibclr(ibclr(self.config, self.first_bit), second_bit))
+    }
+}
+
+// Backend for intersection
+
+struct DoublesIntersection<'a> {
+    v1: &'a Vec<(Config, usize)>,
+    v2: &'a Vec<(Config, usize)>,
+}
+
+impl DoublesIntersection {
+    fn new(v1: &Vec<(Config, usize)>, v2: &Vec<(Config, usize)>) -> DoublesIntersection {
+        DoublesIntersection { v1, v2 }
+    }
+}
+
+impl IntoIterator for DoublesIntersection {
+    type Item = (usize, usize);
+    type IntoIter = DoublesIntersectionIntoIterator<'_>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        let n1 = self.v1.len();
+        let n2 = self.v2.len();
+        if n1 <= n2 {
+            DoublesIntersectionIntoIterator {
+                linear: n1 + n2 <= n1 * ((n2 as f32).log2()).ceil(),
+                v1: self.v1,
+                v2: self.v2,
+                n1: n1,
+                n2: n2,
+                ind1: 0,
+                ind2: 0,
+            }
+        } else {
+            DoublesIntersectionIntoIterator {
+                linear: n1 + n2 <= n2 * ((n1 as f32).log2()).ceil(),
+                v1: self.v2,
+                v2: self.v1,
+                n1: n2,
+                n2: n1,
+                ind1: 0,
+                ind2: 0,
+            }
+        }
+    }
+}
+
+struct DoublesIntersectionIntoIterator<'a> {
+    linear: bool, // if true, use N+M algorithm; else, use N log M algorithm
+    v1: &'a Vec<(Config, usize)>,
+    v2: &'a Vec<(Config, usize)>,
+    n1: usize,
+    n2: usize,
+    ind1: usize,
+    ind2: usize,
+}
+
+impl Iterator for DoublesIntersectionIntoIterator {
+    type Item = (usize, usize);
+
+    fn next(&mut self) -> Option<Item> {
+        if self.linear {
+            while self.ind1 != self.n1 && self.ind2 != self.n2 {
+                if self.v1[self.ind1].0 == self.v2[self.ind2].0 {
+                    return Some((self.v1[self.ind1].1, self.v2[self.ind2].1));
+                } else if self.v1[self.ind1].0.up < self.v2[self.ind2].0.up ||
+                    (self.v1[self.ind1].0.up == self.v2[self.ind2].0.up && self.v1[self.ind1].0.dn < self.v2[self.ind2].0.dn) {
+                    self.ind1 += 1;
+                } else {
+                    self.ind2 += 1;
+                }
+            }
+            None
+        } else {
+            while self.ind1 != self.n1 {
+                // search for ind1 in v2
+                if let Ok(ind2) = self.v2.binary_search_by_key(&self.v1[ind1].0, |&(det, _)| (det.up, det.dn)) {
+                    // Found by binary search
+                    return Some((self.v1[self.ind1].1, self.v2[ind2].1));
+                } else {
+                    // Nothing found; go to next
+                    self.ind1 += 1;
+                }
+            }
+            None
+        }
     }
 }

@@ -22,48 +22,33 @@ use itertools::Itertools;
 // use std::thread;
 // use std::time::Duration;
 
-pub fn gen_dense_ham_connections(wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerator) -> DMatrix<f64> {
-    // Generate Ham as a dense matrix by using all connections to each variational determinant
-    // Simplest algorithm, very slow
 
-    let mut excite: Excite;
-    let mut new_det: Option<Config>;
+pub fn gen_sparse_ham_doubles(wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerator) -> HashMap<(i32, i32, Option<bool>), Vec<(Config, usize)>> {
+    // Generate the sparse H as a Doubles data structure, in O(N^2 N_det log N_det) time
+    // and O(N^2 N_det) space
 
-    // Generate Ham
-    let mut ham_matrix = generate_random_sparse_symmetric(wf.n, wf.n, 0.0); //DMatrix::<f64>::zeros(wf.n, wf.n);
-    for (i_det, det) in wf.dets.iter().enumerate() {
+    // Output data structure:
+    // key: orb1, orb2, is_alpha
+    // value: vector of (config with orb1/2 removed, index of this config in wf) tuples, sorted by
+    // the first element in the tuple
 
-        // Diagonal element
-        ham_matrix[(i_det, i_det)] = det.diag;
+    // To find all pq->rs excites:
+    // Look up the pq and rs vectors
+    // Loop over the overlap in linear time
+    // Each tuple in intersection contains the indices of this matrix element
+    // This algorithm takes anywhere from O(N^4 N_det) time to O(N^6/M^2 N_det) time
 
-        // Double excitations
+    let mut doub: HashMap<(i32, i32, Option<bool>), Vec<(Config, usize)>>::default() = ();
+
+    for (det_ind, det) in wf.dets.iter().enumerate() {
+
         // Opposite spin
         for i in bits(excite_gen.valence & det.config.up) {
             for j in bits(excite_gen.valence & det.config.dn) {
-                for stored_excite in excite_gen.opp_doub_sorted_list.get(&Orbs::Double((i, j))).unwrap() {
-                    excite = Excite {
-                        init: Orbs::Double((i, j)),
-                        target: stored_excite.target,
-                        abs_h: stored_excite.abs_h,
-                        is_alpha: None
-                    };
-                    new_det = det.config.safe_excite_det(&excite);
-                    match new_det {
-                        Some(d) => {
-                            // Valid excite: add to H*psi
-                            match wf.inds.get(&d) {
-                                // TODO: Do this in a cache efficient way
-                                Some(ind) => {
-                                    if *ind > i_det as usize {
-                                        ham_matrix[(i_det as usize, *ind)] = ham.ham_doub(&det.config, &d);
-                                        ham_matrix[(*ind, i_det as usize)] = ham_matrix[(i_det as usize, *ind)];
-                                    }
-                                },
-                                _ => {}
-                            }
-                        }
-                        None => {}
-                    }
+                let key = (i, j, None);
+                match doub.get(&key) {
+                    None => { doub.insert(key, vec![(det_r2, det_ind)]); },
+                    Some(mut v) => { v.push((det_r2, det_ind)); }
                 }
             }
         }
@@ -71,68 +56,137 @@ pub fn gen_dense_ham_connections(wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerato
         // Same spin
         for (config, is_alpha) in &[(det.config.up, true), (det.config.dn, false)] {
             for (i, j) in bit_pairs(excite_gen.valence & *config) {
-                for stored_excite in excite_gen.same_doub_sorted_list.get(&Orbs::Double((i, j))).unwrap() {
-                    excite = Excite {
-                        init: Orbs::Double((i, j)),
-                        target: stored_excite.target,
-                        abs_h: stored_excite.abs_h,
-                        is_alpha: Some(*is_alpha)
-                    };
-                    new_det = det.config.safe_excite_det(&excite);
-                    match new_det {
-                        Some(d) => {
-                            // Valid excite: add to H*psi
-                            match wf.inds.get(&d) {
-                                // TODO: Do this in a cache efficient way
-                                Some(ind) => {
-                                    if *ind > i_det as usize {
-                                        ham_matrix[(i_det as usize, *ind)] = ham.ham_doub(&det.config, &d);
-                                        ham_matrix[(*ind, i_det as usize)] = ham_matrix[(i_det as usize, *ind)];
-                                    }
-                                },
-                                _ => {}
-                            }
-                        }
-                        None => {}
-                    }
+                let key = (i, j, Some(*is_alpha));
+                match doub.get(&key) {
+                    None => { doub.insert(key, vec![(det_r2, det_ind)]); },
+                    Some(mut v) => { v.push((det_r2, det_ind)); }
                 }
             }
         }
 
-        // Single excitations
-        for (config, is_alpha) in &[(det.config.up, true), (det.config.dn, false)] {
-            for i in bits(excite_gen.valence & *config) {
-                for stored_excite in excite_gen.sing_sorted_list.get(&Orbs::Single(i)).unwrap() {
-                    excite = Excite {
-                        init: Orbs::Single(i),
-                        target: stored_excite.target,
-                        abs_h: stored_excite.abs_h,
-                        is_alpha: Some(*is_alpha)
-                    };
-                    new_det = det.config.safe_excite_det(&excite);
-                    match new_det {
-                        Some(d) => {
-                            // Valid excite: add to H*psi
-                            match wf.inds.get(&d) {
-                                // Compute matrix element and add to H*psi
-                                // TODO: Do this in a cache efficient way
-                                Some(ind) => {
-                                    if *ind > i_det as usize {
-                                        ham_matrix[(i_det as usize, *ind)] = ham.ham_sing(&det.config, &d);
-                                        ham_matrix[(*ind, i_det as usize)] = ham_matrix[(i_det as usize, *ind)];
-                                    }
-                                },
-                                _ => {}
-                            }
-                        }
-                        None => {}
-                    }
-                }
-            }
-        }
     }
-    ham_matrix
+
+    // Sort each vector in place by det_r2
+    for vec in doub.values_mut() {
+        vec.sort_by_key(|(det, _)| (det.up, det.dn));
+    }
+
+    doub
+
 }
+
+
+// pub fn gen_dense_ham_connections(wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerator) -> DMatrix<f64> {
+//     // Generate Ham as a dense matrix by using all connections to each variational determinant
+//     // Simplest algorithm, very slow
+//
+//     let mut excite: Excite;
+//     let mut new_det: Option<Config>;
+//
+//     // Generate Ham
+//     let mut ham_matrix = generate_random_sparse_symmetric(wf.n, wf.n, 0.0); //DMatrix::<f64>::zeros(wf.n, wf.n);
+//     for (i_det, det) in wf.dets.iter().enumerate() {
+//
+//         // Diagonal element
+//         ham_matrix[(i_det, i_det)] = det.diag;
+//
+//         // Double excitations
+//         // Opposite spin
+//         for i in bits(excite_gen.valence & det.config.up) {
+//             for j in bits(excite_gen.valence & det.config.dn) {
+//                 for stored_excite in excite_gen.opp_doub_sorted_list.get(&Orbs::Double((i, j))).unwrap() {
+//                     excite = Excite {
+//                         init: Orbs::Double((i, j)),
+//                         target: stored_excite.target,
+//                         abs_h: stored_excite.abs_h,
+//                         is_alpha: None
+//                     };
+//                     new_det = det.config.safe_excite_det(&excite);
+//                     match new_det {
+//                         Some(d) => {
+//                             // Valid excite: add to H*psi
+//                             match wf.inds.get(&d) {
+//                                 // TODO: Do this in a cache efficient way
+//                                 Some(ind) => {
+//                                     if *ind > i_det as usize {
+//                                         ham_matrix[(i_det as usize, *ind)] = ham.ham_doub(&det.config, &d);
+//                                         ham_matrix[(*ind, i_det as usize)] = ham_matrix[(i_det as usize, *ind)];
+//                                     }
+//                                 },
+//                                 _ => {}
+//                             }
+//                         }
+//                         None => {}
+//                     }
+//                 }
+//             }
+//         }
+//
+//         // Same spin
+//         for (config, is_alpha) in &[(det.config.up, true), (det.config.dn, false)] {
+//             for (i, j) in bit_pairs(excite_gen.valence & *config) {
+//                 for stored_excite in excite_gen.same_doub_sorted_list.get(&Orbs::Double((i, j))).unwrap() {
+//                     excite = Excite {
+//                         init: Orbs::Double((i, j)),
+//                         target: stored_excite.target,
+//                         abs_h: stored_excite.abs_h,
+//                         is_alpha: Some(*is_alpha)
+//                     };
+//                     new_det = det.config.safe_excite_det(&excite);
+//                     match new_det {
+//                         Some(d) => {
+//                             // Valid excite: add to H*psi
+//                             match wf.inds.get(&d) {
+//                                 // TODO: Do this in a cache efficient way
+//                                 Some(ind) => {
+//                                     if *ind > i_det as usize {
+//                                         ham_matrix[(i_det as usize, *ind)] = ham.ham_doub(&det.config, &d);
+//                                         ham_matrix[(*ind, i_det as usize)] = ham_matrix[(i_det as usize, *ind)];
+//                                     }
+//                                 },
+//                                 _ => {}
+//                             }
+//                         }
+//                         None => {}
+//                     }
+//                 }
+//             }
+//         }
+//
+//         // Single excitations
+//         for (config, is_alpha) in &[(det.config.up, true), (det.config.dn, false)] {
+//             for i in bits(excite_gen.valence & *config) {
+//                 for stored_excite in excite_gen.sing_sorted_list.get(&Orbs::Single(i)).unwrap() {
+//                     excite = Excite {
+//                         init: Orbs::Single(i),
+//                         target: stored_excite.target,
+//                         abs_h: stored_excite.abs_h,
+//                         is_alpha: Some(*is_alpha)
+//                     };
+//                     new_det = det.config.safe_excite_det(&excite);
+//                     match new_det {
+//                         Some(d) => {
+//                             // Valid excite: add to H*psi
+//                             match wf.inds.get(&d) {
+//                                 // Compute matrix element and add to H*psi
+//                                 // TODO: Do this in a cache efficient way
+//                                 Some(ind) => {
+//                                     if *ind > i_det as usize {
+//                                         ham_matrix[(i_det as usize, *ind)] = ham.ham_sing(&det.config, &d);
+//                                         ham_matrix[(*ind, i_det as usize)] = ham_matrix[(i_det as usize, *ind)];
+//                                     }
+//                                 },
+//                                 _ => {}
+//                             }
+//                         }
+//                         None => {}
+//                     }
+//                 }
+//             }
+//         }
+//     }
+//     ham_matrix
+// }
 
 
 pub fn gen_sparse_ham_fast(global: &Global, wf: &Wf, ham: &Ham, verbose: bool) -> SparseMat {

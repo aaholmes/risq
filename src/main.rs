@@ -24,7 +24,7 @@ mod pt;
 
 use utils::read_input::{Global, read_input};
 use crate::var::variational;
-use crate::semistoch::{semistoch_enpt2, old_semistoch_enpt2, fast_semistoch_enpt2, faster_semistoch_enpt2};
+use crate::semistoch::{old_semistoch_enpt2, faster_semistoch_enpt2};
 
 fn main() {
 
@@ -60,8 +60,8 @@ fn main() {
 
     let eps_pt = GLOBAL.eps_pt;
     let n_batches = 2;
-    let n_samples_per_batch_old = 10;
-    let n_samples_per_batch_new = 400;
+    let n_samples_per_batch_old = 200;
+    let n_samples_per_batch_new = 200;
 
     let start_old_enpt2: Instant = Instant::now();
     println!("\nCalling semistoch ENPT2 the old way with p ~ |c| using eps_pt = {}", eps_pt);
