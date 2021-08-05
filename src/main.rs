@@ -59,7 +59,7 @@ fn main() {
     println!("Time for variational stage: {:?}", start_var.elapsed());
 
     let eps_pt = GLOBAL.eps_pt;
-    let n_batches = 2;
+    let n_batches = 10;
     let n_samples_per_batch_old = 200;
     let n_samples_per_batch_new = 200;
 

@@ -45,12 +45,6 @@ pub fn sparse_optimize(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator,
     // Generate Ham as a sparse matrix
     // Optimize using davidson
 
-    // // Generate dense Ham
-    // let dense_ham = gen_dense_ham_connections(wf, ham, excite_gen);
-    //
-    // // Convert to sparse ham
-    // let sparse_ham = SparseMat::from_dense(dense_ham);
-
     let start_gen_sparse_ham: Instant = Instant::now();
     // let sparse_ham = gen_sparse_ham_doubles(wf, ham, excite_gen);
     let sparse_ham = gen_sparse_ham_fast(global, wf, ham, false);

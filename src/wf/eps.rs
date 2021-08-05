@@ -97,7 +97,7 @@ pub fn init_eps(wf: &Wf, global: &Global, excite_gen: &ExciteGenerator) -> Eps {
         }
     } // det
 
-    let max_doub = { if max_sym > max_asym { max_sym } else { max_asym } };
+    let max_doub = { if max_sym < max_asym { max_sym } else { max_asym } };
     Eps {
         next: max_doub - 1e-9, // Slightly less than max_doub in case there are two or more elements that are off by machine precision
         target: global.eps_var,
