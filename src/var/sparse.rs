@@ -73,8 +73,9 @@ impl MatrixOperations for SparseMat {
             // Diagonal component
             dprod = self.diag[row_ind] * vs[row_ind];
 
-            // Singles component
+            // Off-diagonal component
             for (ind, val) in lvec.iter() {
+                // println!("Excite: ({} {}) = {}", row_ind, ind, val);
                 dprod += val * vs[ind];
             }
             res[row_ind] = dprod;
@@ -105,17 +106,17 @@ impl MatrixOperations for SparseMat {
 
 
 #[derive(Clone)]
-pub struct SparseMatDoubles{
+pub struct SparseMatDoubles<'a> {
     // Sparse mat with doubles stored as a lookup data structure that is smaller than the actual H
     pub n: usize,
     pub diag: DVector<f64>,
     pub singles: CsMat<f64>,
     pub doubles: HashMap<(i32, i32, Option<bool>), Vec<(Config, usize)>>,
-    pub ham: &'_ Ham, // point to ham, so we can compute matrix elements as needed
-    pub wf: &'_ Wf, // point to wf, so we can look up configs as needed
+    pub ham: &'a Ham, // point to ham, so we can compute matrix elements as needed
+    pub wf: &'a Wf, // point to wf, so we can look up configs as needed
 }
 
-impl MatrixOperations for SparseMatDoubles {
+impl MatrixOperations for SparseMatDoubles<'_> {
     fn matrix_vector_prod(&self, vs: DVectorSlice<'_, f64>) -> DVector<f64> {
         let mut res: DVector<f64> = vs.clone().into();
         let mut dprod: f64;
@@ -126,25 +127,43 @@ impl MatrixOperations for SparseMatDoubles {
 
             // Singles component
             for (ind, val) in lvec.iter() {
+                // println!("Single excite: ({} {}) = {}", row_ind, ind, val);
                 dprod += val * vs[ind];
             }
             res[row_ind] = dprod;
         }
 
         // Doubles
-        for (k, v_k) in self.doubles.get_key_value() {
+        for (k, v_k) in self.doubles.iter() {
             for l in self.doubles.keys() {
                 if k.2 == l.2 { // Same total spin
-                    if l.0 > k.0 || (l.0 == k.0 && l.1 > k.1) { // No double counting
-                        let h_kl = { if k.2 == None { self.ham.direct_plus_exchange(k.0, k.1, l.0, l.1) }
-                            else { self.ham.direct(k.0, k.1, l.0, l.1) } };
-                        if (h_kl != 0.0) { // Skip zero elements
-                            // Loop over intersection of v_k.0 and v_l.0
-                            // Read off the corresponding pairs of indices: these are connected with this type of double exctie matrix element!
-                            for (i, j) in intersection(v_k, self.doubles.get(&l).unwrap()) {
-                                let h_ij = self.ham.ham_doub(self.wf.dets[&i], self.wf.dets[&j]);
-                                res[i] += H_ij * vs[j] ;
-                                res[j] += H_ij * vs[i] ;
+                    if { if k.2 == None { l.0 > k.0 } else { l.0 > k.0 || (l.0 == k.0 && l.1 > k.1) } } { // No double counting
+                        // Check that these are 4 distinct spin-orbitals
+                        if {
+                            if k.2 == None {
+                                // Up must be distinct, dn must be distinct
+                                k.0 != l.0 && k.1 != l.1
+                            } else {
+                                // All 4 must be distinct orbitals
+                                k.0 != l.0 && k.0 != l.1 && k.1 != l.0 && k.1 != l.1
+                            }
+                        } {
+                            let h_kl = {
+                                if k.2 == None { self.ham.direct(k.0, k.1, l.0, l.1) } else { self.ham.direct_plus_exchange(k.0, k.1, l.0, l.1) }
+                            };
+                            if (h_kl != 0.0) { // Skip zero elements
+                                // Loop over intersection of v_k.0 and v_l.0
+                                // Read off the corresponding pairs of indices: these are connected with this type of double exctie matrix element!
+                                for (i, j) in intersection(v_k, self.doubles.get(&l).unwrap()) {
+                                    let h_ij = self.ham.ham_doub(&self.wf.dets[i].config, &self.wf.dets[j].config);
+                                    // println!("({} {}) {}, ({} {}) {}: H = {}",
+                                    //          k.0, k.1, { match k.2 { None => { "opp spin" }, Some(b) => if b { "spin up" } else { "spin dn" } } },
+                                    //          l.0, l.1, { match l.2 { None => { "opp spin" }, Some(b) => if b { "spin up" } else { "spin dn" } } },
+                                    //          h_kl);
+                                    // println!("Updating out vec! with H({}, {}) = {}", i, j, h_ij);
+                                    res[i] += h_ij * vs[j];
+                                    res[j] += h_ij * vs[i];
+                                }
                             }
                         }
                     }

@@ -2,7 +2,6 @@
 
 use crate::utils::bits::ibclr;
 use crate::wf::det::Config;
-use std::intrinsics::ceilf32;
 
 // Iterate over configs with 1 electron removed:
 pub fn remove_1e(config: u128) -> impl Iterator<Item = u128> {
@@ -15,8 +14,8 @@ pub fn remove_2e(config: u128) -> impl Iterator<Item = u128> {
 }
 
 // Iterate over intersection of 2 sorted lists:
-pub fn intersection(v1: &Vec<(Config, usize)>, v2: &Vec<(Config, usize)>) -> impl Iterator<Item = (usize, usize)> {
-    DoublesIntersection::new(v1, v2).into_iter()
+pub fn intersection<'a>(v1: &'a Vec<(Config, usize)>, v2: &'a Vec<(Config, usize)>) -> impl Iterator<Item = (usize, usize)> + 'a {
+    Intersection::new(v1, v2).into_iter()
 }
 
 
@@ -123,27 +122,27 @@ impl Iterator for Remove2IntoIterator {
 
 // Backend for intersection
 
-struct DoublesIntersection<'a> {
+struct Intersection<'a> {
     v1: &'a Vec<(Config, usize)>,
     v2: &'a Vec<(Config, usize)>,
 }
 
-impl DoublesIntersection {
-    fn new(v1: &Vec<(Config, usize)>, v2: &Vec<(Config, usize)>) -> DoublesIntersection {
-        DoublesIntersection { v1, v2 }
+impl Intersection<'_> {
+    fn new<'a>(v1: &'a Vec<(Config, usize)>, v2: &'a Vec<(Config, usize)>) -> Intersection<'a> {
+        Intersection { v1, v2 }
     }
 }
 
-impl IntoIterator for DoublesIntersection {
+impl<'a> IntoIterator for Intersection<'a> {
     type Item = (usize, usize);
-    type IntoIter = DoublesIntersectionIntoIterator<'_>;
+    type IntoIter = IntersectionIntoIterator<'a>;
 
     fn into_iter(self) -> Self::IntoIter {
         let n1 = self.v1.len();
         let n2 = self.v2.len();
         if n1 <= n2 {
-            DoublesIntersectionIntoIterator {
-                linear: n1 + n2 <= n1 * ((n2 as f32).log2()).ceil(),
+            IntersectionIntoIterator {
+                linear: n1 + n2 <= n1 * ((n2 as f32).log2()).ceil() as usize,
                 v1: self.v1,
                 v2: self.v2,
                 n1: n1,
@@ -152,8 +151,8 @@ impl IntoIterator for DoublesIntersection {
                 ind2: 0,
             }
         } else {
-            DoublesIntersectionIntoIterator {
-                linear: n1 + n2 <= n2 * ((n1 as f32).log2()).ceil(),
+            IntersectionIntoIterator {
+                linear: n1 + n2 <= n2 * ((n1 as f32).log2()).ceil() as usize,
                 v1: self.v2,
                 v2: self.v1,
                 n1: n2,
@@ -165,7 +164,7 @@ impl IntoIterator for DoublesIntersection {
     }
 }
 
-struct DoublesIntersectionIntoIterator<'a> {
+struct IntersectionIntoIterator<'a> {
     linear: bool, // if true, use N+M algorithm; else, use N log M algorithm
     v1: &'a Vec<(Config, usize)>,
     v2: &'a Vec<(Config, usize)>,
@@ -175,14 +174,17 @@ struct DoublesIntersectionIntoIterator<'a> {
     ind2: usize,
 }
 
-impl Iterator for DoublesIntersectionIntoIterator {
+impl<'a> Iterator for IntersectionIntoIterator<'a> {
     type Item = (usize, usize);
 
-    fn next(&mut self) -> Option<Item> {
+    fn next(&mut self) -> Option<(usize, usize)> {
         if self.linear {
             while self.ind1 != self.n1 && self.ind2 != self.n2 {
                 if self.v1[self.ind1].0 == self.v2[self.ind2].0 {
-                    return Some((self.v1[self.ind1].1, self.v2[self.ind2].1));
+                    let res = Some((self.v1[self.ind1].1, self.v2[self.ind2].1));
+                    self.ind1 += 1;
+                    self.ind2 += 1;
+                    return res;
                 } else if self.v1[self.ind1].0.up < self.v2[self.ind2].0.up ||
                     (self.v1[self.ind1].0.up == self.v2[self.ind2].0.up && self.v1[self.ind1].0.dn < self.v2[self.ind2].0.dn) {
                     self.ind1 += 1;
@@ -194,9 +196,18 @@ impl Iterator for DoublesIntersectionIntoIterator {
         } else {
             while self.ind1 != self.n1 {
                 // search for ind1 in v2
-                if let Ok(ind2) = self.v2.binary_search_by_key(&self.v1[ind1].0, |&(det, _)| (det.up, det.dn)) {
-                    // Found by binary search
-                    return Some((self.v1[self.ind1].1, self.v2[ind2].1));
+                let ind2 = self.v2.partition_point(|&(det, _)| {det.up < self.v1[self.ind1].0.up ||
+                    (det.up == self.v1[self.ind1].0.up && det.dn < self.v1[self.ind1].0.dn) } );
+                if ind2 < self.n2 {
+                    if self.v1[self.ind1].0 == self.v2[ind2].0 {
+                        // Found by binary search
+                        let res = Some((self.v1[self.ind1].1, self.v2[ind2].1));
+                        self.ind1 += 1;
+                        return res;
+                    } else {
+                        // Nothing found; go to next
+                        self.ind1 += 1;
+                    }
                 } else {
                     // Nothing found; go to next
                     self.ind1 += 1;

@@ -7,8 +7,8 @@ use nalgebra::DMatrix;
 use crate::excite::{Excite, Orbs};
 use crate::wf::det::Config;
 use eigenvalues::utils::generate_random_sparse_symmetric;
-use crate::utils::bits::{bit_pairs, bits};
-use crate::var::sparse::SparseMat;
+use crate::utils::bits::{bit_pairs, bits, ibclr};
+use crate::var::sparse::{SparseMat, SparseMatDoubles};
 use std::collections::{HashMap, HashSet};
 use std::cmp::Ordering::Equal;
 use crate::var::utils::{remove_1e, remove_2e};
@@ -23,10 +23,100 @@ use itertools::Itertools;
 // use std::time::Duration;
 
 
-pub fn gen_sparse_ham_doubles(wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerator) -> HashMap<(i32, i32, Option<bool>), Vec<(Config, usize)>> {
-    // Generate the sparse H as a Doubles data structure, in O(N^2 N_det log N_det) time
+pub fn gen_sparse_ham_doubles<'a>(wf: &'a Wf, ham: &'a Ham, excite_gen: &ExciteGenerator) -> SparseMatDoubles<'a> {
+    // Generate the sparse H where the doubles are done in O(N^2 N_det log N_det) time
     // and O(N^2 N_det) space
 
+    let n = wf.n;
+
+    // Diagonal
+    let mut diag = DVector::from(
+        {
+            let mut d = Vec::with_capacity(n);
+            for det in &wf.dets {
+                d.push(det.diag);
+            }
+            d
+        }
+    );
+
+    // Singles
+    let singles = gen_singles(wf, ham);
+
+    // Doubles
+    let doubles = gen_doubles(wf, ham, excite_gen);
+
+    // println!("Doubles:");
+    // for (k, v) in doubles.iter() {
+    //     println!("({} {}): {:?}", k.0, k.1, v);
+    // }
+
+    SparseMatDoubles{n, diag, singles, doubles, ham, wf}
+
+}
+
+
+pub fn gen_singles(wf: &Wf, ham: &Ham) -> CsMat<f64> {
+    // Loop over all electrons to get all connections (asymptotically optimal in Full CI limit)
+
+    let mut off_diag_elems = OffDiagElems::new(wf.n);
+    let start_gen_singles: Instant = Instant::now();
+    let mut unique_up_dict: HashMap<u128, Vec<(usize, u128)>> = HashMap::default();
+    for (config, ind) in &wf.inds {
+        match unique_up_dict.get_mut(&config.up) {
+            None => { unique_up_dict.insert(config.up, vec![(*ind, config.dn)]); },
+            Some(mut v) => { v.push((*ind, config.dn)); }
+        }
+    }
+    for dns_this_up in unique_up_dict.values() {
+        let mut double_excite_constructor: HashMap<u128, Vec<usize>> = HashMap::default();
+        for dn in dns_this_up {
+            for dn_r1 in remove_1e(dn.1) {
+                match double_excite_constructor.get_mut(&dn_r1) {
+                    None => { double_excite_constructor.insert(dn_r1, vec![dn.0]); },
+                    Some(mut v) => { v.push(dn.0); }
+                }
+            }
+        }
+        for dn in dns_this_up {
+            for dn_r1 in remove_1e(dn.1) {
+                for dn2 in &double_excite_constructor[&dn_r1] {
+                    if dn.0 != *dn2 {
+                        // Found dn-spin excitations (and their spin-flipped up-spin excitations):
+                        off_diag_elems.add_el_and_spin_flipped(wf, ham, dn.0, *dn2); // only adds if elem != 0
+                    }
+                }
+            }
+        }
+    }
+    println!("Time to convert stored singles indices to sparse H: {:?}", start_gen_singles.elapsed());
+
+    // Put the matrix elements into a sparse matrix
+    let start_to_sparse: Instant = Instant::now();
+    let n = wf.n;
+    let shape = (n, n);
+    let indptr: Vec<usize> = off_diag_elems.nnz
+        .iter()
+        .scan(0, |acc, &x| {
+            *acc = *acc + x;
+            Some(*acc)
+        })
+        .collect();
+    let indices: Vec<usize> = off_diag_elems.indices.clone().into_iter().flatten().collect();
+    let data: Vec<f64> = off_diag_elems.values.clone().into_iter().flatten().collect();
+    println!("Variational Hamiltonian has {} nonzero single excitation elements", indices.len());
+
+    let mat = CsMat::<f64>::new_from_unsorted(shape, indptr, indices, data);
+    println!("Time to convert stored singles indices to sparse H: {:?}", start_to_sparse.elapsed());
+
+    match mat {
+        Err(_) => { panic!("Error in constructing CsMat"); }
+        Ok(res) => { return res; }
+    }
+}
+
+
+pub fn gen_doubles(wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerator) -> HashMap<(i32, i32, Option<bool>), Vec<(Config, usize)>> {
     // Output data structure:
     // key: orb1, orb2, is_alpha
     // value: vector of (config with orb1/2 removed, index of this config in wf) tuples, sorted by
@@ -38,15 +128,16 @@ pub fn gen_sparse_ham_doubles(wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerator) 
     // Each tuple in intersection contains the indices of this matrix element
     // This algorithm takes anywhere from O(N^4 N_det) time to O(N^6/M^2 N_det) time
 
-    let mut doub: HashMap<(i32, i32, Option<bool>), Vec<(Config, usize)>>::default() = ();
+    let mut doub = HashMap::default();
 
     for (det_ind, det) in wf.dets.iter().enumerate() {
 
         // Opposite spin
         for i in bits(excite_gen.valence & det.config.up) {
             for j in bits(excite_gen.valence & det.config.dn) {
+                let det_r2 = Config{ up: ibclr(det.config.up, i), dn: ibclr(det.config.dn, j) };
                 let key = (i, j, None);
-                match doub.get(&key) {
+                match doub.get_mut(&key) {
                     None => { doub.insert(key, vec![(det_r2, det_ind)]); },
                     Some(mut v) => { v.push((det_r2, det_ind)); }
                 }
@@ -56,8 +147,10 @@ pub fn gen_sparse_ham_doubles(wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerator) 
         // Same spin
         for (config, is_alpha) in &[(det.config.up, true), (det.config.dn, false)] {
             for (i, j) in bit_pairs(excite_gen.valence & *config) {
+                let det_r2 = { if *is_alpha { Config{ up: ibclr(ibclr(det.config.up, i), j), dn: det.config.dn } }
+                    else { Config{ up: det.config.up, dn: ibclr(ibclr(det.config.dn, i), j) } } };
                 let key = (i, j, Some(*is_alpha));
-                match doub.get(&key) {
+                match doub.get_mut(&key) {
                     None => { doub.insert(key, vec![(det_r2, det_ind)]); },
                     Some(mut v) => { v.push((det_r2, det_ind)); }
                 }
@@ -321,7 +414,7 @@ pub fn gen_sparse_ham_fast(global: &Global, wf: &Wf, ham: &Ham, verbose: bool) -
     println!("Time for same-spin: {:?}", start_same.elapsed());
 
     // Finally, put collected off-diag elems into a sparse matrix
-    off_diag_elems.to_sparse(wf, verbose)
+    off_diag_elems.to_sparse(wf)
 }
 
 fn all_opposite_spin_excites(global: &Global, wf: &Wf, ham: &Ham, mut unique_up_dict: &mut HashMap<u128, Vec<(usize, u128)>>, unique_ups_sorted: &mut Vec<Unique>, mut up_singles: &mut HashMap<u128, Vec<u128>>, mut unique_dns_vec: &mut Vec<u128>, mut dn_singles: &mut HashMap<u128, Vec<u128>>, mut off_diag_elems: &mut OffDiagElems) {
@@ -674,7 +767,40 @@ impl OffDiagElems {
         self.add_el(wf, ham, i_spin_flipped, j_spin_flipped);
     }
 
-    pub fn to_sparse(&self, wf: &Wf, verbose: bool) -> SparseMat {
+    pub fn to_sparse(&self, wf: &Wf) -> SparseMat {
+        let start_to_sparse: Instant = Instant::now();
+        // Put the matrix elements into a sparse matrix
+        let n = wf.n;
+
+        // Diagonal component
+        let mut diag = Vec::with_capacity(n);
+        for det in &wf.dets {
+            diag.push(det.diag);
+        }
+        let shape = (n, n);
+        let indptr: Vec<usize> = self.nnz
+            .iter()
+            .scan(0, |acc, &x| {
+                *acc = *acc + x;
+                Some(*acc)
+            })
+            .collect();
+
+        let indices: Vec<usize> = self.indices.clone().into_iter().flatten().collect();
+        let data: Vec<f64> = self.values.clone().into_iter().flatten().collect();
+
+        println!("Variational Hamiltonian has {} nonzero off-diagonal elements", indices.len());
+
+        // Off-diagonal component
+        let off_diag_component = CsMat::<f64>::new_from_unsorted(shape, indptr, indices, data);
+        println!("Time for converting stored nonzero indices to sparse H: {:?}", start_to_sparse.elapsed());
+        match off_diag_component {
+            Err(_) => { panic!("Error in constructing CsMat"); }
+            Ok(off_diag) => { return SparseMat{n, diag: DVector::from(diag), off_diag}; }
+        }
+    }
+
+    pub fn to_sparse_verbose(&self, wf: &Wf, verbose: bool) -> SparseMat {
         let start_to_sparse: Instant = Instant::now();
         // Put the matrix elements into a sparse matrix
         let n = wf.n;
