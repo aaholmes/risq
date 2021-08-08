@@ -475,8 +475,7 @@ pub struct Unique {
 pub fn opposite_spin_excites(global: &Global, wf: &mut Wf, ham: &Ham, unique_up_dict: &HashMap<u128, Vec<(usize, u128)>>, new_unique_up_dict: &HashMap<u128, Vec<(usize, u128)>>, up_singles: &HashMap<u128, Vec<u128>>, unique_dns_vec: &mut Vec<u128>, dn_singles: &mut HashMap<u128, Vec<u128>>, unique: &Unique) {
     // Current status:
     // For the later iterations of C2 vdz, eps=1-4, first algo is ~10x faster than third algo
-    // Second even faster
-    // So, for now, second algo always on
+    // So, for now, first algo always on
 
     // let start_this_opp: Instant = Instant::now();
     let first_algo_complexity = unique.n_dets * (global.ndn * global.ndn) as usize + unique.n_dets_remaining; // Term in parentheses is an estimate
@@ -492,19 +491,19 @@ pub fn opposite_spin_excites(global: &Global, wf: &mut Wf, ham: &Ham, unique_up_
     if first_algo_fastest {
         // if verbose { println!("First algo fastest"); }
         // Use a single for-loop version of the double for-loop algorithm from "Fast SHCI"
-        let mut dn_candidates: HashMap<u128, Vec<usize>> = HashMap::default();
-        for dn in &new_unique_up_dict[&unique.up] {
-            for dn2 in &dn_singles[&dn.1] {
-                match dn_candidates.get_mut(&dn2) {
-                    None => { dn_candidates.insert(*dn2, vec![dn.0]); },
-                    Some(v) => { v.push(dn.0); }
-                }
-            }
-        }
         // up_singles is *new* to *all*
         match up_singles.get(&unique.up) {
             None => {},
             Some(ups) => {
+                let mut dn_candidates: HashMap<u128, Vec<usize>> = HashMap::default();
+                for dn in &new_unique_up_dict[&unique.up] {
+                    for dn2 in &dn_singles[&dn.1] {
+                        match dn_candidates.get_mut(&dn2) {
+                            None => { dn_candidates.insert(*dn2, vec![dn.0]); },
+                            Some(v) => { v.push(dn.0); }
+                        }
+                    }
+                }
                 for up in ups {
                     for dn in &unique_up_dict[&up] {
                         match dn_candidates.get(&dn.1) {
@@ -525,7 +524,7 @@ pub fn opposite_spin_excites(global: &Global, wf: &mut Wf, ham: &Ham, unique_up_
         // if verbose { println!("Second algo fastest"); }
         // Loop over ways to remove an electron to get all connected dets
         let mut dn_single_excite_constructor: HashMap<u128, Vec<usize>> = HashMap::default();
-        for dn in &unique_up_dict[&unique.up] {
+        for dn in &new_unique_up_dict[&unique.up] {
             for dn_r1 in remove_1e(dn.1) {
                 match dn_single_excite_constructor.get_mut(&dn_r1) {
                     None => { dn_single_excite_constructor.insert(dn_r1, vec![dn.0]); },
@@ -533,12 +532,13 @@ pub fn opposite_spin_excites(global: &Global, wf: &mut Wf, ham: &Ham, unique_up_
                 }
             }
         }
-        // up_singles[&unique.up] can be empty, so
+        // up_singles are *new* to *all*
+        // up_singles[&unique.up] can be empty, so...
         match up_singles.get(&unique.up) {
             None => {},
             Some(ups) => {
                 for up in ups {
-                    for dn in &new_unique_up_dict[&up] {
+                    for dn in &unique_up_dict[&up] {
                         for dn_r1 in remove_1e(dn.1) {
                             match dn_single_excite_constructor.get(&dn_r1) {
                                 None => {},
