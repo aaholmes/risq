@@ -1,0 +1,9 @@
+{
+    "norb": 62,
+    "norb_core": 18,
+    "nup": 24,
+    "ndn": 24,
+    "n_states": 1,
+    "eps_var": 2e-4,
+    "eps_pt": 5e-5
+}

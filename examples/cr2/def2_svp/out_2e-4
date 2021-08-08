@@ -1,0 +1,422 @@
+Rust Implementation of Semistochastic Quantum chemistry (RISQ)
+Adam A Holmes, 2021
+
+Reading input file
+Reading integrals
+Initializing excitation generator
+Initializing wavefunction
+Core orbs: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
+Valence orbs: [18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61]
+Largest magnitude opposite-spin double excitation in H: 0.1715
+Largest magnitude same-spin double excitation in H: 0.1268
+Warning: Computing diagonal element (should only happen once!)
+
+Wavefunction has 1 dets with energy -2082.2610
+Coeff     Det_up     Det_dn    <D|H|D>
+1.0000   111111111111111111111111   111111111111111111111111   -2082.261
+
+
+Time for setup: 529.80343ms
+Variational stage
+Start of variational stage: Wavefunction has 1 det with energy -2082.2610
+Getting new dets with epsilon = 1.2e-1
+Time to find new dets: 106.145µs
+
+Optimizing coefficients of wf with 7 dets
+Time for H gen setup: 94.779µs
+Time for opposite-spin: 67.81µs
+Time for same-spin: 1.332µs
+Variational Hamiltonian has 20 nonzero off-diagonal elements
+Time for converting stored nonzero indices to sparse H: 13.04µs
+Time to generate sparse H: 250.983µs
+Davidson Iteration 1: energy = -2082.316888
+Davidson Iteration 2: energy = -2082.317054
+Davidson Iteration 3: energy = -2082.317055
+Time to perform Davidson diagonalization: 104.406µs
+Time to optimize wf coefficients: 372.891µs
+End of iteration 1 (eps = 1.2e-1): Wavefunction has 7 determinants with energy -2082.317055
+
+Wavefunction has 7 dets with energy -2082.3171
+Coeff     Det_up     Det_dn    <D|H|D>
+-0.9848   111111111111111111111111   111111111111111111111111   -2082.261
+0.0430   1______________________1111_1111111111111111111   1______________________1111_1111111111111111111   -2078.960
+0.0430   1_____________________111_11111111111111111111   1_____________________111_11111111111111111111   -2078.960
+0.0868   1________11_111111111111111111111   1________11_111111111111111111111   -2080.964
+-0.0757   1________11_111111111111111111111   1_______1_1111111111111111111111   -2080.970
+-0.0757   1_______1_1111111111111111111111   1________11_111111111111111111111   -2080.970
+0.0868   1_______1_1111111111111111111111   1_______1_1111111111111111111111   -2080.964
+
+
+Getting new dets with epsilon = 6.2e-2
+Time to find new dets: 377.168µs
+
+Optimizing coefficients of wf with 82 dets
+Time for H gen setup: 464.779µs
+Expanding variational H from size 7 to size 82
+Time for opposite-spin: 1.404954ms
+Time for same-spin: 53.261µs
+Variational Hamiltonian has 1566 nonzero off-diagonal elements
+Time for converting stored nonzero indices to sparse H: 125.23µs
+Time to generate sparse H: 2.251785ms
+Davidson Iteration 1: energy = -2082.413179
+Davidson Iteration 2: energy = -2082.418747
+Davidson Iteration 3: energy = -2082.419014
+Davidson Iteration 4: energy = -2082.419027
+Davidson Iteration 5: energy = -2082.419027
+Time to perform Davidson diagonalization: 200.185µs
+Time to optimize wf coefficients: 2.47112ms
+End of iteration 2 (eps = 6.2e-2): Wavefunction has 82 determinants with energy -2082.419027
+Getting new dets with epsilon = 3.1e-2
+Time to find new dets: 1.745948ms
+
+Optimizing coefficients of wf with 300 dets
+Time for H gen setup: 1.258922ms
+Expanding variational H from size 82 to size 300
+Time for opposite-spin: 6.652696ms
+Time for same-spin: 337.742µs
+Variational Hamiltonian has 8752 nonzero off-diagonal elements
+Time for converting stored nonzero indices to sparse H: 610.054µs
+Time to generate sparse H: 12.367663ms
+Davidson Iteration 1: energy = -2082.485168
+Davidson Iteration 2: energy = -2082.486757
+Davidson Iteration 3: energy = -2082.486937
+Davidson Iteration 4: energy = -2082.486940
+Davidson Iteration 5: energy = -2082.486941
+Time to perform Davidson diagonalization: 363.823µs
+Time to optimize wf coefficients: 12.753548ms
+End of iteration 3 (eps = 3.1e-2): Wavefunction has 300 determinants with energy -2082.486941
+Getting new dets with epsilon = 1.6e-2
+Time to find new dets: 6.149844ms
+
+Optimizing coefficients of wf with 786 dets
+Time for H gen setup: 3.173858ms
+Expanding variational H from size 300 to size 786
+Time for opposite-spin: 28.500804ms
+Time for same-spin: 1.501241ms
+Variational Hamiltonian has 35270 nonzero off-diagonal elements
+Time for converting stored nonzero indices to sparse H: 2.674049ms
+Time to generate sparse H: 37.06209ms
+Davidson Iteration 1: energy = -2082.527375
+Davidson Iteration 2: energy = -2082.528748
+Davidson Iteration 3: energy = -2082.528914
+Davidson Iteration 4: energy = -2082.528921
+Davidson Iteration 5: energy = -2082.528922
+Time to perform Davidson diagonalization: 915.196µs
+Time to optimize wf coefficients: 38.008982ms
+End of iteration 4 (eps = 1.6e-2): Wavefunction has 786 determinants with energy -2082.528922
+Getting new dets with epsilon = 7.8e-3
+Time to find new dets: 16.571731ms
+
+Optimizing coefficients of wf with 1723 dets
+Time for H gen setup: 8.188589ms
+Expanding variational H from size 786 to size 1723
+Time for opposite-spin: 95.813896ms
+Time for same-spin: 3.742775ms
+Variational Hamiltonian has 132660 nonzero off-diagonal elements
+Time for converting stored nonzero indices to sparse H: 8.861254ms
+Time to generate sparse H: 118.629719ms
+Davidson Iteration 1: energy = -2082.553698
+Davidson Iteration 2: energy = -2082.554064
+Davidson Iteration 3: energy = -2082.554116
+Davidson Iteration 4: energy = -2082.554118
+Davidson Iteration 5: energy = -2082.554119
+Time to perform Davidson diagonalization: 2.317194ms
+Time to optimize wf coefficients: 120.974652ms
+End of iteration 5 (eps = 7.8e-3): Wavefunction has 1723 determinants with energy -2082.554119
+Getting new dets with epsilon = 3.9e-3
+Time to find new dets: 35.999476ms
+
+Optimizing coefficients of wf with 3341 dets
+Time for H gen setup: 12.281378ms
+Expanding variational H from size 1723 to size 3341
+Time for opposite-spin: 189.483216ms
+Time for same-spin: 8.812651ms
+Variational Hamiltonian has 353324 nonzero off-diagonal elements
+Time for converting stored nonzero indices to sparse H: 21.305044ms
+Time to generate sparse H: 236.90754ms
+Davidson Iteration 1: energy = -2082.568243
+Davidson Iteration 2: energy = -2082.569002
+Davidson Iteration 3: energy = -2082.569101
+Davidson Iteration 4: energy = -2082.569129
+Davidson Iteration 5: energy = -2082.569133
+Davidson Iteration 6: energy = -2082.569134
+Time to perform Davidson diagonalization: 11.903443ms
+Time to optimize wf coefficients: 248.944329ms
+End of iteration 6 (eps = 3.9e-3): Wavefunction has 3341 determinants with energy -2082.569134
+Getting new dets with epsilon = 1.9e-3
+Time to find new dets: 71.435578ms
+
+Optimizing coefficients of wf with 6715 dets
+Time for H gen setup: 22.034595ms
+Expanding variational H from size 3341 to size 6715
+Time for opposite-spin: 351.488312ms
+Time for same-spin: 12.425023ms
+Variational Hamiltonian has 753622 nonzero off-diagonal elements
+Time for converting stored nonzero indices to sparse H: 41.047883ms
+Time to generate sparse H: 434.26659ms
+Davidson Iteration 1: energy = -2082.580562
+Davidson Iteration 2: energy = -2082.581308
+Davidson Iteration 3: energy = -2082.581476
+Davidson Iteration 4: energy = -2082.581521
+Davidson Iteration 5: energy = -2082.581531
+Davidson Iteration 6: energy = -2082.581533
+Davidson Iteration 7: energy = -2082.581533
+Time to perform Davidson diagonalization: 25.451845ms
+Time to optimize wf coefficients: 459.929238ms
+End of iteration 7 (eps = 1.9e-3): Wavefunction has 6715 determinants with energy -2082.581533
+Getting new dets with epsilon = 9.7e-4
+Time to find new dets: 133.820105ms
+
+Optimizing coefficients of wf with 17638 dets
+Time for H gen setup: 54.62282ms
+Expanding variational H from size 6715 to size 17638
+Time for opposite-spin: 1.041721124s
+Time for same-spin: 62.073401ms
+Variational Hamiltonian has 1975630 nonzero off-diagonal elements
+Time for converting stored nonzero indices to sparse H: 115.435014ms
+Time to generate sparse H: 1.297677005s
+Davidson Iteration 1: energy = -2082.591192
+Davidson Iteration 2: energy = -2082.591789
+Davidson Iteration 3: energy = -2082.591911
+Davidson Iteration 4: energy = -2082.591932
+Davidson Iteration 5: energy = -2082.591937
+Davidson Iteration 6: energy = -2082.591939
+Davidson Iteration 7: energy = -2082.591939
+Time to perform Davidson diagonalization: 73.500532ms
+Time to optimize wf coefficients: 1.371439498s
+End of iteration 8 (eps = 9.7e-4): Wavefunction has 17638 determinants with energy -2082.591939
+Getting new dets with epsilon = 4.8e-4
+Time to find new dets: 332.04807ms
+
+Optimizing coefficients of wf with 54355 dets
+Time for H gen setup: 156.752426ms
+Expanding variational H from size 17638 to size 54355
+Time for opposite-spin: 4.049558424s
+Time for same-spin: 273.940463ms
+Variational Hamiltonian has 6597552 nonzero off-diagonal elements
+Time for converting stored nonzero indices to sparse H: 402.875685ms
+Time to generate sparse H: 4.942534257s
+Davidson Iteration 1: energy = -2082.599394
+Davidson Iteration 2: energy = -2082.599872
+Davidson Iteration 3: energy = -2082.599999
+Davidson Iteration 4: energy = -2082.600045
+Davidson Iteration 5: energy = -2082.600057
+Davidson Iteration 6: energy = -2082.600059
+Davidson Iteration 7: energy = -2082.600060
+Time to perform Davidson diagonalization: 233.568877ms
+Time to optimize wf coefficients: 5.17661425s
+End of iteration 9 (eps = 4.8e-4): Wavefunction has 54355 determinants with energy -2082.600060
+Getting new dets with epsilon = 2.4e-4
+Time to find new dets: 976.938133ms
+
+Optimizing coefficients of wf with 163052 dets
+Time for H gen setup: 424.252938ms
+Expanding variational H from size 54355 to size 163052
+Time for opposite-spin: 16.617156468s
+Time for same-spin: 1.382048967s
+Variational Hamiltonian has 25263462 nonzero off-diagonal elements
+Time for converting stored nonzero indices to sparse H: 1.654236947s
+Time to generate sparse H: 20.239687095s
+Davidson Iteration 1: energy = -2082.605206
+Davidson Iteration 2: energy = -2082.605447
+Davidson Iteration 3: energy = -2082.605489
+Davidson Iteration 4: energy = -2082.605503
+Davidson Iteration 5: energy = -2082.605509
+Davidson Iteration 6: energy = -2082.605511
+Davidson Iteration 7: energy = -2082.605511
+Time to perform Davidson diagonalization: 780.001962ms
+Time to optimize wf coefficients: 21.023054362s
+End of iteration 10 (eps = 2.4e-4): Wavefunction has 163052 determinants with energy -2082.605511
+Getting new dets with epsilon = 2.0e-4
+Time to find new dets: 1.77908112s
+
+Optimizing coefficients of wf with 228739 dets
+Time for H gen setup: 379.87293ms
+Expanding variational H from size 163052 to size 228739
+Time for opposite-spin: 17.190139999s
+Time for same-spin: 983.351281ms
+Variational Hamiltonian has 38718060 nonzero off-diagonal elements
+Time for converting stored nonzero indices to sparse H: 1.565906633s
+Time to generate sparse H: 20.303511054s
+Davidson Iteration 1: energy = -2082.606764
+Davidson Iteration 2: energy = -2082.606790
+Davidson Iteration 3: energy = -2082.606793
+Davidson Iteration 4: energy = -2082.606794
+Davidson Iteration 5: energy = -2082.606794
+Time to perform Davidson diagonalization: 925.356839ms
+Time to optimize wf coefficients: 21.230680346s
+End of iteration 11 (eps = 2.0e-4): Wavefunction has 228739 determinants with energy -2082.606794
+Getting new dets with epsilon = 2.0e-4
+Time to find new dets: 2.107310513s
+
+Optimizing coefficients of wf with 231805 dets
+Time for H gen setup: 207.269624ms
+Expanding variational H from size 228739 to size 231805
+Time for opposite-spin: 4.205367074s
+Time for same-spin: 67.442916ms
+Variational Hamiltonian has 39329236 nonzero off-diagonal elements
+Time for converting stored nonzero indices to sparse H: 879.893549ms
+Time to generate sparse H: 5.478747514s
+Davidson Iteration 1: energy = -2082.606847
+Davidson Iteration 2: energy = -2082.606847
+Time to perform Davidson diagonalization: 515.693481ms
+Time to optimize wf coefficients: 5.995735624s
+End of iteration 12 (eps = 2.0e-4): Wavefunction has 231805 determinants with energy -2082.606847
+Variational energy did not change much; wf converged
+Time for variational stage: 61.143520278s
+
+Calling semistoch ENPT2 the old way with p ~ |c| using eps_pt = 0.00005
+Time for dtm ENPT2: 6.648321829s
+Deterministic approximation to Delta E using eps = 0.00005 (1180937 dets): -0.004176
+Setting up wf sampler
+Normalization: 0.999999999999955
+Done setting up wf sampler
+
+ Starting batch 0
+Unbiased estimator (200 sampled var dets, 1346123 sampled PT dets) = -0.009509194367722362
+Component of unbiased estimator that should be constant = 0.063
+Unbiased estimator (200 sampled var dets, 67132 sampled PT dets) = -0.003819590518371796
+Component of unbiased estimator that should be constant = 0.026
+Sampled energy this batch = -0.005689603849350565
+
+ Starting batch 1
+Unbiased estimator (200 sampled var dets, 1360618 sampled PT dets) = -0.00845972378675264
+Component of unbiased estimator that should be constant = 0.061
+Unbiased estimator (200 sampled var dets, 68112 sampled PT dets) = -0.004023063674840635
+Component of unbiased estimator that should be constant = 0.027
+Sampled energy this batch = -0.004436660111912004
+
+ Starting batch 2
+Unbiased estimator (200 sampled var dets, 1382318 sampled PT dets) = -0.005855619462936959
+Component of unbiased estimator that should be constant = 0.042
+Unbiased estimator (200 sampled var dets, 57947 sampled PT dets) = -0.003026874759620175
+Component of unbiased estimator that should be constant = 0.019
+Sampled energy this batch = -0.002828744703316784
+
+ Starting batch 3
+Unbiased estimator (200 sampled var dets, 1401876 sampled PT dets) = -0.010176838222136329
+Component of unbiased estimator that should be constant = 0.071
+Unbiased estimator (200 sampled var dets, 63801 sampled PT dets) = -0.004966760501146437
+Component of unbiased estimator that should be constant = 0.031
+Sampled energy this batch = -0.005210077720989892
+
+ Starting batch 4
+Unbiased estimator (200 sampled var dets, 1368118 sampled PT dets) = -0.008437047368364285
+Component of unbiased estimator that should be constant = 0.061
+Unbiased estimator (200 sampled var dets, 78020 sampled PT dets) = -0.004565932978173348
+Component of unbiased estimator that should be constant = 0.033
+Sampled energy this batch = -0.003871114390190937
+
+ Starting batch 5
+Unbiased estimator (200 sampled var dets, 1400501 sampled PT dets) = -0.010187099913995206
+Component of unbiased estimator that should be constant = 0.068
+Unbiased estimator (200 sampled var dets, 66418 sampled PT dets) = -0.004828117494232344
+Component of unbiased estimator that should be constant = 0.031
+Sampled energy this batch = -0.005358982419762862
+
+ Starting batch 6
+Unbiased estimator (200 sampled var dets, 1391911 sampled PT dets) = -0.008915741103063668
+Component of unbiased estimator that should be constant = 0.061
+Unbiased estimator (200 sampled var dets, 69861 sampled PT dets) = -0.0050367225298568975
+Component of unbiased estimator that should be constant = 0.030
+Sampled energy this batch = -0.003879018573206771
+
+ Starting batch 7
+Unbiased estimator (200 sampled var dets, 1401133 sampled PT dets) = -0.007612168337953146
+Component of unbiased estimator that should be constant = 0.054
+Unbiased estimator (200 sampled var dets, 63399 sampled PT dets) = -0.003162332739165663
+Component of unbiased estimator that should be constant = 0.021
+Sampled energy this batch = -0.004449835598787483
+
+ Starting batch 8
+Unbiased estimator (200 sampled var dets, 1388461 sampled PT dets) = -0.008582050258993525
+Component of unbiased estimator that should be constant = 0.053
+Unbiased estimator (200 sampled var dets, 47628 sampled PT dets) = -0.0034967863011322762
+Component of unbiased estimator that should be constant = 0.022
+Sampled energy this batch = -0.005085263957861249
+
+ Starting batch 9
+Unbiased estimator (200 sampled var dets, 1391748 sampled PT dets) = -0.0056277275113630594
+Component of unbiased estimator that should be constant = 0.038
+Unbiased estimator (200 sampled var dets, 51194 sampled PT dets) = -0.003842561095190968
+Component of unbiased estimator that should be constant = 0.023
+Sampled energy this batch = -0.0017851664161720915
+Stochastic component: -0.0043 +- 0.0012
+Variational energy: -2082.606847
+PT energy: -0.008435 +- 0.001219
+Total energy (old): -2082.615282 +- 0.001219
+Time for old ENPT2: 56.967561702s
+Calling semistoch ENPT2 the new way!
+Generating screened sampler of size 18063054
+Time for dtm ENPT2: 14.764645157s
+Deterministic approximation to Delta E using eps = 0.00005 (1180937 dets): -0.004176
+
+ Starting batch 0
+Unbiased estimator (196 sampled var dets, 196 sampled PT dets) = -0.00007739817101895452
+Component of unbiased estimator that should be constant = 0.000
+Sampled energy this batch = -0.00007739817101895452
+
+ Starting batch 1
+Warning! Should not get here! p = 0.000000000021594069595775304
+Unbiased estimator (199 sampled var dets, 199 sampled PT dets) = -0.0000794347680252895
+Component of unbiased estimator that should be constant = 0.000
+Sampled energy this batch = -0.0000794347680252895
+
+ Starting batch 2
+Warning! Should not get here! p = 0.000000000765148942339215
+Unbiased estimator (191 sampled var dets, 191 sampled PT dets) = -0.00008873855027704449
+Component of unbiased estimator that should be constant = 0.001
+Sampled energy this batch = -0.00008873855027704449
+
+ Starting batch 3
+Warning! Should not get here! p = 0.0000000008099913825464764
+Unbiased estimator (193 sampled var dets, 193 sampled PT dets) = -0.00009813261861048378
+Component of unbiased estimator that should be constant = 0.001
+Sampled energy this batch = -0.00009813261861048378
+
+ Starting batch 4
+Warning! Should not get here! p = 0.0000000003225103420971124
+Unbiased estimator (194 sampled var dets, 194 sampled PT dets) = -0.00012201774360100157
+Component of unbiased estimator that should be constant = 0.001
+Sampled energy this batch = -0.00012201774360100157
+
+ Starting batch 5
+Warning! Should not get here! p = 0.0000000003563784107896092
+Unbiased estimator (195 sampled var dets, 195 sampled PT dets) = -0.00008039638824961167
+Component of unbiased estimator that should be constant = 0.000
+Sampled energy this batch = -0.00008039638824961167
+
+ Starting batch 6
+Warning! Should not get here! p = 0.00000000020428884101434075
+Warning! Should not get here! p = 0.00000000034754863002974655
+Warning! Should not get here! p = 0.00000000004712446548252085
+Unbiased estimator (189 sampled var dets, 189 sampled PT dets) = -0.00006607129284127671
+Component of unbiased estimator that should be constant = 0.000
+Sampled energy this batch = -0.00006607129284127671
+
+ Starting batch 7
+Unbiased estimator (196 sampled var dets, 196 sampled PT dets) = -0.00007761414117934807
+Component of unbiased estimator that should be constant = 0.000
+Sampled energy this batch = -0.00007761414117934807
+
+ Starting batch 8
+Warning! Should not get here! p = 0.00000000022805770033283538
+Warning! Should not get here! p = 0.0000000006617964391877256
+Unbiased estimator (197 sampled var dets, 197 sampled PT dets) = -0.0000870880555816889
+Component of unbiased estimator that should be constant = 0.000
+Sampled energy this batch = -0.0000870880555816889
+
+ Starting batch 9
+Unbiased estimator (190 sampled var dets, 190 sampled PT dets) = -0.00010325710977773644
+Component of unbiased estimator that should be constant = 0.001
+Sampled energy this batch = -0.00010325710977773644
+Taking 1 samples for cross-term
+|H|, |c| = 0.004725811204280799, 0.00008572735853928897
+Found nonzero contribution to cross term: 0.0007695679309803981
+Stochastic components: Cross term: 0.000022 +- 0.000184,   Quadratic term: -0.000088 +- 0.000016
+Variational energy: -2082.606847
+PT energy: -0.004242 +- 0.000185
+Total energy (new): -2082.611089 +- 0.000185
+Time for new ENPT2: 15.146125058s
+Total Time: 133.78707109s
+writing flamegraph to "flamegraph.svg"
