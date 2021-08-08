@@ -1,4 +1,5 @@
 // Wavefunction data structure:
+// Includes both the variational wf and the variational H
 // Includes functions for initializing, printing, and adding new determinants
 
 pub mod det;
@@ -15,6 +16,8 @@ use eps::{Eps, init_eps};
 use crate::utils::bits::{bit_pairs, bits};
 use crate::stoch::{DetOrbSample, ScreenedSampler, generate_screened_sampler};
 use itertools::enumerate;
+use crate::var::sparse::SparseMat;
+use crate::var::off_diag::OffDiagElemsNoHash;
 
 #[derive(Default)]
 pub struct Wf {
@@ -26,6 +29,8 @@ pub struct Wf {
     pub energy: f64,                    // variational energy
     pub inds: HashMap<Config, usize>,            // hashtable : det -> usize for looking up index by det
     pub dets: Vec<Det>,                     // for looking up det by index
+    n_stored_h: usize, // n for which the variational H has already been stored
+    pub off_diag_h_elems: Option<OffDiagElemsNoHash>, // store the sparse variational H off-diagonal elements here
 }
 
 impl Wf {
@@ -1062,6 +1067,15 @@ impl Wf {
 
         out
     }
+
+    pub fn update_n_stored_h(&mut self, n: usize) {
+        // Make this setter explicit because we really don't want to accidentally change it
+        self.n_stored_h = n;
+    }
+
+    pub fn n_stored_h(&self) -> usize {
+        self.n_stored_h
+    }
 }
 
 // Initialize variational wf to the HF det (only needs to be called once)
@@ -1070,6 +1084,7 @@ pub fn init_var_wf(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator) -> 
     wf.n_states = global.n_states;
     wf.converged = false;
     wf.n = 1;
+    wf.update_n_stored_h(0); // No stored H yet
     let one: u128 = 1;
     let mut hf = Det {
         config: Config {
@@ -1086,5 +1101,6 @@ pub fn init_var_wf(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator) -> 
     wf.dets.push(hf);
     wf.energy = wf.dets[0].diag;
     wf.eps_iter = init_eps(&wf, &global, &excite_gen);
+    wf.off_diag_h_elems = None;
     wf
 }

@@ -5,7 +5,7 @@ use crate::wf::Wf;
 use crate::excite::init::ExciteGenerator;
 use crate::ham::Ham;
 use eigenvalues::{Davidson, DavidsonCorrection, SpectrumTarget};
-use crate::var::ham_gen::{gen_sparse_ham_doubles, gen_sparse_ham_fast};
+use crate::var::ham_gen::gen_sparse_ham_fast;
 use std::time::Instant;
 use crate::utils::read_input::Global;
 use eigenvalues::algorithms::davidson::DavidsonError;
@@ -41,7 +41,7 @@ use crate::excite::Excite;
 //     }
 // }
 
-pub fn sparse_optimize(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, wf: &mut Wf, coeff_eps: f64, energy_eps: f64, init_last_iter: bool) {
+pub fn sparse_optimize(global: &Global, ham: &Ham, wf: &mut Wf, coeff_eps: f64, energy_eps: f64, init_last_iter: bool) {
     // Generate Ham as a sparse matrix
     // Optimize using davidson
 

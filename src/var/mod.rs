@@ -2,8 +2,9 @@
 
 mod davidson;
 mod ham_gen;
-mod sparse;
+pub(crate) mod sparse;
 mod utils;
+pub mod off_diag;
 
 use super::ham::Ham;
 use super::wf::Wf;
@@ -41,7 +42,7 @@ pub fn variational(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, wf:
 
         println!("\nOptimizing coefficients of wf with {} dets", wf.n);
         let start_optimize_coeffs: Instant = Instant::now();
-        sparse_optimize(&global, &ham, excite_gen, wf, coeff_eps, energy_eps, iter > 1);
+        sparse_optimize(&global, &ham, wf, coeff_eps, energy_eps, iter > 1);
         // dense_optimize(wf, coeff_eps, energy_eps, &ham, &excite_gen);
         println!("Time to optimize wf coefficients: {:?}", start_optimize_coeffs.elapsed());
 
