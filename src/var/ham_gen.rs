@@ -330,6 +330,10 @@ pub fn gen_sparse_ham_fast(global: &Global, wf: &mut Wf, ham: &Ham, verbose: boo
         x.n_dets_remaining = acc;
         acc + x.n_dets
     });
+    new_unique_ups_sorted.iter_mut().rev().fold(0, |acc, x| {
+        x.n_dets_remaining = acc;
+        acc + x.n_dets
+    });
     // if verbose { println!("Unique_ups_sorted:"); }
     // for val in &unique_ups_sorted {
     //     if verbose { println!("{}, {}, {}", val.up, val.n_dets, val.n_dets_remaining); }
@@ -346,6 +350,7 @@ pub fn gen_sparse_ham_fast(global: &Global, wf: &mut Wf, ham: &Ham, verbose: boo
             }
         }
     }
+    // up_singles is *new* to *all*
     let mut up_singles: HashMap<u128, Vec<u128>> = HashMap::default();
     for (ind, unique) in new_unique_ups_sorted.iter().enumerate() {
         for up_r1 in remove_1e(unique.up) {
@@ -433,7 +438,7 @@ pub fn gen_sparse_ham_fast(global: &Global, wf: &mut Wf, ham: &Ham, verbose: boo
     let max_n_dets_double_loop = global.ndn as usize; // ((global.ndn * (global.ndn - 1)) / 2) as usize;
 
     let start_opp: Instant = Instant::now();
-    all_opposite_spin_excites(global, wf, ham, &unique_up_dict, &new_unique_up_dict, &mut unique_ups_sorted, &up_singles, &mut unique_dns_vec, &mut dn_singles);
+    all_opposite_spin_excites(global, wf, ham, &unique_up_dict, &new_unique_up_dict, &new_unique_ups_sorted, &up_singles, &mut unique_dns_vec, &mut dn_singles);
     println!("Time for opposite-spin: {:?}", start_opp.elapsed());
 
     let start_same: Instant = Instant::now();
@@ -445,6 +450,7 @@ pub fn gen_sparse_ham_fast(global: &Global, wf: &mut Wf, ham: &Ham, verbose: boo
 }
 
 fn all_opposite_spin_excites(global: &Global, wf: &mut Wf, ham: &Ham, unique_up_dict: &HashMap<u128, Vec<(usize, u128)>>, new_unique_up_dict: &HashMap<u128, Vec<(usize, u128)>>, new_unique_ups_sorted: &Vec<Unique>, up_singles: &HashMap<u128, Vec<u128>>, mut unique_dns_vec: &mut Vec<u128>, mut dn_singles: &mut HashMap<u128, Vec<u128>>) {
+    // Loop over new dets only
     for unique in new_unique_ups_sorted {
         // Opposite-spin excitations
         opposite_spin_excites(global, wf, ham, unique_up_dict, new_unique_up_dict, &up_singles, &mut unique_dns_vec, &mut dn_singles, unique);
