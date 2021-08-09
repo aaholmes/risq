@@ -31,10 +31,10 @@ fn main() {
     let start: Instant = Instant::now();
     let start_setup: Instant = Instant::now();
 
-    println!(" //==============================================================\\\\");
-    println!("// Rust Implementation of Semistochastic Quantum chemistry (RISQ) \\\\");
-    println!("\\\\                      Adam A Holmes, 2021                       //");
-    println!(" \\\\==============================================================//");
+    println!(" //==================================================================\\\\");
+    println!("//   Rust Implementation of Semistochastic Quantum chemistry (RISQ)   \\\\");
+    println!("\\\\                        Adam A Holmes, 2021                         //");
+    println!(" \\\\==================================================================//");
 
     println!("\n\n=====\nSetup\n=====\n");
 

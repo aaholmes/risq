@@ -41,13 +41,13 @@ use crate::excite::Excite;
 //     }
 // }
 
-pub fn sparse_optimize(global: &Global, ham: &Ham, wf: &mut Wf, coeff_eps: f64, energy_eps: f64, init_last_iter: bool) {
+pub fn sparse_optimize(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, wf: &mut Wf, coeff_eps: f64, energy_eps: f64, init_last_iter: bool) {
     // Generate Ham as a sparse matrix
     // Optimize using davidson
 
     let start_gen_sparse_ham: Instant = Instant::now();
     // let sparse_ham = gen_sparse_ham_doubles(wf, ham, excite_gen);
-    let sparse_ham = gen_sparse_ham_fast(global, wf, ham, false);
+    let sparse_ham = gen_sparse_ham_fast(global, wf, ham, excite_gen);
     println!("Time to generate sparse H: {:?}", start_gen_sparse_ham.elapsed());
 
     // Davidson
