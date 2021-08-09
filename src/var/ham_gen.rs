@@ -374,17 +374,25 @@ pub fn gen_sparse_ham_fast(global: &Global, wf: &mut Wf, ham: &Ham, verbose: boo
     // 5. Find the unique dn dets, a map from each dn det to its index in the unique dn det list, and a map dnSingles
     // (analogous to upSingles, except want all excitations, not just to later unique dets)
     let mut unique_dns_set: HashSet<u128> = HashSet::default();
-    for config in wf.inds.keys() {
-        unique_dns_set.insert(config.dn);
+    let mut new_unique_dns_set: HashSet<u128> = HashSet::default();
+    for (ind, det) in wf.dets.iter().enumerate() {
+        unique_dns_set.insert(det.config.dn);
+        if ind >= wf.n_stored_h() {
+            new_unique_dns_set.insert(det.config.dn);
+        }
     }
     let mut unique_dns_vec: Vec<u128> = Vec::with_capacity(unique_dns_set.len());
+    let mut new_unique_dns_vec: Vec<u128> = Vec::with_capacity(new_unique_dns_set.len());
     // Problem: following results in a randomly ordered vector!
     for dn in unique_dns_set {
         unique_dns_vec.push(dn);
     }
+    for dn in new_unique_dns_set {
+        new_unique_dns_vec.push(dn);
+    }
 
     let mut dn_single_excite_constructor: HashMap<u128, Vec<usize>> = HashMap::default();
-    for (ind, dn) in unique_dns_vec.iter().enumerate() {
+    for (ind, dn) in new_unique_dns_vec.iter().enumerate() {
         for dn_r1 in remove_1e(*dn) {
             match dn_single_excite_constructor.get_mut(&dn_r1) {
                 None => { dn_single_excite_constructor.insert(dn_r1, vec![ind]); },
@@ -392,15 +400,20 @@ pub fn gen_sparse_ham_fast(global: &Global, wf: &mut Wf, ham: &Ham, verbose: boo
             }
         }
     }
+    // dn_singles is *all* to *new*
     let mut dn_singles: HashMap<u128, Vec<u128>> = HashMap::default();
     for dn in &unique_dns_vec {
         for dn_r1 in remove_1e(*dn) {
-            for connected_ind in &dn_single_excite_constructor[&dn_r1] {
-                // Skip over the diagonal excitations (there will be ndn of these)
-                if *dn == unique_dns_vec[*connected_ind] { continue; }
-                match dn_singles.get_mut(&dn) {
-                    None => { dn_singles.insert(*dn, vec![unique_dns_vec[*connected_ind]]); },
-                    Some(v) => { v.push(unique_dns_vec[*connected_ind]); }
+            if let Some(connected_inds) = dn_single_excite_constructor.get_mut(&dn_r1) {
+                for connected_ind in connected_inds {
+                    // can't compare *connected_ind to wf.n_stored_h() because connected_ind
+                    // is the index in the vector of unique dns, not in the wf!
+                    // Skip over the diagonal excitations (there will be ndn of these)
+                    if *dn == new_unique_dns_vec[*connected_ind] { continue; }
+                    match dn_singles.get_mut(&dn) {
+                        None => { dn_singles.insert(*dn, vec![new_unique_dns_vec[*connected_ind]]); },
+                        Some(v) => { v.push(new_unique_dns_vec[*connected_ind]); }
+                    }
                 }
             }
         }
@@ -438,29 +451,29 @@ pub fn gen_sparse_ham_fast(global: &Global, wf: &mut Wf, ham: &Ham, verbose: boo
     let max_n_dets_double_loop = global.ndn as usize; // ((global.ndn * (global.ndn - 1)) / 2) as usize;
 
     let start_opp: Instant = Instant::now();
-    all_opposite_spin_excites(global, wf, ham, &unique_up_dict, &new_unique_up_dict, &new_unique_ups_sorted, &up_singles, &mut unique_dns_vec, &mut dn_singles);
+    all_opposite_spin_excites(global, wf, ham, &unique_up_dict, &new_unique_up_dict, &new_unique_ups_sorted, &up_singles, &mut unique_dns_vec, &dn_singles);
     println!("Time for opposite-spin: {:?}", start_opp.elapsed());
 
     let start_same: Instant = Instant::now();
-    all_same_spin_excites(wf, ham, &unique_up_dict, &new_unique_up_dict, &mut unique_ups_sorted, max_n_dets_double_loop);
+    all_same_spin_excites(global, wf, ham, &unique_up_dict, &new_unique_up_dict, &mut unique_ups_sorted, max_n_dets_double_loop);
     println!("Time for same-spin: {:?}", start_same.elapsed());
 
     // Finally, put collected off-diag elems into a sparse matrix
     create_sparse(wf)
 }
 
-fn all_opposite_spin_excites(global: &Global, wf: &mut Wf, ham: &Ham, unique_up_dict: &HashMap<u128, Vec<(usize, u128)>>, new_unique_up_dict: &HashMap<u128, Vec<(usize, u128)>>, new_unique_ups_sorted: &Vec<Unique>, up_singles: &HashMap<u128, Vec<u128>>, mut unique_dns_vec: &mut Vec<u128>, mut dn_singles: &mut HashMap<u128, Vec<u128>>) {
+fn all_opposite_spin_excites(global: &Global, wf: &mut Wf, ham: &Ham, unique_up_dict: &HashMap<u128, Vec<(usize, u128)>>, new_unique_up_dict: &HashMap<u128, Vec<(usize, u128)>>, new_unique_ups_sorted: &Vec<Unique>, up_singles: &HashMap<u128, Vec<u128>>, mut unique_dns_vec: &mut Vec<u128>, dn_singles: &HashMap<u128, Vec<u128>>) {
     // Loop over new dets only
     for unique in new_unique_ups_sorted {
         // Opposite-spin excitations
-        opposite_spin_excites(global, wf, ham, unique_up_dict, new_unique_up_dict, &up_singles, &mut unique_dns_vec, &mut dn_singles, unique);
+        opposite_spin_excites(global, wf, ham, unique_up_dict, new_unique_up_dict, &up_singles, &mut unique_dns_vec, &dn_singles, unique);
     }
 }
 
-fn all_same_spin_excites(wf: &mut Wf, ham: &Ham, unique_up_dict: &HashMap<u128, Vec<(usize, u128)>>, new_unique_up_dict: &HashMap<u128, Vec<(usize, u128)>>, unique_ups_sorted: &mut Vec<Unique>, max_n_dets_double_loop: usize) {
+fn all_same_spin_excites(global: &Global, wf: &mut Wf, ham: &Ham, unique_up_dict: &HashMap<u128, Vec<(usize, u128)>>, new_unique_up_dict: &HashMap<u128, Vec<(usize, u128)>>, unique_ups_sorted: &mut Vec<Unique>, max_n_dets_double_loop: usize) {
     for unique in unique_ups_sorted {
         // Same-spin excitations
-        same_spin_excites(wf, ham, unique_up_dict, new_unique_up_dict, max_n_dets_double_loop, unique);
+        same_spin_excites(global, wf, ham, unique_up_dict, new_unique_up_dict, max_n_dets_double_loop, unique);
     }
 }
 
@@ -472,23 +485,23 @@ pub struct Unique {
 }
 
 
-pub fn opposite_spin_excites(global: &Global, wf: &mut Wf, ham: &Ham, unique_up_dict: &HashMap<u128, Vec<(usize, u128)>>, new_unique_up_dict: &HashMap<u128, Vec<(usize, u128)>>, up_singles: &HashMap<u128, Vec<u128>>, unique_dns_vec: &mut Vec<u128>, dn_singles: &mut HashMap<u128, Vec<u128>>, unique: &Unique) {
+pub fn opposite_spin_excites(global: &Global, wf: &mut Wf, ham: &Ham, unique_up_dict: &HashMap<u128, Vec<(usize, u128)>>, new_unique_up_dict: &HashMap<u128, Vec<(usize, u128)>>, up_singles: &HashMap<u128, Vec<u128>>, unique_dns_vec: &mut Vec<u128>, dn_singles: &HashMap<u128, Vec<u128>>, unique: &Unique) {
     // Current status:
     // For the later iterations of C2 vdz, eps=1-4, first algo is ~10x faster than third algo
     // So, for now, first algo always on
 
     // let start_this_opp: Instant = Instant::now();
-    let first_algo_complexity = unique.n_dets * (global.ndn * global.ndn) as usize + unique.n_dets_remaining; // Term in parentheses is an estimate
-    let second_algo_complexity = global.ndn as usize * (unique.n_dets + unique.n_dets_remaining);
-    let third_algo_complexity = unique.n_dets * unique.n_dets_remaining;
-    let mut first_algo_fastest = true;
-    let mut second_algo_fastest = true;
+    // let first_algo_complexity = unique.n_dets * (global.ndn * global.ndn) as usize + unique.n_dets_remaining; // Term in parentheses is an estimate
+    // let second_algo_complexity = global.ndn as usize * (unique.n_dets + unique.n_dets_remaining);
+    // let third_algo_complexity = unique.n_dets * unique.n_dets_remaining;
+    // let mut first_algo_fastest = false;
+    // let mut second_algo_fastest = true;
     // if first_algo_complexity <= second_algo_complexity {
     //     if first_algo_complexity <= third_algo_complexity { first_algo_fastest = true; }
     // } else {
     //     if second_algo_complexity <= third_algo_complexity { second_algo_fastest = true; }
     // }
-    if first_algo_fastest {
+    if global.opp_algo == 1 {
         // if verbose { println!("First algo fastest"); }
         // Use a single for-loop version of the double for-loop algorithm from "Fast SHCI"
         // up_singles is *new* to *all*
@@ -496,11 +509,13 @@ pub fn opposite_spin_excites(global: &Global, wf: &mut Wf, ham: &Ham, unique_up_
             None => {},
             Some(ups) => {
                 let mut dn_candidates: HashMap<u128, Vec<usize>> = HashMap::default();
-                for dn in &new_unique_up_dict[&unique.up] {
-                    for dn2 in &dn_singles[&dn.1] {
-                        match dn_candidates.get_mut(&dn2) {
-                            None => { dn_candidates.insert(*dn2, vec![dn.0]); },
-                            Some(v) => { v.push(dn.0); }
+                for dn in &unique_up_dict[&unique.up] {
+                    if let Some(dns) = dn_singles.get(&dn.1) {
+                        for dn2 in dns {
+                            match dn_candidates.get_mut(&dn2) {
+                                None => { dn_candidates.insert(*dn2, vec![dn.0]); },
+                                Some(v) => { v.push(dn.0); }
+                            }
                         }
                     }
                 }
@@ -520,23 +535,24 @@ pub fn opposite_spin_excites(global: &Global, wf: &mut Wf, ham: &Ham, unique_up_
                 }
             }
         }
-    } else if second_algo_fastest {
+    } else if global.opp_algo == 2 {
         // if verbose { println!("Second algo fastest"); }
         // Loop over ways to remove an electron to get all connected dets
-        let mut dn_single_excite_constructor: HashMap<u128, Vec<usize>> = HashMap::default();
-        for dn in &new_unique_up_dict[&unique.up] {
-            for dn_r1 in remove_1e(dn.1) {
-                match dn_single_excite_constructor.get_mut(&dn_r1) {
-                    None => { dn_single_excite_constructor.insert(dn_r1, vec![dn.0]); },
-                    Some(v) => { v.push(dn.0); }
-                }
-            }
-        }
+
         // up_singles are *new* to *all*
         // up_singles[&unique.up] can be empty, so...
         match up_singles.get(&unique.up) {
             None => {},
             Some(ups) => {
+                let mut dn_single_excite_constructor: HashMap<u128, Vec<usize>> = HashMap::default();
+                for dn in &new_unique_up_dict[&unique.up] {
+                    for dn_r1 in remove_1e(dn.1) {
+                        match dn_single_excite_constructor.get_mut(&dn_r1) {
+                            None => { dn_single_excite_constructor.insert(dn_r1, vec![dn.0]); },
+                            Some(v) => { v.push(dn.0); }
+                        }
+                    }
+                }
                 for up in ups {
                     for dn in &unique_up_dict[&up] {
                         for dn_r1 in remove_1e(dn.1) {
@@ -577,8 +593,8 @@ pub fn opposite_spin_excites(global: &Global, wf: &mut Wf, ham: &Ham, unique_up_
 }
 
 
-pub fn same_spin_excites(wf: &mut Wf, ham: &Ham, unique_up_dict: &HashMap<u128, Vec<(usize, u128)>>, new_unique_up_dict: &HashMap<u128, Vec<(usize, u128)>>, max_n_dets_double_loop: usize, unique: &Unique) {
-    if true { //unique.n_dets <= max_n_dets_double_loop {
+pub fn same_spin_excites(global: &Global, wf: &mut Wf, ham: &Ham, unique_up_dict: &HashMap<u128, Vec<(usize, u128)>>, new_unique_up_dict: &HashMap<u128, Vec<(usize, u128)>>, max_n_dets_double_loop: usize, unique: &Unique) {
+    if global.same_algo == 1 { //unique.n_dets <= max_n_dets_double_loop {
         // if verbose { println!("Same-spin first algo fastest"); }
         // Use the double for-loop algorithm from "Fast SHCI"
         for (i_ind, ind1) in unique_up_dict[&unique.up].iter().enumerate() {

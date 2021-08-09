@@ -31,7 +31,12 @@ fn main() {
     let start: Instant = Instant::now();
     let start_setup: Instant = Instant::now();
 
-    println!("Rust Implementation of Semistochastic Quantum chemistry (RISQ)\nAdam A Holmes, 2021\n");
+    println!(" //==============================================================\\\\");
+    println!("// Rust Implementation of Semistochastic Quantum chemistry (RISQ) \\\\");
+    println!("\\\\                      Adam A Holmes, 2021                       //");
+    println!(" \\\\==============================================================//");
+
+    println!("\n\n=====\nSetup\n=====\n");
 
     println!("Reading input file");
     lazy_static! {
@@ -53,12 +58,14 @@ fn main() {
     wf.print();
     println!("Time for setup: {:?}", start_setup.elapsed());
 
-    println!("Variational stage");
+    println!("\n\n=================\nVariational stage\n=================\n");
     let start_var: Instant = Instant::now();
     variational(&GLOBAL, &HAM, &EXCITE_GEN, &mut wf);
     println!("Time for variational stage: {:?}", start_var.elapsed());
 
-    let eps_pt = GLOBAL.eps_pt;
+    panic!("Debug");
+
+    let eps_pt = GLOBAL.eps_pt_dtm;
     let n_batches = 10;
     let n_samples_per_batch_old = 200;
     let n_samples_per_batch_new = 200;
