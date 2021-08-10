@@ -392,7 +392,7 @@ pub fn gen_sparse_ham_fast(global: &Global, wf: &mut Wf, ham: &Ham, excite_gen: 
     }
 
     let mut dn_single_excite_constructor: HashMap<u128, Vec<usize>> = HashMap::default();
-    for (ind, dn) in new_unique_dns_vec.iter().enumerate() {
+    for (ind, dn) in unique_dns_vec.iter().enumerate() {
         for dn_r1 in remove_1e(*dn) {
             match dn_single_excite_constructor.get_mut(&dn_r1) {
                 None => { dn_single_excite_constructor.insert(dn_r1, vec![ind]); },
@@ -409,10 +409,10 @@ pub fn gen_sparse_ham_fast(global: &Global, wf: &mut Wf, ham: &Ham, excite_gen: 
                     // can't compare *connected_ind to wf.n_stored_h() because connected_ind
                     // is the index in the vector of unique dns, not in the wf!
                     // Skip over the diagonal excitations (there will be ndn of these)
-                    if *dn == new_unique_dns_vec[*connected_ind] { continue; }
+                    if *dn == unique_dns_vec[*connected_ind] { continue; }
                     match dn_singles.get_mut(&dn) {
-                        None => { dn_singles.insert(*dn, vec![new_unique_dns_vec[*connected_ind]]); },
-                        Some(v) => { v.push(new_unique_dns_vec[*connected_ind]); }
+                        None => { dn_singles.insert(*dn, vec![unique_dns_vec[*connected_ind]]); },
+                        Some(v) => { v.push(unique_dns_vec[*connected_ind]); }
                     }
                 }
             }
@@ -420,13 +420,15 @@ pub fn gen_sparse_ham_fast(global: &Global, wf: &mut Wf, ham: &Ham, excite_gen: 
     }
     // 6. Dn excite constructor: Look up (ind, dn) lists using keys (up, dn_r1)
     let mut dn_single_constructor: HashMap<Config, Vec<(usize, u128)>> = HashMap::default();
-    for (ind, det) in wf.dets.iter().enumerate() {
-        for dn_r1 in remove_1e(excite_gen.valence & det.config.dn) {
-            let key = Config { up: det.config.up, dn: dn_r1 };
-            // println!("Assigning key: {}", key);
-            match dn_single_constructor.get_mut(&key) {
-                None => { dn_single_constructor.insert(key, vec![(ind, det.config.dn)]); },
-                Some(v) => { v.push((ind, det.config.dn)); }
+    if global.opp_algo == 4 {
+        for (ind, det) in wf.dets.iter().enumerate() {
+            for dn_r1 in remove_1e(excite_gen.valence & det.config.dn) {
+                let key = Config { up: det.config.up, dn: dn_r1 };
+                // println!("Assigning key: {}", key);
+                match dn_single_constructor.get_mut(&key) {
+                    None => { dn_single_constructor.insert(key, vec![(ind, det.config.dn)]); },
+                    Some(v) => { v.push((ind, det.config.dn)); }
+                }
             }
         }
     }
@@ -504,10 +506,11 @@ pub struct Unique {
 pub fn opposite_spin_excites(global: &Global, wf: &mut Wf, ham: &Ham, excite_gen: &ExciteGenerator, unique_up_dict: &HashMap<u128, Vec<(usize, u128)>>, new_unique_up_dict: &HashMap<u128, Vec<(usize, u128)>>, up_singles: &HashMap<u128, Vec<u128>>, unique_dns_vec: &mut Vec<u128>, dn_singles: &HashMap<u128, Vec<u128>>, dn_single_constructor: &HashMap<Config, Vec<(usize, u128)>>, unique: &Unique) {
     // Current status:
     // For frozen-core F2 in VTZ at equilibrium with eps_var = 3e-4, the full variational stage takes:
-    // Algo 1: not yet working
+    // Algo 1: 63 s
     // Algo 2: 77 s
     // Algo 3: 132 s
     // Algo 4: 88 s
+    // Algo 5: 287 s
     // but on the last iteration, algo 4 is 3.5 times faster than algo 2, so algo 4 may become faster for larger variational spaces
 
     // let start_this_opp: Instant = Instant::now();
@@ -529,8 +532,8 @@ pub fn opposite_spin_excites(global: &Global, wf: &mut Wf, ham: &Ham, excite_gen
             None => {},
             Some(ups) => {
                 let mut dn_candidates: HashMap<u128, Vec<usize>> = HashMap::default();
-                for dn in &unique_up_dict[&unique.up] {
-                    if let Some(dns) = dn_singles.get(&dn.1) {
+                for dn in &new_unique_up_dict[&unique.up] {
+                    if let Some(dns) = up_singles.get(&dn.1) {
                         for dn2 in dns {
                             match dn_candidates.get_mut(&dn2) {
                                 None => { dn_candidates.insert(*dn2, vec![dn.0]); },
@@ -611,7 +614,7 @@ pub fn opposite_spin_excites(global: &Global, wf: &mut Wf, ham: &Ham, excite_gen
                 }
             }
         }
-    } else {
+    } else if global.opp_algo == 4 {
         // Algorithm 4: Loop over up-spin singles (new to all); for each, loop over ways of removing 1
         // dn electron, use that to look up all opposite spin double excites
         match up_singles.get(&unique.up) {
@@ -632,6 +635,29 @@ pub fn opposite_spin_excites(global: &Global, wf: &mut Wf, ham: &Ham, excite_gen
                                     if new_ind > all_ind {
                                         // Found excite new_ind, all_ind!
                                         add_el(wf, ham, *all_ind, *new_ind, None); // only adds if elem != 0
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    } else {
+        // Algorithm 5: Loop over all new dets: loop over up_singles (new to all) and dn_singles (new to all),
+        // check whether resulting det exists in wf
+        match up_singles.get(&unique.up) {
+            None => {},
+            Some(ups) => {
+                for dn in &new_unique_up_dict[&unique.up] {
+                    match up_singles.get(&dn.1) {
+                        None => {},
+                        Some(dns) => {
+                            for all_up in ups {
+                                for all_dn in dns {
+                                    match wf.inds.get(&Config { up: *all_up, dn: *all_dn }) {
+                                        None => {},
+                                        Some(ind) => add_el(wf, ham, *ind, dn.0, None),
                                     }
                                 }
                             }
