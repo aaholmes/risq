@@ -503,8 +503,12 @@ pub struct Unique {
 
 pub fn opposite_spin_excites(global: &Global, wf: &mut Wf, ham: &Ham, excite_gen: &ExciteGenerator, unique_up_dict: &HashMap<u128, Vec<(usize, u128)>>, new_unique_up_dict: &HashMap<u128, Vec<(usize, u128)>>, up_singles: &HashMap<u128, Vec<u128>>, unique_dns_vec: &mut Vec<u128>, dn_singles: &HashMap<u128, Vec<u128>>, dn_single_constructor: &HashMap<Config, Vec<(usize, u128)>>, unique: &Unique) {
     // Current status:
-    // For the later iterations of C2 vdz, eps=1-4, first algo is ~10x faster than third algo
-    // So, for now, first algo always on
+    // For frozen-core F2 in VTZ at equilibrium with eps_var = 3e-4, the full variational stage takes:
+    // Algo 1: not yet working
+    // Algo 2: 77 s
+    // Algo 3: 132 s
+    // Algo 4: 88 s
+    // but on the last iteration, algo 4 is 3.5 times faster than algo 2, so algo 4 may become faster for larger variational spaces
 
     // let start_this_opp: Instant = Instant::now();
     // let first_algo_complexity = unique.n_dets * (global.ndn * global.ndn) as usize + unique.n_dets_remaining; // Term in parentheses is an estimate
@@ -597,7 +601,7 @@ pub fn opposite_spin_excites(global: &Global, wf: &mut Wf, ham: &Ham, excite_gen
             Some(ups) => {
                 for up in ups {
                     // if verbose { println!("up: {}", up); }
-                    for ind1 in &unique_up_dict[&unique.up] {
+                    for ind1 in &new_unique_up_dict[&unique.up] {
                         // if verbose { println!("ind1= ({}, {})", ind1.0, ind1.1); }
                         for ind2 in &unique_up_dict[&up] {
                             // if verbose { println!("Found excitation: {} {}", ind1.0, ind2.0); }
