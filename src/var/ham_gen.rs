@@ -8,7 +8,7 @@ use crate::excite::{Excite, Orbs};
 use crate::wf::det::Config;
 use eigenvalues::utils::generate_random_sparse_symmetric;
 use crate::utils::bits::{bit_pairs, bits, ibclr};
-use crate::var::sparse::{SparseMat, SparseMatDoubles};
+use crate::var::sparse::{SparseMat, SparseMatDoubles, SparseMatUpperTri};
 use std::collections::{HashMap, HashSet};
 use std::cmp::Ordering::Equal;
 use crate::var::utils::{remove_1e, remove_2e};
@@ -16,7 +16,7 @@ use crate::utils::read_input::Global;
 use sprs::CsMat;
 use std::time::Instant;
 use itertools::Itertools;
-use crate::var::off_diag::{OffDiagElemsNoHash, add_el, add_el_and_spin_flipped, create_sparse};
+use crate::var::off_diag::{OffDiagElemsNoHash, add_el, add_el_and_spin_flipped};
 // extern crate threads_pool;
 // use threads_pool::ThreadPool;
 // use std::thread;
@@ -282,7 +282,7 @@ pub fn gen_doubles(wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerator) -> HashMap<
 // }
 
 
-pub fn gen_sparse_ham_fast(global: &Global, wf: &mut Wf, ham: &Ham, excite_gen: &ExciteGenerator) -> SparseMat {
+pub fn gen_sparse_ham_fast(global: &Global, wf: &mut Wf, ham: &Ham, excite_gen: &ExciteGenerator) {
     // Generate Ham as a sparse matrix using my 2019 notes when I was working pro bono
     // For now, assumes that nup == ndn
     // Updates wf.sparse_ham if it already exists from the previous iteration
@@ -438,26 +438,14 @@ pub fn gen_sparse_ham_fast(global: &Global, wf: &mut Wf, ham: &Ham, excite_gen: 
     // }
     println!("Time for H gen setup: {:?}", start_setup.elapsed());
 
-    // Accumulator of new off-diagonal elements
-    // Will put them in the SparseMat data structure later
     let n = wf.n;
-    if let Some(off_diag) = &mut wf.off_diag_h_elems {
-        // Expand old off-diagonal elements holder to hold new rows
-        off_diag.expand_rows(n);
-    } else {
+    if wf.n_stored_h() == 0 {
         // Create new off-diagonal elements holder
-        wf.off_diag_h_elems = Some(OffDiagElemsNoHash::new(n));
+        wf.new_sparse_ham();
+    } else {
+        // Expand old off-diagonal elements holder to hold new rows
+        wf.expand_sparse_ham_rows();
     }
-    // match &mut wf.off_diag_h_elems {
-    //     None => {
-    //         // Create new off-diagonal elements holder
-    //         wf.off_diag_h_elems = Some(OffDiagElemsNoHash::new(n));
-    //     },
-    //     Some(mut off_diag) => {
-    //         // Expand old off-diagonal elements holder to hold new rows
-    //         off_diag.expand_rows(n);
-    //     }
-    // }
 
     // Thread pool
     // let mut pool = ThreadPool::new(4);
@@ -476,8 +464,12 @@ pub fn gen_sparse_ham_fast(global: &Global, wf: &mut Wf, ham: &Ham, excite_gen: 
     all_same_spin_excites(global, wf, ham, &unique_up_dict, &new_unique_up_dict, &mut unique_ups_sorted, max_n_dets_double_loop);
     println!("Time for same-spin: {:?}", start_same.elapsed());
 
-    // Finally, put collected off-diag elems into a sparse matrix
-    create_sparse(wf)
+    // Sort and remove duplicates
+    &wf.sparse_ham.sort_remove_duplicates();
+
+    // Update wf.n_stored_h
+    wf.update_n_stored_h(wf.n);
+
 }
 
 fn all_opposite_spin_excites(global: &Global, wf: &mut Wf, ham: &Ham, excite_gen: &ExciteGenerator, unique_up_dict: &HashMap<u128, Vec<(usize, u128)>>, new_unique_up_dict: &HashMap<u128, Vec<(usize, u128)>>, new_unique_ups_sorted: &Vec<Unique>, up_singles: &HashMap<u128, Vec<u128>>, mut unique_dns_vec: &mut Vec<u128>, dn_singles: &HashMap<u128, Vec<u128>>, dn_single_constructor: &HashMap<Config, Vec<(usize, u128)>>) {

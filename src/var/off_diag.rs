@@ -6,7 +6,7 @@ use std::time::Instant;
 use nalgebra::base::DVector;
 
 use crate::ham::Ham;
-use crate::var::sparse::SparseMat;
+use crate::var::sparse::{SparseMat, SparseMatUpperTri};
 use crate::wf::Wf;
 use crate::wf::det::Config;
 
@@ -45,16 +45,22 @@ pub fn add_el(wf: &mut Wf, ham: &Ham, i: usize, j: usize, elem: Option<f64>) {
             if i == j { return; }
             let elem = ham.ham_off_diag_no_excite(&wf.dets[i].config, &wf.dets[j].config);
             if elem != 0.0 {
-                if let Some(off_diag) = &mut wf.off_diag_h_elems {
-                    off_diag.nonzero[i].push((j, elem));
-                    off_diag.nonzero[j].push((i, elem));
+                if i < j {
+                    wf.sparse_ham.off_diag[i].push((j, elem));
+                    // if j >= wf.n_stored_h() { wf.sparse_ham.off_diag[i].push((j, elem)); }
+                } else {
+                    wf.sparse_ham.off_diag[j].push((i, elem));
+                    // if i >= wf.n_stored_h() { wf.sparse_ham.off_diag[j].push((i, elem)); }
                 }
             }
         },
         Some(elem) => {
-            if let Some(off_diag) = &mut wf.off_diag_h_elems {
-                off_diag.nonzero[i].push((j, elem));
-                off_diag.nonzero[j].push((i, elem));
+            if i < j {
+                wf.sparse_ham.off_diag[i].push((j, elem));
+                // if j >= wf.n_stored_h() { wf.sparse_ham.off_diag[i].push((j, elem)); }
+            } else {
+                wf.sparse_ham.off_diag[j].push((i, elem)) ;
+                // if i >= wf.n_stored_h() { wf.sparse_ham.off_diag[j].push((i, elem)); }
             }
         }
     }
@@ -84,76 +90,76 @@ pub fn add_el_and_spin_flipped(wf: &mut Wf, ham: &Ham, i: usize, j: usize) {
     }
 }
 
-pub fn create_sparse(wf: &mut Wf) -> SparseMat {
-    // Creates sparse matrix from the off-diag elements
-    // At the end of this routine, update wf.n_last to wf.n (these two variables only needed to be different for determining which part of H is new)
-    let start_create_sparse: Instant = Instant::now();
-
-    // Put the matrix elements into a sparse matrix
-    let n = wf.n;
-
-    // Diagonal component
-    let mut diag = Vec::with_capacity(n);
-    for det in &wf.dets {
-        diag.push(det.diag);
-    }
-
-    // Off-diagonal component
-
-    let shape = (n, n);
-
-    // Sort each vec, remove duplicates
-    // (updating self.nnz in the process)
-
-    let res;
-
-    if let Some(stored_off_diag) = &mut wf.off_diag_h_elems {
-
-        for (i, v) in stored_off_diag.nonzero.iter_mut().enumerate() {
-            // Sort by index
-            v[stored_off_diag.nnz[i + 1]..].sort_by_key(|k| k.0);
-            // Call dedup on everything because I can't figure out how to do dedup on a slice
-            // (but should be fast enough anyway)
-            v.dedup_by_key(|k| k.0);
-            stored_off_diag.nnz[i + 1] = v.len();
-        }
-
-        let indptr: Vec<usize> = stored_off_diag.nnz
-            .iter()
-            .scan(0, |acc, &x| {
-                *acc = *acc + x;
-                Some(*acc)
-            })
-            .collect();
-
-        let indices: Vec<usize> = stored_off_diag.nonzero.iter()
-            .flatten()
-            .map(|x| x.0)
-            .collect();
-        let data: Vec<f64> = stored_off_diag.nonzero.iter()
-            .flatten()
-            .map(|x| x.1)
-            .collect();
-
-        println!("Variational Hamiltonian has {} nonzero off-diagonal elements", indices.len());
-
-        // Off-diagonal component
-        let off_diag = CsMat::<f64>::new(shape, indptr, indices, data);
-        println!("Time for converting stored nonzero indices to sparse H: {:?}", start_create_sparse.elapsed());
-
-        res = SparseMat { n, diag: DVector::from(diag), off_diag };
-
-    } else {
-
-        panic!("Failed to access wf's stored off-diagonal elements!")
-
-    }
-
-    // Update n_stored_h to be equal to n because we have now stored the whole variational H
-    wf.update_n_stored_h(wf.n);
-
-    res
-}
+// pub fn create_sparse(wf: &mut Wf) -> SparseMat {
+//     // Creates sparse matrix from the off-diag elements
+//     // At the end of this routine, update wf.n_last to wf.n (these two variables only needed to be different for determining which part of H is new)
+//     let start_create_sparse: Instant = Instant::now();
+//
+//     // Put the matrix elements into a sparse matrix
+//     let n = wf.n;
+//
+//     // Diagonal component
+//     let mut diag = Vec::with_capacity(n);
+//     for det in &wf.dets {
+//         diag.push(det.diag);
+//     }
+//
+//     // Off-diagonal component
+//
+//     let shape = (n, n);
+//
+//     // Sort each vec, remove duplicates
+//     // (updating self.nnz in the process)
+//
+//     let res;
+//
+//     if let Some(stored_off_diag) = &mut wf.off_diag_h_elems {
+//
+//         for (i, v) in stored_off_diag.nonzero.iter_mut().enumerate() {
+//             // Sort by index
+//             v[stored_off_diag.nnz[i + 1]..].sort_by_key(|k| k.0);
+//             // Call dedup on everything because I can't figure out how to do dedup on a slice
+//             // (but should be fast enough anyway)
+//             v.dedup_by_key(|k| k.0);
+//             stored_off_diag.nnz[i + 1] = v.len();
+//         }
+//
+//         let indptr: Vec<usize> = stored_off_diag.nnz
+//             .iter()
+//             .scan(0, |acc, &x| {
+//                 *acc = *acc + x;
+//                 Some(*acc)
+//             })
+//             .collect();
+//
+//         let indices: Vec<usize> = stored_off_diag.nonzero.iter()
+//             .flatten()
+//             .map(|x| x.0)
+//             .collect();
+//         let data: Vec<f64> = stored_off_diag.nonzero.iter()
+//             .flatten()
+//             .map(|x| x.1)
+//             .collect();
+//
+//         println!("Variational Hamiltonian has {} nonzero off-diagonal elements", indices.len());
+//
+//         // Off-diagonal component
+//         let off_diag = CsMat::<f64>::new(shape, indptr, indices, data);
+//         println!("Time for converting stored nonzero indices to sparse H: {:?}", start_create_sparse.elapsed());
+//
+//         res = SparseMat { n, diag: DVector::from(diag), off_diag };
+//
+//     } else {
+//
+//         panic!("Failed to access wf's stored off-diagonal elements!")
+//
+//     }
+//
+//     // Update n_stored_h to be equal to n because we have now stored the whole variational H
+//     wf.update_n_stored_h(wf.n);
+//
+//     res
+// }
 
 // Off-diag elems data structure
 // pub struct OffDiagElems {

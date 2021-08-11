@@ -14,7 +14,78 @@ use crate::var::utils::intersection;
 use crate::ham::Ham;
 use crate::wf::Wf;
 
-#[derive(Clone)]
+
+// Upper triangular sparse matrix
+// nonzero off-diagonal elements are at (ind1, ind2) where ind1 < ind2
+#[derive(Default)]
+pub struct SparseMatUpperTri{
+    pub(crate) n: usize,
+    pub(crate) diag: Vec<f64>,
+    pub(crate) nnz: Vec<usize>, // Number of nonzero off-diagonal elements in each row
+    pub off_diag: Vec<Vec<(usize, f64)>>, // Make our own CsMat because we need it to be temporarily unsorted
+}
+
+impl SparseMatUpperTri {
+    pub fn sort_remove_duplicates(&mut self) {
+        let mut n_upper_t = 0;
+        for (i, v) in self.off_diag.iter_mut().enumerate() {
+            // println!("Before sort and dedup: Row {} has {} elements:", i, self.nnz[i]);
+            // println!("{:?}", v.iter().scan(0, |_, (ind, val)| Some(ind)));
+            // Sort by index
+            v[self.nnz[i]..].sort_by_key(|k| k.0);
+            // Call dedup on everything because I can't figure out how to do dedup on a slice
+            // (but should be fast enough anyway)
+            v.dedup_by_key(|k| k.0);
+            self.nnz[i] = v.len();
+            // println!("Row {} has {} elements:", i, self.nnz[i]);
+            // println!("{:?}", v.iter().scan(0, |_, (ind, val)| Some(ind)));
+            n_upper_t += self.nnz[i];
+        }
+        println!("Variational Hamiltonian has {} nonzero off-diagonal elements in upper triangle, {} total", n_upper_t, 2 * n_upper_t);
+    }
+}
+
+impl MatrixOperations for SparseMatUpperTri {
+    fn matrix_vector_prod(&self, vs: DVectorSlice<'_, f64>) -> DVector<f64> {
+        let mut res: DVector<f64> = DVector::from(vec![0.0; self.n]);
+
+        for (row_ind, lvec) in self.off_diag.iter().enumerate() {
+            // Diagonal component
+            res[row_ind] += self.diag[row_ind] * vs[row_ind];
+
+            // Off-diagonal component
+            for (ind, val) in lvec.iter() {
+                res[row_ind] += val * vs[*ind];
+                res[*ind] += val * vs[row_ind];
+            }
+        }
+        res
+    }
+
+    fn matrix_matrix_prod(&self, mtx: DMatrixSlice<'_, f64>) -> DMatrix<f64> {
+        let mut res: DMatrix<f64> = mtx.clone().into();
+        for (in_col, mut out_col) in mtx.column_iter().zip(res.column_iter_mut()) {
+            out_col.copy_from(&self.matrix_vector_prod(in_col));
+        }
+        res
+    }
+
+    fn diagonal(&self) -> DVector<f64> {
+        DVector::from(self.diag.clone())
+    }
+
+    fn set_diagonal(&mut self, diag: &DVector<f64>) {
+        for i in 0..self.n {
+            self.diag[i] = diag[i];
+        }
+    }
+
+    fn ncols(&self) -> usize { self.n }
+
+    fn nrows(&self) -> usize { self.n }
+}
+
+
 pub struct SparseMat{
     pub n: usize,
     pub diag: DVector<f64>,
@@ -105,7 +176,6 @@ impl MatrixOperations for SparseMat {
 }
 
 
-#[derive(Clone)]
 pub struct SparseMatDoubles<'a> {
     // Sparse mat with doubles stored as a lookup data structure that is smaller than the actual H
     pub n: usize,

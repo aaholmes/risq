@@ -16,7 +16,7 @@ use eps::{Eps, init_eps};
 use crate::utils::bits::{bit_pairs, bits};
 use crate::stoch::{DetOrbSample, ScreenedSampler, generate_screened_sampler};
 use itertools::enumerate;
-use crate::var::sparse::SparseMat;
+use crate::var::sparse::{SparseMat, SparseMatUpperTri};
 use crate::var::off_diag::OffDiagElemsNoHash;
 
 #[derive(Default)]
@@ -30,7 +30,7 @@ pub struct Wf {
     pub inds: HashMap<Config, usize>,            // hashtable : det -> usize for looking up index by det
     pub dets: Vec<Det>,                     // for looking up det by index
     n_stored_h: usize, // n for which the variational H has already been stored
-    pub off_diag_h_elems: Option<OffDiagElemsNoHash>, // store the sparse variational H off-diagonal elements here
+    pub sparse_ham: SparseMatUpperTri, // store the sparse variational H off-diagonal elements here
 }
 
 impl Wf {
@@ -1076,6 +1076,35 @@ impl Wf {
     pub fn n_stored_h(&self) -> usize {
         self.n_stored_h
     }
+
+    pub fn new_sparse_ham(&mut self) {
+        // Create new sparse Hamiltonian, set the diagonal elements to the ones already stored in wf
+        // Don't update self.n_stored_h yet, because we haven't computed the off-diagonal elements yet
+        self.sparse_ham = SparseMatUpperTri {
+            n: self.n,
+            diag: vec![0.0; self.n],
+            nnz: vec![0; self.n],
+            off_diag: vec![Vec::with_capacity(100); self.n],
+        };
+        for i in 0..self.n {
+            self.sparse_ham.diag[i] = self.dets[i].diag;
+        }
+    }
+
+    pub fn expand_sparse_ham_rows(&mut self) {
+        // Just create empty rows to fill up the dimension to new size wf.n
+        // Also, fill up all of the new diagonal elements
+        // Don't update self.n_stored_h yet, because we haven't computed the off-diagonal elements yet
+        println!("Expanding variational H from size {} to size {}", self.sparse_ham.n, self.n);
+        self.sparse_ham.diag.append(&mut vec![0.0; self.n - self.sparse_ham.n]);
+        self.sparse_ham.nnz.append(&mut vec![0; self.n - self.sparse_ham.n]);
+        self.sparse_ham.off_diag.append(&mut vec![Vec::with_capacity(100); self.n - self.sparse_ham.n]);
+        for i in self.sparse_ham.n..self.n {
+            self.sparse_ham.diag[i] = self.dets[i].diag;
+        }
+        self.sparse_ham.n = self.n;
+    }
+
 }
 
 // Initialize variational wf to the HF det (only needs to be called once)
@@ -1101,6 +1130,5 @@ pub fn init_var_wf(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator) -> 
     wf.dets.push(hf);
     wf.energy = wf.dets[0].diag;
     wf.eps_iter = init_eps(&wf, &global, &excite_gen);
-    wf.off_diag_h_elems = None;
     wf
 }

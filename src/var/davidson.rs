@@ -47,7 +47,8 @@ pub fn sparse_optimize(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator,
 
     let start_gen_sparse_ham: Instant = Instant::now();
     // let sparse_ham = gen_sparse_ham_doubles(wf, ham, excite_gen);
-    let sparse_ham = gen_sparse_ham_fast(global, wf, ham, excite_gen);
+    // let sparse_ham = gen_sparse_ham_fast(global, wf, ham, excite_gen);
+    gen_sparse_ham_fast(global, wf, ham, excite_gen);
     println!("Time to generate sparse H: {:?}", start_gen_sparse_ham.elapsed());
 
     // Davidson
@@ -65,7 +66,7 @@ pub fn sparse_optimize(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator,
         }
     };
     dav = Davidson::new(
-        sparse_ham, 1, init, DavidsonCorrection::DPR,
+        &wf.sparse_ham, 1, init, DavidsonCorrection::DPR,
         SpectrumTarget::Lowest, coeff_eps,
         energy_eps
     );
