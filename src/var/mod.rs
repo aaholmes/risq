@@ -38,7 +38,7 @@ pub fn variational(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, wf:
         last_energy = Some(wf.energy);
 
         let coeff_eps: f64 = 1e-2; // Davidson convergence epsilon for coefficients
-        let energy_eps: f64 = 1e-5; // Davidson convergence epsilon for energy
+        let energy_eps: f64 = 1e-4; // Davidson convergence epsilon for energy
 
         println!("\nOptimizing coefficients of wf with {} dets", wf.n);
         let start_optimize_coeffs: Instant = Instant::now();
