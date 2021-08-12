@@ -888,14 +888,14 @@ impl Wf {
         out
     }
 
-    pub fn find_new_dets(&mut self, ham: &Ham, excite_gen: &ExciteGenerator) -> bool {
+    pub fn find_new_dets(&mut self, global: &Global, ham: &Ham, excite_gen: &ExciteGenerator) -> bool {
         // Get new dets: iterate over all dets; for each, propose all excitations; for each, check if new;
         // if new, add to wf
         // Returns true if no new dets (i.e., returns whether already converged)
 
         self.eps = self.eps_iter.next().unwrap();
 
-        let new_dets: Wf = self.iterate_excites(ham, excite_gen, self.eps, false);
+        let new_dets: Wf = self.iterate_excites(global, ham, excite_gen, self.eps, false);
 
         // Add all new dets to the wf
         for det in new_dets.dets {
@@ -905,7 +905,7 @@ impl Wf {
         new_dets.n == 0
     }
 
-    fn iterate_excites(&mut self, ham: &Ham, excite_gen: &ExciteGenerator, eps: f64, matmul: bool) -> Wf {
+    fn iterate_excites(&mut self, global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, eps: f64, matmul: bool) -> Wf {
         // Iterate over excitations using heat-bath cutoff eps
         // Used internally by both approx_matmul and get_new_dets
         // If matmul, then return H*psi; else, return a wf composed of new dets
@@ -1015,49 +1015,52 @@ impl Wf {
             }
 
             // Single excitations
-            // if excite_gen.max_sing >= local_eps {
-            //     for (config, is_alpha) in &[(det.config.up, true), (det.config.dn, false)] {
-            //         for i in bits(excite_gen.valence & *config) {
-            //             for stored_excite in excite_gen.sing_sorted_list.get(&Orbs::Single(i)).unwrap() {
-            //                 if stored_excite.abs_h < local_eps { break; }
-            //                 excite = Excite {
-            //                     init: Orbs::Single(i),
-            //                     target: stored_excite.target,
-            //                     abs_h: stored_excite.abs_h,
-            //                     is_alpha: Some(*is_alpha)
-            //                 };
-            //                 new_det = det.config.safe_excite_det(&excite);
-            //                 match new_det {
-            //                     Some(d) => {
-            //                         if matmul {
-            //                             // Compute matrix element and add to H*psi
-            //                             // TODO: Do this in a cache efficient way
-            //                             // out.add_det_with_coeff(det, ham, excite, d,
-            //                             //                       ham.ham_sing(&det.config, &d) * det.coeff);
-            //                             todo!()
-            //                         } else {
-            //                             if !self.inds.contains_key(&d) {
-            //                                 if !out.inds.contains_key(&d) {
-            //                                     match excite.target {
-            //                                         Orbs::Single(r) => {
-            //                                             // Compute whether single excitation actually exceeds eps!
-            //                                             if ham.ham_sing(&det.config, &d).abs() > local_eps {
-            //                                                 out.push(
-            //                                                     Det {
-            //                                                         config: d,
-            //                                                         coeff: 0.0,
-            //                                                         diag: det.new_diag_sing(ham, i, r, *is_alpha)
-            //                                                     }
-            //                                                 );
+            // Since this is expensive, do it only if wf.eps has reached the target value!
+            // if self.eps == global.eps_var {
+            //     if excite_gen.max_sing >= local_eps {
+            //         for (config, is_alpha) in &[(det.config.up, true), (det.config.dn, false)] {
+            //             for i in bits(excite_gen.valence & *config) {
+            //                 for stored_excite in excite_gen.sing_sorted_list.get(&Orbs::Single(i)).unwrap() {
+            //                     if stored_excite.abs_h < local_eps { break; }
+            //                     excite = Excite {
+            //                         init: Orbs::Single(i),
+            //                         target: stored_excite.target,
+            //                         abs_h: stored_excite.abs_h,
+            //                         is_alpha: Some(*is_alpha)
+            //                     };
+            //                     new_det = det.config.safe_excite_det(&excite);
+            //                     match new_det {
+            //                         Some(d) => {
+            //                             if matmul {
+            //                                 // Compute matrix element and add to H*psi
+            //                                 // TODO: Do this in a cache efficient way
+            //                                 // out.add_det_with_coeff(det, ham, excite, d,
+            //                                 //                       ham.ham_sing(&det.config, &d) * det.coeff);
+            //                                 todo!()
+            //                             } else {
+            //                                 if !self.inds.contains_key(&d) {
+            //                                     if !out.inds.contains_key(&d) {
+            //                                         match excite.target {
+            //                                             Orbs::Single(r) => {
+            //                                                 // Compute whether single excitation actually exceeds eps!
+            //                                                 if ham.ham_sing(&det.config, &d).abs() > local_eps {
+            //                                                     out.push(
+            //                                                         Det {
+            //                                                             config: d,
+            //                                                             coeff: 0.0,
+            //                                                             diag: det.new_diag_sing(ham, i, r, *is_alpha)
+            //                                                         }
+            //                                                     );
+            //                                                 }
             //                                             }
+            //                                             _ => {}
             //                                         }
-            //                                         _ => {}
             //                                     }
             //                                 }
             //                             }
             //                         }
+            //                         None => {}
             //                     }
-            //                     None => {}
             //                 }
             //             }
             //         }
