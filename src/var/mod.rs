@@ -47,8 +47,10 @@ pub fn variational(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, wf:
         println!("Time to optimize wf coefficients: {:?}", start_optimize_coeffs.elapsed());
 
         println!("End of iteration {} (eps = {:.1e}): Wavefunction has {} determinants with energy {:.6}", iter, wf.eps, wf.n, wf.energy);
-        if wf.n <= 20 {
+        if wf.n <= 10 {
             wf.print();
+        } else {
+            wf.print_largest(10);
         }
 
         // if iter == 2 { panic!("Debug!") }

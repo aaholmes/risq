@@ -392,7 +392,7 @@ pub fn gen_sparse_ham_fast(global: &Global, wf: &mut Wf, ham: &Ham, excite_gen: 
     }
 
     let mut dn_single_excite_constructor: HashMap<u128, Vec<usize>> = HashMap::default();
-    for (ind, dn) in unique_dns_vec.iter().enumerate() {
+    for (ind, dn) in new_unique_dns_vec.iter().enumerate() {
         for dn_r1 in remove_1e(*dn) {
             match dn_single_excite_constructor.get_mut(&dn_r1) {
                 None => { dn_single_excite_constructor.insert(dn_r1, vec![ind]); },
@@ -635,7 +635,7 @@ pub fn opposite_spin_excites(global: &Global, wf: &mut Wf, ham: &Ham, excite_gen
                 }
             }
         }
-    } else {
+    } else if global.opp_algo == 5 {
         // Algorithm 5: Loop over all new dets: loop over up_singles (new to all) and dn_singles (new to all),
         // check whether resulting det exists in wf
         match up_singles.get(&unique.up) {
@@ -658,8 +658,34 @@ pub fn opposite_spin_excites(global: &Global, wf: &mut Wf, ham: &Ham, excite_gen
                 }
             }
         }
+    } else {
+        // Algo 6: like algo 1 but without the dn_candidates data structure
+        match up_singles.get(&unique.up) {
+            None => {},
+            Some(ups) => {
+                for all_up in ups {
+                    for all_dn in &unique_up_dict[&all_up] {
+                        match dn_singles.get(&all_dn.1) {
+                            None => {},
+                            Some(dn_connections) => {
+                                // We need to do this one in terms of up config rather than ind
+                                let ind1 = wf.inds[&Config { up: *all_up, dn: all_dn.1 }];
+                                for dn_new in dn_connections {
+                                    if let Some(ind2) = wf.inds.get(&Config { up: unique.up, dn: *dn_new }) {
+                                        // Check that the index is new (because even if up and dn are independently new, (up, dn) can be old)
+                                        if *ind2 >= wf.n_stored_h() {
+                                            add_el(wf, ham, ind1, *ind2, None); // only adds if elem != 0
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
-    // println!("Time for opposite-spin excites for up config {}: {:?}", unique.up, start_this_opp.elapsed());
+// println!("Time for opposite-spin excites for up config {}: {:?}", unique.up, start_this_opp.elapsed());
 }
 
 

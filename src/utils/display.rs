@@ -5,6 +5,9 @@ use crate::wf::det::{Config, Det};
 use crate::excite::Orbs;
 use crate::stoch::DetOrbSample;
 use crate::wf::Wf;
+use std::collections::BinaryHeap;
+use std::cmp::Ordering::Equal;
+use std::cmp::{Reverse, Ordering};
 
 pub(crate) fn fmt_det(d: u128) -> String {
     let mut s = format!("{:#10b}", d);
@@ -63,4 +66,58 @@ impl Wf {
         }
         println!("\n");
     }
+
+    pub fn print_largest(&self, k: usize) {
+        // Prints the k dets with largest abs coeff
+        // O(N + k log k) time
+
+        // Use a min-heap of the k largest elements
+        let mut heap = BinaryHeap::with_capacity(k);
+
+        for (ind, det) in self.dets.iter().enumerate() {
+            if ind < k {
+                heap.push(Reverse(DetByCoeff{det}));
+            } else {
+                if det.coeff.abs() > heap.peek().unwrap().0.det.coeff.abs() {
+                    heap.pop();
+                    heap.push(Reverse(DetByCoeff{det}));
+                }
+            }
+        }
+
+        let mut top_k = heap.into_vec();
+        top_k.sort_by(|a, b| b.0.det.coeff.abs().partial_cmp(&a.0.det.coeff.abs()).unwrap_or(Equal));
+
+        println!("\nWavefunction has {} dets with energy {:.4}", self.n, self.energy);
+        println!("Coeff     Det_up     Det_dn    <D|H|D>");
+        for d in top_k {
+            println!("{:.4}   {}   {}   {:.3}", d.0.det.coeff, fmt_det(d.0.det.config.up), fmt_det(d.0.det.config.dn), d.0.det.diag);
+        }
+        println!("\n");
+    }
 }
+
+// Wrapper for Det that enables sorting by coeff (usually sort by config), needed by print_largest
+struct DetByCoeff<'a> {
+    det: &'a Det,
+}
+
+impl Ord for DetByCoeff<'_> {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.det.coeff.abs().partial_cmp(&other.det.coeff.abs()).unwrap_or(Equal)
+    }
+}
+
+impl PartialOrd for DetByCoeff<'_> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl PartialEq for DetByCoeff<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        self.det.coeff.abs() == other.det.coeff.abs()
+    }
+}
+
+impl Eq for DetByCoeff<'_> { }
