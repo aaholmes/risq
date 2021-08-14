@@ -1,12 +1,7 @@
 // Data structure for holding off-diagonal Hamiltonian matrix elements
 // and putting them into the SparseMat data structure for Davidson
 
-use sprs::CsMat;
-use std::time::Instant;
-use nalgebra::base::DVector;
-
 use crate::ham::Ham;
-use crate::var::sparse::{SparseMat, SparseMatUpperTri};
 use crate::wf::Wf;
 use crate::wf::det::Config;
 

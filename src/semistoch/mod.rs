@@ -6,7 +6,6 @@ use crate::excite::init::ExciteGenerator;
 use crate::stoch::{matmul_sample_remaining, ImpSampleDist};
 use rolling_stats::Stats;
 use crate::pt::PtSamples;
-use crate::wf::det::Det;
 use crate::utils::read_input::Global;
 use crate::stoch::alias::Alias;
 use std::time::Instant;

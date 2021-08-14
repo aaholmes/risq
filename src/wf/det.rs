@@ -7,7 +7,6 @@ use crate::utils::bits::{bits, btest, ibset, ibclr, bit_pairs};
 use crate::excite::{Excite, Orbs, StoredExcite};
 use crate::excite::init::ExciteGenerator;
 use crate::wf::Wf;
-use crate::stoch::DetOrbSample;
 use std::hash::{Hash, Hasher};
 
 // Configuration: up and dn spin occupation bitstrings

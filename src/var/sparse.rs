@@ -1,10 +1,8 @@
 // Sparse matrix datatype that works with eigenvalues module
 
-extern crate eigenvalues;
 extern crate nalgebra;
 extern crate sprs;
 use sprs::CsMat;
-use eigenvalues::matrix_operations::MatrixOperations;
 use nalgebra::base::{DVector, DMatrixSlice, DVectorSlice};
 use nalgebra::DMatrix;
 use std::collections::HashMap;
@@ -13,6 +11,7 @@ use crate::wf::det::Config;
 use crate::var::utils::intersection;
 use crate::ham::Ham;
 use crate::wf::Wf;
+use crate::var::eigenvalues::matrix_operations::MatrixOperations;
 
 
 // Upper triangular sparse matrix
@@ -221,7 +220,7 @@ impl MatrixOperations for SparseMatDoubles<'_> {
                             let h_kl = {
                                 if k.2 == None { self.ham.direct(k.0, k.1, l.0, l.1) } else { self.ham.direct_plus_exchange(k.0, k.1, l.0, l.1) }
                             };
-                            if (h_kl != 0.0) { // Skip zero elements
+                            if h_kl != 0.0 { // Skip zero elements
                                 // Loop over intersection of v_k.0 and v_l.0
                                 // Read off the corresponding pairs of indices: these are connected with this type of double exctie matrix element!
                                 for (i, j) in intersection(v_k, self.doubles.get(&l).unwrap()) {

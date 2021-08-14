@@ -16,8 +16,8 @@ use eps::{Eps, init_eps};
 use crate::utils::bits::{bit_pairs, bits};
 use crate::stoch::{DetOrbSample, ScreenedSampler, generate_screened_sampler};
 use itertools::enumerate;
-use crate::var::sparse::{SparseMat, SparseMatUpperTri};
-use crate::var::off_diag::OffDiagElemsNoHash;
+use crate::var::sparse::SparseMatUpperTri;
+use nalgebra::{VecStorage, Dynamic, Const, DMatrix, Matrix};
 
 #[derive(Default)]
 pub struct Wf {
@@ -873,6 +873,94 @@ impl Wf {
                                         // TODO: Do this in a cache efficient way
                                         Some(ind) => {
                                             out[*ind] += ham.ham_sing(&det.config, &d) * input_coeffs[i_det]
+                                        },
+                                        _ => {}
+                                    }
+                                }
+                                None => {}
+                            }
+                        }
+                    }
+                }
+            }
+        } // for det in self.dets
+
+        out
+    }
+
+    pub fn approx_matmul_off_diag_variational_no_singles(&self, input_coeffs: &Matrix<f64, Dynamic, Const<1_usize>, VecStorage<f64, Dynamic, Const<1_usize>>>, ham: &Ham, excite_gen: &ExciteGenerator, eps: f64) -> Vec<f64> {
+        // Approximate matrix-vector multiplication within variational space only
+        // WARNING: Uses self only to define and access variational dets; uses input_coeffs as the vector to multiply with
+        // instead of wf.dets[:].coeff
+        // Uses eps as a cutoff for doubles, skips singles
+
+        let mut local_eps: f64;
+        let mut excite: Excite;
+        let mut new_det: Option<Config>;
+        let mut out: Vec<f64> = vec![0.0f64; self.n];
+
+        // Off-diagonal component
+
+        // Iterate over all dets; for each, use eps to truncate the excitations; for each excitation,
+        // only add if it is already in variational wf
+        for (i_det, det) in enumerate(self.dets.iter()) {
+
+            local_eps = eps / input_coeffs[i_det].abs();
+            // Double excitations
+            // Opposite spin
+            if excite_gen.max_opp_doub >= local_eps {
+                for i in bits(excite_gen.valence & det.config.up) {
+                    for j in bits(excite_gen.valence & det.config.dn) {
+                        for stored_excite in excite_gen.opp_doub_sorted_list.get(&Orbs::Double((i, j))).unwrap() {
+                            if stored_excite.abs_h < local_eps { break; }
+                            excite = Excite {
+                                init: Orbs::Double((i, j)),
+                                target: stored_excite.target,
+                                abs_h: stored_excite.abs_h,
+                                is_alpha: None
+                            };
+                            new_det = det.config.safe_excite_det(&excite);
+                            match new_det {
+                                Some(d) => {
+                                    // Valid excite: add to H*psi
+                                    match self.inds.get(&d) {
+                                        // Compute matrix element and add to H*psi
+                                        // TODO: Do this in a cache efficient way
+                                        Some(ind) => {
+                                            out[*ind] += ham.ham_doub(&det.config, &d) * input_coeffs[i_det]
+                                        },
+                                        _ => {}
+                                    }
+                                }
+                                None => {}
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Same spin
+            if excite_gen.max_same_doub >= local_eps {
+                for (config, is_alpha) in &[(det.config.up, true), (det.config.dn, false)] {
+                    for (i, j) in bit_pairs(excite_gen.valence & *config) {
+                        for stored_excite in excite_gen.same_doub_sorted_list.get(&Orbs::Double((i, j))).unwrap() {
+                            if stored_excite.abs_h < local_eps { break; }
+                            excite = Excite {
+                                init: Orbs::Double((i, j)),
+                                target: stored_excite.target,
+                                abs_h: stored_excite.abs_h,
+                                is_alpha: Some(*is_alpha)
+                            };
+                            new_det = det.config.safe_excite_det(&excite);
+                            match new_det {
+                                Some(d) => {
+                                    // Valid excite: add to H*psi
+                                    // Valid excite: add to H*psi
+                                    match self.inds.get(&d) {
+                                        // Compute matrix element and add to H*psi
+                                        // TODO: Do this in a cache efficient way
+                                        Some(ind) => {
+                                            out[*ind] += ham.ham_doub(&det.config, &d) * input_coeffs[i_det]
                                         },
                                         _ => {}
                                     }

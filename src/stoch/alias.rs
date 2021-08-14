@@ -4,10 +4,6 @@
 // - Don't discretize probabilities to multiples of 1%
 
 use std::fmt::Debug;
-use std::fmt::Display;
-use std::hash::Hash;
-
-use rand::seq::SliceRandom;
 use rand::Rng;
 use rand::rngs::ThreadRng;
 use rand::distributions::Uniform;
