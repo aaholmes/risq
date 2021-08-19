@@ -4,6 +4,31 @@ use std::collections::HashMap;
 use crate::wf::det::{Config, Det};
 use crate::excite::Excite;
 use crate::ham::Ham;
+use crate::excite::init::ExciteGenerator;
+use crate::utils::read_input::Global;
+use crate::wf::Wf;
+use crate::semistoch::{old_semistoch_enpt2, faster_semistoch_enpt2};
+
+pub fn perturbative(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, wf: &Wf) {
+    // Perform the perturbative stage (Epstein-Nesbet perturbation theory, that is)
+    let mut e_pt2: f64 = 0.0;
+    let mut std_dev: f64 = 0.0;
+    if global.n_cross_term_samples == 0 {
+        // Old SHCI (2017 paper)
+        println!("\nCalling semistoch ENPT2 the old way with p ~ |c|");
+        let out = old_semistoch_enpt2(wf, global, ham, excite_gen, false);
+        e_pt2 = out.0;
+        std_dev = out.1;
+    } else {
+        println!("\nCalling semistoch ENPT2 the new way!");
+        let out = faster_semistoch_enpt2(wf, global, ham, excite_gen);
+        e_pt2 = out.0;
+        std_dev = out.1;
+    }
+    println!("Variational energy: {:.6}", wf.energy);
+    println!("PT energy: {:.6} +- {:.6}", e_pt2, std_dev);
+    println!("Total energy (old): {:.6} +- {:.6}", wf.energy + e_pt2, std_dev);
+}
 
 #[derive(Default)]
 pub struct PtSamples {

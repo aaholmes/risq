@@ -11,7 +11,7 @@ use crate::stoch::alias::Alias;
 use std::time::Instant;
 
 
-pub fn faster_semistoch_enpt2(input_wf: &Wf, global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, eps: f64, n_batches: i32, n_samples_per_batch: i32, n_cross_term_samples: i32) -> (f64, f64) {
+pub fn faster_semistoch_enpt2(input_wf: &Wf, global: &Global, ham: &Ham, excite_gen: &ExciteGenerator) -> (f64, f64) {
     // Semistochastic Epstein-Nesbet PT2
     // In earlier SHCI paper, used the following strategy:
     // 1. Compute ENPT2 deterministically using large eps
@@ -29,7 +29,7 @@ pub fn faster_semistoch_enpt2(input_wf: &Wf, global: &Global, ham: &Ham, excite_
 
     // Compute deterministic component, and create sampler object for sampling remaining component
     let start_dtm_enpt2: Instant = Instant::now();
-    let (dtm_result, mut screened_sampler) = input_wf.approx_matmul_external_semistoch_singles(ham, excite_gen, eps);
+    let (dtm_result, mut screened_sampler) = input_wf.approx_matmul_external_semistoch_singles(ham, excite_gen, global.eps_pt_dtm);
     // println!("Testing screened sampler!");
     // let n_samples = 1000000;
     // screened_sampler.det_orb_sampler_abs_hc.test(n_samples);
@@ -41,7 +41,7 @@ pub fn faster_semistoch_enpt2(input_wf: &Wf, global: &Global, ham: &Ham, excite_
     for det in &dtm_result.dets {
         dtm_enpt2 += (det.coeff * det.coeff) / (input_wf.energy - det.diag);
     }
-    println!("Deterministic approximation to Delta E using eps = {} ({} dets): {:.6}", eps, dtm_result.n, dtm_enpt2);
+    println!("Deterministic approximation to Delta E using eps = {} ({} dets): {:.6}", global.eps_pt_dtm, dtm_result.n, dtm_enpt2);
 
     // Stochastic component
     let mut stoch_enpt2_cross_term: Stats<f64> = Stats::new(); // samples overlap with deterministic part
@@ -49,11 +49,11 @@ pub fn faster_semistoch_enpt2(input_wf: &Wf, global: &Global, ham: &Ham, excite_
     let mut samples: PtSamples = Default::default(); // data structure to contain sampled contributions to PT
 
     let start_quadratic: Instant = Instant::now();
-    for i_batch in 0..n_batches {
+    for i_batch in 0..global.n_batches {
         // Sample a batch of samples, updating the stoch component of the energy for each sample
         println!("\n Starting batch {}", i_batch);
         samples.clear();
-        for _i_sample in 0..n_samples_per_batch {
+        for _i_sample in 0..global.n_samples_per_batch {
 
             // Sample with probability proportional to (Hc)^2
             let (sampled_det_info, sampled_prob) = matmul_sample_remaining(
@@ -106,10 +106,10 @@ pub fn faster_semistoch_enpt2(input_wf: &Wf, global: &Global, ham: &Ham, excite_
 
     let n_e: i32 = global.nup + global.ndn;
     // let n_cross_term_samples = (n_batches * n_samples_per_batch) / ( (n_e * (n_e + 1)) / 2 );
-    println!("Taking {} samples for cross-term", n_cross_term_samples);
+    println!("Taking {} samples for cross-term", global.n_cross_term_samples);
 
     let start_cross_term: Instant = Instant::now();
-    for _i_sample in 0..n_cross_term_samples {
+    for _i_sample in 0..global.n_cross_term_samples {
         // Sample a det in dtm_result
         let (sampled_dtm_det_ind, sampled_dtm_det_prob) = dtm_result_sampler.sample_with_prob();
         let sampled_dtm_det = dtm_result.dets[sampled_dtm_det_ind];
@@ -134,7 +134,7 @@ pub fn faster_semistoch_enpt2(input_wf: &Wf, global: &Global, ham: &Ham, excite_
                             // Compute matrix element h
                             // Screen for terms <eps
                             let sampled_e: f64 =
-                                if excite.abs_h * input_wf.dets[*ind].coeff.abs() < eps {
+                                if excite.abs_h * input_wf.dets[*ind].coeff.abs() < global.eps_pt_dtm {
                                     // println!("|H|, |c| = {}, {}", excite.abs_h, input_wf.dets[*ind].coeff.abs());
                                     let h: f64 = ham.ham_off_diag(&sampled_dtm_det.config, &exc_det, &excite);
                                     // println!("Found nonzero contribution to cross term: {}", (sampled_dtm_det.coeff / (input_wf.energy - sampled_dtm_det.diag)) * h * input_wf.dets[*ind].coeff / (sampled_dtm_det_prob * excite_prob));
@@ -402,14 +402,14 @@ pub fn faster_semistoch_enpt2(input_wf: &Wf, global: &Global, ham: &Ham, excite_
 // }
 
 
-pub fn old_semistoch_enpt2(input_wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerator, eps: f64, n_batches: i32, n_samples_per_batch: i32, use_optimal_probs: bool) -> (f64, f64) {
+pub fn old_semistoch_enpt2(input_wf: &Wf, global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, use_optimal_probs: bool) -> (f64, f64) {
     // Old algorithm (2017) for semistochastic ENPT2
     // If use_optimal_probs, then sample with probability proportional to sum of remaining (Hc)^2;
     // else, use probability proportional to |c|
 
     // Compute deterministic approximation to H psi using large eps
     let start_dtm_enpt2: Instant = Instant::now();
-    let (dtm_result, optimal_probs) = input_wf.approx_matmul_external_dtm_only(ham, excite_gen, eps);
+    let (dtm_result, optimal_probs) = input_wf.approx_matmul_external_dtm_only(ham, excite_gen, global.eps_pt_dtm);
     println!("Time for dtm ENPT2: {:?}", start_dtm_enpt2.elapsed());
 
     // Compute approximate delta E using approx H psi
@@ -417,7 +417,7 @@ pub fn old_semistoch_enpt2(input_wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerato
     for det in dtm_result.dets {
         dtm_enpt2 += det.coeff * det.coeff / (input_wf.energy - det.diag);
     }
-    println!("Deterministic approximation to Delta E using eps = {} ({} dets): {:.6}", eps, dtm_result.n, dtm_enpt2);
+    println!("Deterministic approximation to Delta E using eps = {} ({} dets): {:.6}", global.eps_pt_dtm, dtm_result.n, dtm_enpt2);
 
     // Sample dets from wf with probability |c|
     // Update estimate of difference between exact and approximate delta E using deterministic application of H
@@ -451,7 +451,7 @@ pub fn old_semistoch_enpt2(input_wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerato
     // println!("Testing alias sampler...");
     // wf_sampler.test(1000000);
 
-    for i_batch in 0..n_batches {
+    for i_batch in 0..global.n_batches {
 
         // Sample a batch of samples, updating the stoch component of the energy for each sample
         println!("\n Starting batch {}", i_batch);
@@ -459,7 +459,7 @@ pub fn old_semistoch_enpt2(input_wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerato
         samples_all.clear();
         samples_large_eps.clear();
 
-        for _i_sample in 0..n_samples_per_batch {
+        for _i_sample in 0..global.n_samples_per_batch {
             // Sample with prob var_probs(:)
             let (sampled_var_det_ind, sampled_prob) = wf_sampler.sample_with_prob();
             let sampled_var_det = input_wf.dets[sampled_var_det_ind];
@@ -475,14 +475,14 @@ pub fn old_semistoch_enpt2(input_wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerato
             }
 
             // Collect samples using large eps (eps) corresponding to deterministic part
-            v_times_sampled_var_det = sampled_var_det.approx_matmul_external_dtm_only_compute_diags(input_wf, ham, excite_gen, eps);
+            v_times_sampled_var_det = sampled_var_det.approx_matmul_external_dtm_only_compute_diags(input_wf, ham, excite_gen, global.eps_pt_dtm);
             for target_det in v_times_sampled_var_det.dets {
                 samples_large_eps.add_sample_diag_already_stored(sampled_var_det, target_det, sampled_prob);
             }
         }
 
-        let sampled_e: f64 = samples_all.pt_estimator(input_wf.energy, n_samples_per_batch)
-            - samples_large_eps.pt_estimator(input_wf.energy, n_samples_per_batch);
+        let sampled_e: f64 = samples_all.pt_estimator(input_wf.energy, global.n_samples_per_batch)
+            - samples_large_eps.pt_estimator(input_wf.energy, global.n_samples_per_batch);
 
         println!("Sampled energy this batch = {}", sampled_e);
         stoch_enpt2.update(sampled_e);
