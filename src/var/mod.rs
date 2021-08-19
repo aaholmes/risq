@@ -54,7 +54,7 @@ pub fn variational(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, wf:
             wf.print_largest(10);
         }
 
-        if iter == 2 { panic!("Debug!") }
+        // if iter == 2 { panic!("Debug!") }
 
         if wf.eps == global.eps_var {
             match last_energy {

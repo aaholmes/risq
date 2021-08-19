@@ -11,7 +11,7 @@ use crate::stoch::alias::Alias;
 use std::time::Instant;
 
 
-pub fn faster_semistoch_enpt2(input_wf: &Wf, global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, eps: f64, n_batches: i32, n_samples_per_batch: i32) -> (f64, f64) {
+pub fn faster_semistoch_enpt2(input_wf: &Wf, global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, eps: f64, n_batches: i32, n_samples_per_batch: i32, n_cross_term_samples: i32) -> (f64, f64) {
     // Semistochastic Epstein-Nesbet PT2
     // In earlier SHCI paper, used the following strategy:
     // 1. Compute ENPT2 deterministically using large eps
@@ -48,6 +48,7 @@ pub fn faster_semistoch_enpt2(input_wf: &Wf, global: &Global, ham: &Ham, excite_
     let mut stoch_enpt2_quadratic: Stats<f64> = Stats::new(); // unbiased contribution from samples with themselves
     let mut samples: PtSamples = Default::default(); // data structure to contain sampled contributions to PT
 
+    let start_quadratic: Instant = Instant::now();
     for i_batch in 0..n_batches {
         // Sample a batch of samples, updating the stoch component of the energy for each sample
         println!("\n Starting batch {}", i_batch);
@@ -81,6 +82,7 @@ pub fn faster_semistoch_enpt2(input_wf: &Wf, global: &Global, ham: &Ham, excite_
         stoch_enpt2_quadratic.update(sampled_e);
 
     }
+    println!("Time for quadratic term: {:?}", start_quadratic.elapsed());
 
     // Cross term
     // Setup sampler of dtm_result with probability | det.coeff / (input_wf.energy - det.diag) |
@@ -103,9 +105,10 @@ pub fn faster_semistoch_enpt2(input_wf: &Wf, global: &Global, ham: &Ham, excite_
     // 3. Check each one to see whether it excites to a variational det; if so, update energy estimator
 
     let n_e: i32 = global.nup + global.ndn;
-    let n_cross_term_samples = (n_batches * n_samples_per_batch) / ( (n_e * (n_e + 1)) / 2 );
+    // let n_cross_term_samples = (n_batches * n_samples_per_batch) / ( (n_e * (n_e + 1)) / 2 );
     println!("Taking {} samples for cross-term", n_cross_term_samples);
 
+    let start_cross_term: Instant = Instant::now();
     for _i_sample in 0..n_cross_term_samples {
         // Sample a det in dtm_result
         let (sampled_dtm_det_ind, sampled_dtm_det_prob) = dtm_result_sampler.sample_with_prob();
@@ -132,9 +135,9 @@ pub fn faster_semistoch_enpt2(input_wf: &Wf, global: &Global, ham: &Ham, excite_
                             // Screen for terms <eps
                             let sampled_e: f64 =
                                 if excite.abs_h * input_wf.dets[*ind].coeff.abs() < eps {
-                                    println!("|H|, |c| = {}, {}", excite.abs_h, input_wf.dets[*ind].coeff.abs());
+                                    // println!("|H|, |c| = {}, {}", excite.abs_h, input_wf.dets[*ind].coeff.abs());
                                     let h: f64 = ham.ham_off_diag(&sampled_dtm_det.config, &exc_det, &excite);
-                                    println!("Found nonzero contribution to cross term: {}", (sampled_dtm_det.coeff / (input_wf.energy - sampled_dtm_det.diag)) * h * input_wf.dets[*ind].coeff / (sampled_dtm_det_prob * excite_prob));
+                                    // println!("Found nonzero contribution to cross term: {}", (sampled_dtm_det.coeff / (input_wf.energy - sampled_dtm_det.diag)) * h * input_wf.dets[*ind].coeff / (sampled_dtm_det_prob * excite_prob));
                                     (sampled_dtm_det.coeff / (input_wf.energy - sampled_dtm_det.diag)) * h * input_wf.dets[*ind].coeff / (sampled_dtm_det_prob * excite_prob)
                                 } else {
                                     0.0
@@ -146,6 +149,7 @@ pub fn faster_semistoch_enpt2(input_wf: &Wf, global: &Global, ham: &Ham, excite_
             }
         }
     }
+    println!("Time for cross term: {:?}", start_cross_term.elapsed());
 
     println!("Stochastic components: Cross term: {:.6} +- {:.6},   Quadratic term: {:.6} +- {:.6}", 2f64 * stoch_enpt2_cross_term.mean,
              2f64 * stoch_enpt2_cross_term.std_dev, stoch_enpt2_quadratic.mean, stoch_enpt2_quadratic.std_dev);

@@ -34,7 +34,7 @@ pub fn sparse_optimize(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator,
             None
         }
     };
-    let eps_hpr = 10.0 * wf.eps;
+    // let eps_hpr = wf.eps;
     dav = Davidson::new(
         &wf.sparse_ham, 1, init, DavidsonCorrection::DPR, //HPR(eps_hpr),
         SpectrumTarget::Lowest, coeff_eps,

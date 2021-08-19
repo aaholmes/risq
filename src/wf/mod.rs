@@ -17,7 +17,7 @@ use crate::utils::bits::{bit_pairs, bits};
 use crate::stoch::{DetOrbSample, ScreenedSampler, generate_screened_sampler};
 use itertools::enumerate;
 use crate::var::sparse::SparseMatUpperTri;
-use nalgebra::{VecStorage, Dynamic, Const, DMatrix, Matrix};
+use nalgebra::{VecStorage, Dynamic, Const, Matrix};
 
 #[derive(Default)]
 pub struct Wf {
@@ -904,6 +904,7 @@ impl Wf {
         // Iterate over all dets; for each, use eps to truncate the excitations; for each excitation,
         // only add if it is already in variational wf
         for (i_det, det) in enumerate(self.dets.iter()) {
+            println!("Coeff: {}", input_coeffs[i_det]);
 
             local_eps = eps / input_coeffs[i_det].abs();
             // Double excitations
@@ -954,7 +955,6 @@ impl Wf {
                             new_det = det.config.safe_excite_det(&excite);
                             match new_det {
                                 Some(d) => {
-                                    // Valid excite: add to H*psi
                                     // Valid excite: add to H*psi
                                     match self.inds.get(&d) {
                                         // Compute matrix element and add to H*psi

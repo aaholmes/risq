@@ -63,12 +63,11 @@ fn main() {
     variational(&GLOBAL, &HAM, &EXCITE_GEN, &mut wf);
     println!("Time for variational stage: {:?}", start_var.elapsed());
 
-    panic!("Debug");
-
     let eps_pt = GLOBAL.eps_pt_dtm;
     let n_batches = 10;
     let n_samples_per_batch_old = 200;
-    let n_samples_per_batch_new = 200;
+    let n_samples_per_batch_new = 20000;
+    let n_cross_term_samples = 100000;
 
     let start_old_enpt2: Instant = Instant::now();
     println!("\nCalling semistoch ENPT2 the old way with p ~ |c| using eps_pt = {}", eps_pt);
@@ -80,7 +79,7 @@ fn main() {
 
     let start_new_enpt2: Instant = Instant::now();
     println!("Calling semistoch ENPT2 the new way!");
-    let (e_pt2, std_dev) = faster_semistoch_enpt2(&wf, &GLOBAL, &HAM, &EXCITE_GEN, eps_pt, n_batches, n_samples_per_batch_new);
+    let (e_pt2, std_dev) = faster_semistoch_enpt2(&wf, &GLOBAL, &HAM, &EXCITE_GEN, eps_pt, n_batches, n_samples_per_batch_new, n_cross_term_samples);
     println!("Variational energy: {:.6}", wf.energy);
     println!("PT energy: {:.6} +- {:.6}", e_pt2, std_dev);
     println!("Total energy (new): {:.6} +- {:.6}", wf.energy + e_pt2, std_dev);
