@@ -6,6 +6,8 @@ use sprs::CsMat;
 use nalgebra::base::{DVector, DMatrixSlice, DVectorSlice};
 use nalgebra::DMatrix;
 use std::collections::HashMap;
+// use rayon::prelude::into_par_iter;
+use rayon::iter::IntoParallelIterator;
 
 use crate::wf::det::Config;
 use crate::var::utils::intersection;
@@ -48,12 +50,12 @@ impl MatrixOperations for SparseMatUpperTri {
     fn matrix_vector_prod(&self, vs: DVectorSlice<'_, f64>) -> DVector<f64> {
         let mut res: DVector<f64> = DVector::from(vec![0.0; self.n]);
 
-        for (row_ind, lvec) in self.off_diag.iter().enumerate() {
+        for row_ind in (0..self.n).into_iter() {
             // Diagonal component
             res[row_ind] += self.diag[row_ind] * vs[row_ind];
 
             // Off-diagonal component
-            for (ind, val) in lvec.iter() {
+            for (ind, val) in self.off_diag[row_ind].iter() {
                 res[row_ind] += val * vs[*ind];
                 res[*ind] += val * vs[row_ind];
             }
@@ -206,7 +208,7 @@ impl MatrixOperations for SparseMatDoubles<'_> {
         for (k, v_k) in self.doubles.iter() {
             for l in self.doubles.keys() {
                 if k.2 == l.2 { // Same total spin
-                    if { if k.2 == None { l.0 > k.0 } else { l.0 > k.0 || (l.0 == k.0 && l.1 > k.1) } } { // No double counting
+                    if if k.2 == None { l.0 > k.0 } else { l.0 > k.0 || (l.0 == k.0 && l.1 > k.1) } { // No double counting
                         // Check that these are 4 distinct spin-orbitals
                         if {
                             if k.2 == None {

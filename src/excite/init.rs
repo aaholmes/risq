@@ -149,10 +149,10 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
             if p == r { continue; }
             v_same = vec![];
             v_opp = vec![];
-            for q in &ham.valence_orbs {
-                if p == q || q == r { continue; }
-                v_same.push(ham.direct_plus_exchange(*p, *r, *q, *q));
-                v_opp.push(ham.direct(*p, *r, *q, *q));
+            for q in 0..global.norb {
+                if *p == q || q == *r { continue; }
+                v_same.push(ham.direct_plus_exchange(*p, q, *r, q));
+                v_opp.push(ham.direct(*p, q, *r, q));
             }
             v_same.sort_by(|a, b| a.partial_cmp(&b).unwrap_or(Equal));
             v_opp.sort_by(|a, b| a.partial_cmp(&b).unwrap_or(Equal));
@@ -162,6 +162,7 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
             max2 = ham.one_body(*p, *r)
                 + v_same[ v_same.len() - (global.nup - 1) as usize .. ].iter().sum::<f64>()
                 + v_opp[ v_same.len() - global.ndn as usize .. ].iter().sum::<f64>();
+            // println!("One body = {}, max1 = {}, max2 = {}, max value = {}", ham.one_body(*p, *r), max1, max2, {if max1.abs() > max2.abs() { max1.abs() } else { max2.abs() } });
             v_sing.push(
                 StoredExcite {
                     target: Orbs::Single(*r),

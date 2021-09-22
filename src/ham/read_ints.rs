@@ -74,6 +74,24 @@ pub fn read_ints(global: &Global, filename: &str) -> Ham {
         }
         println!("Core orbs: {:?}", ham.core_orbs);
         println!("Valence orbs: {:?}", ham.valence_orbs);
+        //
+        // // Finally, compute the screens of orbs that provide nonzero two-body contributions
+        // // to single excitations
+        // ham.screen_single_nonzero_direct = vec![vec![0; global.norb as usize]; global.norb as usize];
+        // ham.screen_single_nonzero_direct_plus_exchange = vec![vec![0; global.norb as usize]; global.norb as usize];
+        // for p in global.norb_core + 1 .. global.norb {
+        //     for r in global.norb_core + 1 .. global.norb {
+        //         if p == r { continue; }
+        //         for q in global.norb_core + 1 .. global.norb {
+        //             if ham.ints.tw            for k in bits(det1.up) {
+        //                 out += self.direct_plus_exchange(i, k, j, k);
+        //             }
+        //             for k in bits(det1.dn) {
+        //                 out += self.direct(i, k, j, k);
+        //             }o
+        //         }
+        //     }
+        // }
     }
     ham
 }

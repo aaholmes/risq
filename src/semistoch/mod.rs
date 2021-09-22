@@ -29,6 +29,7 @@ pub fn faster_semistoch_enpt2(input_wf: &Wf, global: &Global, ham: &Ham, excite_
 
     // Compute deterministic component, and create sampler object for sampling remaining component
     let start_dtm_enpt2: Instant = Instant::now();
+    // let (dtm_result, mut screened_sampler) = input_wf.approx_matmul_external_dtm_singles(global, ham, excite_gen, global.eps_pt_dtm);
     let (dtm_result, mut screened_sampler) = input_wf.approx_matmul_external_semistoch_singles(ham, excite_gen, global.eps_pt_dtm);
     // println!("Testing screened sampler!");
     // let n_samples = 1000000;
@@ -49,7 +50,8 @@ pub fn faster_semistoch_enpt2(input_wf: &Wf, global: &Global, ham: &Ham, excite_
     let mut samples: PtSamples = Default::default(); // data structure to contain sampled contributions to PT
 
     let start_quadratic: Instant = Instant::now();
-    for i_batch in 0..global.n_batches {
+    let n_batches_max = 1000;
+    for i_batch in 0..n_batches_max {
         // Sample a batch of samples, updating the stoch component of the energy for each sample
         println!("\n Starting batch {}", i_batch);
         samples.clear();
@@ -62,9 +64,10 @@ pub fn faster_semistoch_enpt2(input_wf: &Wf, global: &Global, ham: &Ham, excite_
 
             match sampled_det_info {
                 None => {
-                    //println!("Sampled excitation not valid! Sample prob = {}", sampled_prob);
+                    println!("Sampled excitation not valid! Sample prob = {}", sampled_prob);
                 }
                 Some((exciting_det, excite, target_det)) => {
+                    println!("Sampled excitation: Sampled det = {}, Sample prob = {}, (H_ai c_i)^2 / p = {}", target_det, sampled_prob, excite.abs_h * excite.abs_h * exciting_det.coeff * exciting_det.coeff / sampled_prob);
                     // Collect this sample for the quadratic contribution
                     // This is analogous to the SHCI contribution, but only applies to the (<eps)
                     // terms. The sampling probability (Hc)^2 was chosen because the largest terms
@@ -80,6 +83,14 @@ pub fn faster_semistoch_enpt2(input_wf: &Wf, global: &Global, ham: &Ham, excite_
         let sampled_e: f64 = samples.pt_estimator(input_wf.energy, samples.n);
         println!("Sampled energy this batch = {}", sampled_e);
         stoch_enpt2_quadratic.update(sampled_e);
+        println!("Current estimate of stochastic component: {:.4} +- {:.4}", stoch_enpt2_quadratic.mean, stoch_enpt2_quadratic.std_dev);
+
+        if i_batch > 9 {
+            if stoch_enpt2_quadratic.std_dev <= global.target_uncertainty / 2f64.sqrt() {
+                println!("Target uncertainty reached!");
+                break;
+            }
+        }
 
     }
     println!("Time for quadratic term: {:?}", start_quadratic.elapsed());
@@ -104,12 +115,13 @@ pub fn faster_semistoch_enpt2(input_wf: &Wf, global: &Global, ham: &Ham, excite_
     // 2. Iterate over all pairs of occupied orbitals in sampled_det. For each, importance sample an excitation. This gives us O(N^2) samples
     // 3. Check each one to see whether it excites to a variational det; if so, update energy estimator
 
-    let n_e: i32 = global.nup + global.ndn;
+    // let n_e: i32 = global.nup + global.ndn;
     // let n_cross_term_samples = (n_batches * n_samples_per_batch) / ( (n_e * (n_e + 1)) / 2 );
-    println!("Taking {} samples for cross-term", global.n_cross_term_samples);
+    println!("Taking up to {} samples for cross-term", global.n_cross_term_samples);
+    let n_min_samples = 100;
 
     let start_cross_term: Instant = Instant::now();
-    for _i_sample in 0..global.n_cross_term_samples {
+    for i_sample in 0..global.n_cross_term_samples {
         // Sample a det in dtm_result
         let (sampled_dtm_det_ind, sampled_dtm_det_prob) = dtm_result_sampler.sample_with_prob();
         let sampled_dtm_det = dtm_result.dets[sampled_dtm_det_ind];
@@ -146,6 +158,13 @@ pub fn faster_semistoch_enpt2(input_wf: &Wf, global: &Global, ham: &Ham, excite_
                         }
                     }
                 }
+            }
+        }
+
+        if i_sample > n_min_samples {
+            if 2.0 * stoch_enpt2_quadratic.std_dev <= global.target_uncertainty / 2f64.sqrt() {
+                println!("Target uncertainty reached after {} samples!", i_sample + 1);
+                break;
             }
         }
     }
@@ -451,7 +470,9 @@ pub fn old_semistoch_enpt2(input_wf: &Wf, global: &Global, ham: &Ham, excite_gen
     // println!("Testing alias sampler...");
     // wf_sampler.test(1000000);
 
-    for i_batch in 0..global.n_batches {
+    let n_batches_max = 1000;
+
+    for i_batch in 0..n_batches_max {
 
         // Sample a batch of samples, updating the stoch component of the energy for each sample
         println!("\n Starting batch {}", i_batch);
@@ -486,6 +507,14 @@ pub fn old_semistoch_enpt2(input_wf: &Wf, global: &Global, ham: &Ham, excite_gen
 
         println!("Sampled energy this batch = {}", sampled_e);
         stoch_enpt2.update(sampled_e);
+        println!("Current estimate of stochastic component: {:.4} +- {:.4}", stoch_enpt2.mean, stoch_enpt2.std_dev);
+
+        if i_batch > 9 {
+            if stoch_enpt2.std_dev <= global.target_uncertainty {
+                println!("Target uncertainty reached!");
+                break;
+            }
+        }
 
     }
 

@@ -20,19 +20,34 @@ pub enum ImpSampleDist {
 
 pub struct ScreenedSampler<'a> {
     // For importance sampling the component of the matmul that is screened out by the eps threshold
+
     // Matmul_sample_remaining performs the whole excitation sampling (exciting pair and target), but
     // this contains only data structures sampling the exciting det and its exciting electron pair;
     // sampling the target electron pair uses CDF searching which only requires ExciteGenerator
+
     // Lifetime 'a must last as long as the vector being semistochastically multiplied, since this
     // struct has pointers to its components
+
+    // For doubles:
     // Contains two samplers, for sampling with p ~ |Hc| and with p ~ (Hc)^2
+
+    // For singles:
+    // If uniform_singles is true, enables uniform sampling of the singles from small-magnitude
+    // determinants that were not already treated deterministically
+    // Else, singles are sampled alongside doubles using max |H| instead of |H| as their
+    // relative prob
+
     // Also, contains elements, the list of elements being sampled (e.g. det/orb pairs)
+
     pub eps: f64,
+    // pub uniform_singles: bool,
     pub elements: Vec<DetOrbSample<'a>>,
     pub det_orb_sampler_abs_hc: Alias,
     pub det_orb_sampler_hc_squared: Alias,
     pub sum_abs_hc_all_dets_orbs: f64,
     pub sum_hc_squared_all_dets_orbs: f64,
+    // pub single_excitable_dets: Vec<&'a Det>, // Dets that can have single excites sampled
+    // pub single_excitable_det_sampler: Alias, // Alias sampler for selecting dets to perform single excites on
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -67,7 +82,9 @@ impl Hash for DetOrbSample<'_> {
 }
 
 pub fn generate_screened_sampler(eps: f64, det_orbs: Vec<DetOrbSample>) -> ScreenedSampler {
-    // Generate a screened sampler object (using Alias)
+    // Generate a screened sampler object for sampling (det, orbs) pairs using Alias
+    // The input det_orbs will contain the information needed for CDF-searching as a separate step
+    // (sum_abs_hc, sum_hc_squared are the sums of remaining terms to be sampled)
 
     println!("Generating screened sampler of size {}", det_orbs.len());
 
@@ -164,7 +181,7 @@ pub fn matmul_sample_remaining(screened_sampler: &mut ScreenedSampler, imp_sampl
             let sample = screened_sampler.det_orb_sampler_hc_squared.sample_with_prob();
             det_orb_sample = screened_sampler.elements[sample.0];
             det_orb_prob = sample.1;
-            // println!("Sampled det {}, prob {}", det_orb_sample, det_orb_prob);
+            println!("Sampled det/orb {}, prob {}", det_orb_sample, det_orb_prob);
 
 
             // Sample excitation from this det/orb pair by binary search the stored cdf with prob H^2

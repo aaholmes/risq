@@ -2,7 +2,7 @@
 
 use std::collections::HashMap;
 use crate::wf::det::{Config, Det};
-use crate::excite::Excite;
+use crate::excite::{Excite, Orbs};
 use crate::ham::Ham;
 use crate::excite::init::ExciteGenerator;
 use crate::utils::read_input::Global;
@@ -27,7 +27,7 @@ pub fn perturbative(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, wf
     }
     println!("Variational energy: {:.6}", wf.energy);
     println!("PT energy: {:.6} +- {:.6}", e_pt2, std_dev);
-    println!("Total energy (old): {:.6} +- {:.6}", wf.energy + e_pt2, std_dev);
+    println!("Total energy: {:.6} +- {:.6}", wf.energy + e_pt2, std_dev);
 }
 
 #[derive(Default)]
@@ -68,6 +68,14 @@ impl PtSamples {
         // Add a new sample to PtSamples
         // Compute diagonal element of perturbative determinant if it hasn't already been computed
         self.n += 1;
+        match excite.init {
+            Orbs::Double(_) => {
+                println!("Doubles in add_sample_compute_diag: (Hc)^2 / p = {}", pt_det.coeff * pt_det.coeff / sampled_prob);
+            },
+            Orbs::Single(_) => {
+                println!("Singles in add_sample_compute_diag: (Hc)^2 / p = {}", pt_det.coeff * pt_det.coeff / sampled_prob);
+            }
+        }
         match self.samples.get_mut(&pt_det.config) {
             None => {
                 // New PT det was sampled: compute diagonal element and create new variational det map
@@ -136,7 +144,7 @@ impl PtSamples {
             diag_term = 0.0;
             to_square = 0.0;
             for (hai_ci, p, w) in var_det_map.values() {
-                //println!("New energy sample! H_ai c_i = {}, p = {}, w = {}, E0 = {}, E_a = {}", hai_ci, p, w, e0, pt_det_diag);
+                // println!("New energy sample! H_ai c_i = {}, p = {}, (H_ai c_i)^2 / p = {}, w = {}, E0 = {}, E_a = {}", hai_ci, p, hai_ci * hai_ci / p, w, e0, pt_det_diag);
                 if *p < 1e-9 {
                     println!("Warning! Should not get here! p = {}", p);
                 }

@@ -23,6 +23,7 @@ pub struct Global {
     pub opp_algo: i32, // 1-5 for which of the opposite-spin algorithms to use (currently use 1)
     pub same_algo: i32, // 1-2 for which of the same-spin algorithms to use (currently use 1)
     // Perturbative sample size:
+    pub target_uncertainty: f64,
     pub n_samples_per_batch: i32,
     pub n_batches: i32,
     pub n_cross_term_samples: i32, // 0 for old semistochastic method; >0 for new
@@ -44,10 +45,12 @@ pub fn read_input<P: AsRef<Path>>(path: P) -> Result<Global> {
     println!("  eps_var: {}", global.eps_var);
     println!("  eps_pt_dtm: {}", global.eps_pt_dtm);
     println!("  opp_algo: {}", global.opp_algo);
-    println!("  same_algo: {}\n", global.same_algo);
+    println!("  same_algo: {}", global.same_algo);
+    println!("  target_uncertainty: {}", global.target_uncertainty);
     println!("  n_samples_per_batch: {}", global.n_samples_per_batch);
     println!("  n_batches: {}", global.n_batches);
     println!("  n_cross_term_samples: {}", global.n_cross_term_samples);
+    println!("\n");
 
     // if n_states != 1 {
     //     Err("n_states > 1 not yet implemented!")

@@ -27,6 +27,7 @@ fn main() {
     println!("\\\\                        Adam A Holmes, 2021                         //");
     println!(" \\\\==================================================================//");
 
+
     println!("\n\n=====\nSetup\n=====\n");
     let start_setup: Instant = Instant::now();
 
@@ -50,6 +51,7 @@ fn main() {
     wf.print();
     println!("Time for setup: {:?}", start_setup.elapsed());
 
+
     println!("\n\n=================\nVariational stage\n=================\n");
     let start_var: Instant = Instant::now();
     variational(&GLOBAL, &HAM, &EXCITE_GEN, &mut wf);
@@ -59,6 +61,7 @@ fn main() {
     let start_enpt2: Instant = Instant::now();
     perturbative(&GLOBAL, &HAM, &EXCITE_GEN, &wf);
     println!("Time for perturbative stage: {:?}", start_enpt2.elapsed());
+
 
     println!("Total Time: {:?}", start.elapsed());
 }

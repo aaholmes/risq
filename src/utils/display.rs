@@ -98,8 +98,8 @@ impl Wf {
 }
 
 // Wrapper for Det that enables sorting by coeff (usually sort by config), needed by print_largest
-struct DetByCoeff<'a> {
-    det: &'a Det,
+pub struct DetByCoeff<'a> {
+    pub(crate) det: &'a Det,
 }
 
 impl Ord for DetByCoeff<'_> {

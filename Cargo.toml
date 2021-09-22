@@ -18,6 +18,7 @@ itertools = "0.8.0"
 rand = "0.8.3"
 rolling-stats = "0.4.0"
 threads_pool = "0.2.6"
+rayon = "1.5.1"
 
 [profile.release]
 debug = true

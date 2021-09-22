@@ -15,7 +15,8 @@ use crate::excite::{Orbs, Excite};
 pub struct Ham {
     ints: Ints,
     pub(crate) core_orbs: Vec<i32>,
-    pub(crate) valence_orbs: Vec<i32>
+    pub(crate) valence_orbs: Vec<i32>,
+    pub screen_single_nonzero: Vec<Vec<i128>>,
 }
 
 impl Ham {
@@ -86,6 +87,11 @@ impl Ham {
 
             // One-body term
             out = self.one_body(i, j);
+            //
+            // // Check whether det1.up & screen_single_nonzero(i, j) is 0; if it is, skip the following for loops!
+            // if det1.up & self.screen_single_nonzero(i, j) == 0 {
+            //     return permute(det1.up, det2.up) as f64 * out;
+            // }
 
             // Two-body term
             for k in bits(det1.up) {
@@ -103,6 +109,11 @@ impl Ham {
 
             // One-body term
             out = self.one_body(i, j);
+            //
+            // // Check whether det1.dn & screen_single_nonzero(i, j) is 0; if it is, skip the following for loops!
+            // if det1.dn & self.screen_single_nonzero(i, j) == 0 {
+            //     return permute(det1.dn, det2.dn) as f64 * out;
+            // }
 
             // Two-body term
             for k in bits(det1.dn) {
