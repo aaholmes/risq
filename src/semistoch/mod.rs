@@ -162,7 +162,7 @@ pub fn faster_semistoch_enpt2(input_wf: &Wf, global: &Global, ham: &Ham, excite_
         }
 
         if i_sample > n_min_samples {
-            if 2.0 * stoch_enpt2_quadratic.std_dev <= global.target_uncertainty / 2f64.sqrt() {
+            if 2.0 * stoch_enpt2_cross_term.std_dev <= global.target_uncertainty / 2f64.sqrt() {
                 println!("Target uncertainty reached after {} samples!", i_sample + 1);
                 break;
             }
