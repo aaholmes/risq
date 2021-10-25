@@ -7,21 +7,32 @@ use crate::ham::Ham;
 use crate::excite::init::ExciteGenerator;
 use crate::utils::read_input::Global;
 use crate::wf::Wf;
-use crate::semistoch::{old_semistoch_enpt2, faster_semistoch_enpt2};
+use crate::rng::{Rand, init_rand};
+use crate::semistoch::{old_semistoch_enpt2, faster_semistoch_enpt2, fast_stoch_enpt2, importance_sampled_semistoch_enpt2};
+// use rand::Rng;
 
 pub fn perturbative(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, wf: &Wf) {
     // Perform the perturbative stage (Epstein-Nesbet perturbation theory, that is)
-    let mut e_pt2: f64 = 0.0;
-    let mut std_dev: f64 = 0.0;
+
+    // Initialize random number genrator
+    let mut rand: Rand = init_rand();
+    // let r: f64 = rand.rng.gen();
+    // println!("Debug: {}", r);
+    // panic!("DEBUG");
+
+    let mut e_pt2: f64;
+    let mut std_dev: f64;
     if global.n_cross_term_samples == 0 {
         // Old SHCI (2017 paper)
         println!("\nCalling semistoch ENPT2 the old way with p ~ |c|");
-        let out = old_semistoch_enpt2(wf, global, ham, excite_gen, false);
+        let out = old_semistoch_enpt2(wf, global, ham, excite_gen, false, &mut rand);
         e_pt2 = out.0;
         std_dev = out.1;
     } else {
         println!("\nCalling semistoch ENPT2 the new way!");
-        let out = faster_semistoch_enpt2(wf, global, ham, excite_gen);
+        let out = importance_sampled_semistoch_enpt2(wf, global, ham, excite_gen, &mut rand);
+        // let out = fast_stoch_enpt2(wf, global, ham, excite_gen);
+        // let out = faster_semistoch_enpt2(wf, global, ham, excite_gen);
         e_pt2 = out.0;
         std_dev = out.1;
     }
@@ -151,12 +162,12 @@ impl PtSamples {
                 else {
                     w_over_p = (*w as f64) / p;
                     // println!("p = {:.2e}", p);
-                    // println!("(H_ai c_i)^2 / p_i = {:.3}", hai_ci * hai_ci / p);
+                    println!("(H_ai c_i)^2 / p_i = {:.3}", hai_ci * hai_ci / p);
                     diag_term += ((n_det - 1) as f64 - w_over_p) * w_over_p * hai_ci * hai_ci;
                     to_square += hai_ci * w_over_p;
                 }
             }
-            // println!("Diag term = {:.3}, off-diag term = {:.3}, diag + off-diag^2 = {:.3}", diag_term, to_square, diag_term + to_square * to_square);
+            println!("Diag term = {:.3}, off-diag term = {:.3}, diag + off-diag^2 = {:.3}", diag_term, to_square, diag_term + to_square * to_square);
             out += (diag_term + to_square * to_square) / (e0 - pt_det_diag);
             tmp += diag_term + to_square * to_square;
         }

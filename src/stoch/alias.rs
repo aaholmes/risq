@@ -5,8 +5,9 @@
 
 use std::fmt::Debug;
 use rand::Rng;
-use rand::rngs::ThreadRng;
+// use rand::rngs::ThreadRng;
 use rand::distributions::Uniform;
+use crate::rng::Rand;
 
 #[derive(Debug, Clone)]
 pub struct Alias {
@@ -15,7 +16,6 @@ pub struct Alias {
     // Internal components of sampling process
     alias: Vec<usize>,
     alias_prob: Vec<f64>,
-    rng: ThreadRng,
     uniform: Uniform<usize>,
 }
 
@@ -97,25 +97,24 @@ impl Alias {
             sample_prob: norm_prob,
             alias: alias,
             alias_prob: prob,
-            rng: rand::thread_rng(),
             uniform: Uniform::from(0..size)
         }
     }
 
-    pub fn sample(&mut self) -> usize {
-        let (i, r) = self.roll_die_and_flip_coin();
+    pub fn sample(&mut self, rand: &mut Rand) -> usize {
+        let (i, r) = self.roll_die_and_flip_coin(rand);
         return self.select_element(i, r);
     }
 
-    pub fn sample_with_prob(&mut self) -> (usize, f64) {
-        let (i, r) = self.roll_die_and_flip_coin();
+    pub fn sample_with_prob(&mut self, rand: &mut Rand) -> (usize, f64) {
+        let (i, r) = self.roll_die_and_flip_coin(rand);
         return self.select_element_and_prob(i, r);
     }
 
     /// This function 'rolls the unweighted die' (selects an element uniformly) and 'flips the weighted coin' (selects a uniform real between 0 and 1 for comparing to the probability of using the alias)
-    fn roll_die_and_flip_coin(&mut self) -> (usize, f64) {
-        let i: usize = self.rng.sample(self.uniform);
-        let r: f64 = self.rng.gen();
+    fn roll_die_and_flip_coin(&mut self, rand: &mut Rand) -> (usize, f64) {
+        let i: usize = rand.rng.sample(self.uniform);
+        let r: f64 = rand.rng.gen();
         return (i, r);
     }
 
@@ -140,12 +139,12 @@ impl Alias {
         }
     }
 
-    pub fn test(&mut self, n_samples: i32) {
+    pub fn test(&mut self, n_samples: i32, rand: &mut Rand) {
         // Take n_samples samples, show frequency of samples vs probability for full distribution
         let n = self.alias.len();
         let mut freq: Vec<i32> = vec![0; n];
         for _i_sample in 0..n_samples {
-            let sample = self.sample();
+            let sample = self.sample(rand);
             freq[sample] += 1;
         }
         println!("Target prob, sampled prob, element");

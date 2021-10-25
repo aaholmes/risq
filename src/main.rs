@@ -14,6 +14,8 @@ mod utils;
 mod stoch;
 mod semistoch;
 mod pt;
+mod rng;
+
 use utils::read_input::{Global, read_input};
 use crate::var::variational;
 use crate::pt::perturbative;
@@ -56,6 +58,7 @@ fn main() {
     let start_var: Instant = Instant::now();
     variational(&GLOBAL, &HAM, &EXCITE_GEN, &mut wf);
     println!("Time for variational stage: {:?}", start_var.elapsed());
+
 
     println!("\n\n==================\nPerturbative stage\n==================\n");
     let start_enpt2: Instant = Instant::now();

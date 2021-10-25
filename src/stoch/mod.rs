@@ -10,6 +10,7 @@ use std::hash::{Hash, Hasher};
 pub(crate) mod utils;
 pub(crate) mod alias;
 use alias::Alias;
+use crate::rng::Rand;
 
 #[derive(Clone, Copy)]
 pub enum ImpSampleDist {
@@ -82,6 +83,7 @@ impl Hash for DetOrbSample<'_> {
 }
 
 pub fn generate_screened_sampler(eps: f64, det_orbs: Vec<DetOrbSample>) -> ScreenedSampler {
+    // pub fn generate_screened_sampler<'a>(eps: f64, det_orbs: &'a Vec<DetOrbSample>) -> ScreenedSampler<'a> {
     // Generate a screened sampler object for sampling (det, orbs) pairs using Alias
     // The input det_orbs will contain the information needed for CDF-searching as a separate step
     // (sum_abs_hc, sum_hc_squared are the sums of remaining terms to be sampled)
@@ -107,15 +109,15 @@ pub fn generate_screened_sampler(eps: f64, det_orbs: Vec<DetOrbSample>) -> Scree
     ScreenedSampler{
         eps: eps,
         elements: det_orbs_nonzero,
-        det_orb_sampler_abs_hc: Alias::new( probs_abs_hc),
-        det_orb_sampler_hc_squared: Alias::new( probs_hc_squared),
+        det_orb_sampler_abs_hc: Alias::new(probs_abs_hc),
+        det_orb_sampler_hc_squared: Alias::new(probs_hc_squared),
         sum_abs_hc_all_dets_orbs: sum_hc_all_dets_orbs,
         sum_hc_squared_all_dets_orbs: sum_hc_squared_all_dets_orbs,
     }
 }
 
 
-pub fn matmul_sample_remaining(screened_sampler: &mut ScreenedSampler, imp_sample_dist: ImpSampleDist, excite_gen: &ExciteGenerator, ham: &Ham) -> (Option<(Det, Excite, Det)>, f64) {
+pub fn matmul_sample_remaining(screened_sampler: &mut ScreenedSampler, imp_sample_dist: ImpSampleDist, excite_gen: &ExciteGenerator, ham: &Ham, rand: &mut Rand) -> (Option<(Det, Excite, Det)>, f64) {
     // Importance-sample the remaining component of a screened matmul using the given epsilon
     // Returns tuple containing (option(exciting det, excitation, and sampled determinant (with coeff attached)), and probability of that sample
     // O(log M) time
@@ -145,7 +147,7 @@ pub fn matmul_sample_remaining(screened_sampler: &mut ScreenedSampler, imp_sampl
     match imp_sample_dist {
         ImpSampleDist::AbsHc => {
             // First, sample a (determinant, orbs) pair using Alias sampling with prob |Hc|
-            let sample = screened_sampler.det_orb_sampler_abs_hc.sample_with_prob();
+            let sample = screened_sampler.det_orb_sampler_abs_hc.sample_with_prob(rand);
             det_orb_sample = screened_sampler.elements[sample.0];
             det_orb_prob = sample.1;
             // println!("Sampled det {}, prob {}", det_orb_sample, det_orb_prob);
@@ -154,7 +156,7 @@ pub fn matmul_sample_remaining(screened_sampler: &mut ScreenedSampler, imp_sampl
             match det_orb_sample.is_alpha {
                 None => {
                     // Opposite spin double
-                    let sample2 = sample_cdf(excite_gen.opp_doub_sorted_list.get(&det_orb_sample.init).unwrap(), &ImpSampleDist::AbsHc, Some(det_orb_sample.sum_abs_h)).unwrap();
+                    let sample2 = sample_cdf(excite_gen.opp_doub_sorted_list.get(&det_orb_sample.init).unwrap(), &ImpSampleDist::AbsHc, Some(det_orb_sample.sum_abs_h), rand).unwrap();
                     sampled_excite = sample2.0;
                     sampled_excite_prob = sample2.1;
                 },
@@ -162,13 +164,13 @@ pub fn matmul_sample_remaining(screened_sampler: &mut ScreenedSampler, imp_sampl
                     match det_orb_sample.init {
                         Orbs::Double(_) => {
                             // Same spin double
-                            let sample2 = sample_cdf(excite_gen.same_doub_sorted_list.get(&det_orb_sample.init).unwrap(), &ImpSampleDist::AbsHc, Some(det_orb_sample.sum_abs_h)).unwrap();
+                            let sample2 = sample_cdf(excite_gen.same_doub_sorted_list.get(&det_orb_sample.init).unwrap(), &ImpSampleDist::AbsHc, Some(det_orb_sample.sum_abs_h), rand).unwrap();
                             sampled_excite = sample2.0;
                             sampled_excite_prob = sample2.1;
                         },
                         Orbs::Single(_) => {
                             // Single
-                            let sample2 = sample_cdf(excite_gen.sing_sorted_list.get(&det_orb_sample.init).unwrap(), &ImpSampleDist::AbsHc, Some(det_orb_sample.sum_abs_h)).unwrap();
+                            let sample2 = sample_cdf(excite_gen.sing_sorted_list.get(&det_orb_sample.init).unwrap(), &ImpSampleDist::AbsHc, Some(det_orb_sample.sum_abs_h), rand).unwrap();
                             sampled_excite = sample2.0;
                             sampled_excite_prob = sample2.1;
                         }
@@ -178,7 +180,7 @@ pub fn matmul_sample_remaining(screened_sampler: &mut ScreenedSampler, imp_sampl
         }
         ImpSampleDist::HcSquared => {
             // First, sample a (determinant, orbs) pair using Alias sampling with prob (Hc)^2
-            let sample = screened_sampler.det_orb_sampler_hc_squared.sample_with_prob();
+            let sample = screened_sampler.det_orb_sampler_hc_squared.sample_with_prob(rand);
             det_orb_sample = screened_sampler.elements[sample.0];
             det_orb_prob = sample.1;
             println!("Sampled det/orb {}, prob {}", det_orb_sample, det_orb_prob);
@@ -188,7 +190,7 @@ pub fn matmul_sample_remaining(screened_sampler: &mut ScreenedSampler, imp_sampl
             match det_orb_sample.is_alpha {
                 None => {
                     // Opposite spin double
-                    let sample2 = sample_cdf(excite_gen.opp_doub_sorted_list.get(&det_orb_sample.init).unwrap(), &ImpSampleDist::HcSquared, Some(det_orb_sample.sum_h_squared)).unwrap();
+                    let sample2 = sample_cdf(excite_gen.opp_doub_sorted_list.get(&det_orb_sample.init).unwrap(), &ImpSampleDist::HcSquared, Some(det_orb_sample.sum_h_squared), rand).unwrap();
                     sampled_excite = sample2.0;
                     sampled_excite_prob = sample2.1;
                 },
@@ -196,13 +198,13 @@ pub fn matmul_sample_remaining(screened_sampler: &mut ScreenedSampler, imp_sampl
                     match det_orb_sample.init {
                         Orbs::Double(_) => {
                             // Same spin double
-                            let sample2 = sample_cdf(excite_gen.same_doub_sorted_list.get(&det_orb_sample.init).unwrap(), &ImpSampleDist::HcSquared, Some(det_orb_sample.sum_h_squared)).unwrap();
+                            let sample2 = sample_cdf(excite_gen.same_doub_sorted_list.get(&det_orb_sample.init).unwrap(), &ImpSampleDist::HcSquared, Some(det_orb_sample.sum_h_squared), rand).unwrap();
                             sampled_excite = sample2.0;
                             sampled_excite_prob = sample2.1;
                         },
                         Orbs::Single(_) => {
                             // Single
-                            let sample2 = sample_cdf(excite_gen.sing_sorted_list.get(&det_orb_sample.init).unwrap(), &ImpSampleDist::HcSquared, Some(det_orb_sample.sum_h_squared)).unwrap();
+                            let sample2 = sample_cdf(excite_gen.sing_sorted_list.get(&det_orb_sample.init).unwrap(), &ImpSampleDist::HcSquared, Some(det_orb_sample.sum_h_squared), rand).unwrap();
                             sampled_excite = sample2.0;
                             sampled_excite_prob = sample2.1;
                         }

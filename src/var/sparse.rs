@@ -7,7 +7,7 @@ use nalgebra::base::{DVector, DMatrixSlice, DVectorSlice};
 use nalgebra::DMatrix;
 use std::collections::HashMap;
 // use rayon::prelude::into_par_iter;
-use rayon::iter::IntoParallelIterator;
+// use rayon::iter::IntoParallelIterator;
 
 use crate::wf::det::Config;
 use crate::var::utils::intersection;

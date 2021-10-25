@@ -4,9 +4,10 @@ use rand::prelude::*;
 use crate::excite::StoredExcite;
 use crate::stoch::ImpSampleDist;
 use std::collections::HashMap;
+use crate::rng::Rand;
 // use std::intrinsics::offset;
 
-pub fn sample_cdf<'a>(cdf: &'a Vec<StoredExcite>, imp_sample_dist: &ImpSampleDist, max_cdf: Option<f64>) -> Option<(&'a StoredExcite, f64)> {
+pub fn sample_cdf<'a>(cdf: &'a Vec<StoredExcite>, imp_sample_dist: &ImpSampleDist, max_cdf: Option<f64>, rand: &mut Rand) -> Option<(&'a StoredExcite, f64)> {
     // Sample a CDF (in decreasing order) by sampling a uniform random number up to max_cdf
     // and binary searching the CDF
     // cdf is a vector of StoredExcites, and we access their stored cumulative sums depending on imp_sample_dist
@@ -24,7 +25,7 @@ pub fn sample_cdf<'a>(cdf: &'a Vec<StoredExcite>, imp_sample_dist: &ImpSampleDis
         return Some((&cdf[0], 1.0));
     }
 
-    let mut max: f64 = 0.0;
+    let mut max: f64;
     match max_cdf {
         None => {
             match imp_sample_dist {
@@ -46,8 +47,7 @@ pub fn sample_cdf<'a>(cdf: &'a Vec<StoredExcite>, imp_sample_dist: &ImpSampleDis
     }
 
     // TODO: Move this rng def out of this fn
-    let mut rng = rand::thread_rng();
-    let mut target: f64 = rng.gen();
+    let mut target: f64 = rand.rng.gen();
     // println!("rng, max: {}, {}", target, max);
     target *= max;
 
@@ -67,8 +67,8 @@ pub fn sample_cdf<'a>(cdf: &'a Vec<StoredExcite>, imp_sample_dist: &ImpSampleDis
     // println!("Target (sampled value) = {}", target);
 
     // Binary-search for target
-    let mut ind: usize = 0;
-    let mut sample_prob: f64 = 0.0;
+    let mut ind: usize;
+    let mut sample_prob: f64;
     match imp_sample_dist {
         ImpSampleDist::AbsHc => {
             // println!("target: {}", target);
@@ -90,7 +90,7 @@ pub fn sample_cdf<'a>(cdf: &'a Vec<StoredExcite>, imp_sample_dist: &ImpSampleDis
 }
 
 
-pub fn test_cdf(cdf: &Vec<StoredExcite>, imp_sample_dist: &ImpSampleDist, max_cdf: Option<f64>, n_samples: i32) {
+pub fn test_cdf(cdf: &Vec<StoredExcite>, imp_sample_dist: &ImpSampleDist, max_cdf: Option<f64>, rand: &mut Rand, n_samples: i32) {
     // Test the sample_cdf routine by taking n_samples samples and showing frequency of samples vs probability for full distribution
     println!("Calling test_cdf");
     let n: usize = cdf.len();
@@ -114,7 +114,7 @@ pub fn test_cdf(cdf: &Vec<StoredExcite>, imp_sample_dist: &ImpSampleDist, max_cd
         freq.insert(*i, 0);
     }
     for _i_sample in 0..n_samples {
-        let sample = sample_cdf(cdf, imp_sample_dist, max_cdf).unwrap();
+        let sample = sample_cdf(cdf, imp_sample_dist, max_cdf, rand).unwrap();
         *freq.get_mut(&sample.0).unwrap() += 1;
     }
     println!("Target prob, sampled prob");

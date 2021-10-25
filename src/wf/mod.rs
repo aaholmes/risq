@@ -880,10 +880,10 @@ impl Wf {
 
         // Off-diagonal component
         for det in &self.dets {
-            let mut sum_abs_h_external: f64 = 0.0;
-            let mut sum_abs_h_discarded: f64 = 0.0;
-            let mut sum_h_sq_external: f64 = 0.0;
-            let mut sum_h_sq_discarded: f64 = 0.0;
+            // let mut sum_abs_h_external: f64 = 0.0;
+            // let mut sum_abs_h_discarded: f64 = 0.0;
+            // let mut sum_h_sq_external: f64 = 0.0;
+            // let mut sum_h_sq_discarded: f64 = 0.0;
             local_eps = eps / det.coeff.abs();
             // Double excitations
             // Opposite spin
@@ -919,16 +919,16 @@ impl Wf {
                                     // TODO: Do this in a cache efficient way
                                     out_wf.add_det_with_coeff(det, ham, &excite, d, ham.ham_doub(&det.config, &d) * det.coeff);
                                 }
-                                if stored_excite.abs_h < 1e-4 {
-                                    sum_abs_h_external += stored_excite.abs_h;
-                                    sum_h_sq_external += stored_excite.abs_h * stored_excite.abs_h;
-                                }
+                                // if stored_excite.abs_h < 1e-4 {
+                                //     sum_abs_h_external += stored_excite.abs_h;
+                                //     sum_h_sq_external += stored_excite.abs_h * stored_excite.abs_h;
+                                // }
                             }
                             None => {
-                                if stored_excite.abs_h < 1e-4 {
-                                    sum_abs_h_discarded += stored_excite.abs_h;
-                                    sum_h_sq_discarded += stored_excite.abs_h * stored_excite.abs_h;
-                                }
+                                // if stored_excite.abs_h < 1e-4 {
+                                //     sum_abs_h_discarded += stored_excite.abs_h;
+                                //     sum_h_sq_discarded += stored_excite.abs_h * stored_excite.abs_h;
+                                // }
                             }
                         }
                     }
@@ -968,16 +968,16 @@ impl Wf {
                                     // TODO: Do this in a cache efficient way
                                     out_wf.add_det_with_coeff(det, ham, &excite, d, ham.ham_doub(&det.config, &d) * det.coeff);
                                 }
-                                if stored_excite.abs_h < 1e-4 {
-                                    sum_abs_h_external += stored_excite.abs_h;
-                                    sum_h_sq_external += stored_excite.abs_h * stored_excite.abs_h;
-                                }
+                                // if stored_excite.abs_h < 1e-4 {
+                                //     sum_abs_h_external += stored_excite.abs_h;
+                                //     sum_h_sq_external += stored_excite.abs_h * stored_excite.abs_h;
+                                // }
                             }
                             None => {
-                                if stored_excite.abs_h < 1e-4 {
-                                    sum_abs_h_discarded += stored_excite.abs_h;
-                                    sum_h_sq_discarded += stored_excite.abs_h * stored_excite.abs_h;
-                                }
+                                // if stored_excite.abs_h < 1e-4 {
+                                //     sum_abs_h_discarded += stored_excite.abs_h;
+                                //     sum_h_sq_discarded += stored_excite.abs_h * stored_excite.abs_h;
+                                // }
                             }
                         }
                     }
@@ -988,7 +988,7 @@ impl Wf {
             // Single excitations (no deterministic contribution - just set up for sampling later)
             for (config, is_alpha) in &[(det.config.up, true), (det.config.dn, false)] {
                 for i in bits(excite_gen.valence & *config) {
-                    let mut stored_excite = &excite_gen.sing_sorted_list.get(&Orbs::Single(i)).unwrap()[0];
+                    let stored_excite = &excite_gen.sing_sorted_list.get(&Orbs::Single(i)).unwrap()[0];
                     det_orbs.push(DetOrbSample{
                         det: det,
                         init: Orbs::Single(i),
