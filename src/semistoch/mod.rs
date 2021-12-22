@@ -14,6 +14,19 @@ use crate::rng::Rand;
 
 pub fn importance_sampled_semistoch_enpt2(input_wf: &Wf, global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, rand: &mut Rand) -> (f64, f64) {
     // Importance sampled semistochastic ENPT2
+
+    // Basically just the original SHCI except the sum on "a" is importance sampled
+    // i.e., instead of computing the sum deterministically, sample according to some
+    // importance sampled probability distribution, specifically, P(a|i)P(i) ~ (H_{ai} c_i)^2,
+    // since the leading term has this depenence
+
+    // Old algorithm: Sample i (p_i ~ |c_i|), sum on a (sum on all a minus sum on screened a)
+    // New algorithm:
+    // Idea 1 (do this one): Sample i (smarter), then sample a (from all), sample a (screened), take difference
+    // Idea 2: Sample ai (from all), then sample ai (screened), take difference
+
+    // Probability of sampling each det: sum_a (H_{ai} c_i)^2 (over terms larger than eps?)
+
     println!("Importance sampled semistoch ENPT2");
 
     let start_dtm_enpt2: Instant = Instant::now();
@@ -21,7 +34,7 @@ pub fn importance_sampled_semistoch_enpt2(input_wf: &Wf, global: &Global, ham: &
     // Create a sampler that importance samples all excitations smaller than eps_var (since excitations that exceed eps_var would have already been used to construct wf_var)
     let (_, mut screened_sampler_lt_var_eps) = input_wf.approx_matmul_external_semistoch_singles(ham, excite_gen, global.eps_var);
 
-    // Compute deterministic approximation to H psi using large eps
+    // Compute deterministic approximation to H psi using large PT eps (i.e., the eps that determines whether a deterministic or stochastic contribution)
     let (dtm_result, mut screened_sampler_lt_pt_eps) = input_wf.approx_matmul_external_semistoch_singles(ham, excite_gen, global.eps_pt_dtm);
 
     println!("Time for dtm ENPT2: {:?}", start_dtm_enpt2.elapsed());
@@ -40,7 +53,7 @@ pub fn importance_sampled_semistoch_enpt2(input_wf: &Wf, global: &Global, ham: &
     let mut samples_gt_eps: PtSamples = Default::default(); // data structure to contain sampled contributions to PT that exceed eps_dtm_pt
     let mut samples_all: PtSamples = Default::default(); // data structure to contain sampled contributions to PT that are less than eps_dtm_pt
 
-    let n_batches_max = 1000;
+    let n_batches_max = 43;
 
     let start_quadratic: Instant = Instant::now();
     for i_batch in 0..n_batches_max {
@@ -63,16 +76,22 @@ pub fn importance_sampled_semistoch_enpt2(input_wf: &Wf, global: &Global, ham: &
 
             match sampled_det_info {
                 None => {
-                    println!("Sampled excitation not valid! Sample prob = {}", sampled_prob);
+                    // println!("Sampled excitation not valid! Sample prob = {}", sampled_prob);
                 }
                 Some((exciting_det, excite, target_det)) => {
-                    println!("Sampled excitation: Sampled det = {}, Sample prob = {}, (H_ai c_i)^2 / p = {}", target_det, sampled_prob, excite.abs_h * excite.abs_h * exciting_det.coeff * exciting_det.coeff / sampled_prob);
+                    // println!("Sampled excitation: Sampled det = {}, Sample prob = {}, (H_ai c_i)^2 / p = {}", target_det, sampled_prob, excite.abs_h * excite.abs_h * exciting_det.coeff * exciting_det.coeff / sampled_prob);
                     // Collect this sample for the quadratic contribution
                     // This is analogous to the SHCI contribution, but only applies to the (<eps)
                     // terms. The sampling probability (Hc)^2 was chosen because the largest terms
                     // in this component are (Hc)^2 / (E_0 - E_a).
+                    if i_batch == 42 {
+                        println!("Adding sample to 'all' samples: exciting det: {}, target det: {}, sampled prob: {}", exciting_det, target_det, sampled_prob);
+                    }
                     samples_all.add_sample_compute_diag(exciting_det, &excite, target_det, sampled_prob, ham);
                     if excite.abs_h * exciting_det.coeff.abs() > global.eps_pt_dtm {
+                        if i_batch == 42 {
+                            println!("Adding sample to '> eps_pt' samples: exciting det: {}, target det: {}, sampled prob: {}", exciting_det, target_det, sampled_prob);
+                        }
                         samples_gt_eps.add_sample_compute_diag(exciting_det, &excite, target_det, sampled_prob, ham);
                     }
                 },
@@ -87,23 +106,29 @@ pub fn importance_sampled_semistoch_enpt2(input_wf: &Wf, global: &Global, ham: &
 
             match sampled_det_info {
                 None => {
-                    println!("Sampled excitation not valid! Sample prob = {}", sampled_prob);
+                    // println!("Sampled excitation not valid! Sample prob = {}", sampled_prob);
                 }
                 Some((exciting_det, excite, target_det)) => {
-                    println!("Sampled excitation: Sampled det = {}, Sample prob = {}, (H_ai c_i)^2 / p = {}", target_det, sampled_prob, excite.abs_h * excite.abs_h * exciting_det.coeff * exciting_det.coeff / sampled_prob);
+                    // println!("Sampled excitation: Sampled det = {}, Sample prob = {}, (H_ai c_i)^2 / p = {}", target_det, sampled_prob, excite.abs_h * excite.abs_h * exciting_det.coeff * exciting_det.coeff / sampled_prob);
                     // Collect this sample for the quadratic contribution
                     // This is analogous to the SHCI contribution, but only applies to the (<eps)
                     // terms. The sampling probability (Hc)^2 was chosen because the largest terms
                     // in this component are (Hc)^2 / (E_0 - E_a).
+                    if i_batch == 42 {
+                        println!("Adding sample to 'all' samples: exciting det: {}, target det: {}, sampled prob: {}", exciting_det, target_det, sampled_prob);
+                    }
                     samples_all.add_sample_compute_diag(exciting_det, &excite, target_det, sampled_prob, ham);
                 },
             }
         }
 
-        let sampled_e: f64 = samples_all.pt_estimator(input_wf.energy, global.n_samples_per_batch)
-            - samples_gt_eps.pt_estimator(input_wf.energy, global.n_samples_per_batch);
+        let e_stoch_all: f64 = samples_all.pt_estimator(input_wf.energy, global.n_samples_per_batch);
+        let e_stoch_screened: f64 = samples_gt_eps.pt_estimator(input_wf.energy, global.n_samples_per_batch);
+        println!("Energy components: {} {}", e_stoch_all, e_stoch_screened);
 
+        let sampled_e: f64 = e_stoch_all - e_stoch_screened;
         println!("Sampled energy this batch = {}", sampled_e);
+
         stoch_enpt2.update(sampled_e);
         println!("Current estimate of stochastic component: {:.4} +- {:.4}", stoch_enpt2.mean, stoch_enpt2.std_dev);
 
@@ -268,10 +293,10 @@ pub fn faster_semistoch_enpt2(input_wf: &Wf, global: &Global, ham: &Ham, excite_
 
             match sampled_det_info {
                 None => {
-                    println!("Sampled excitation not valid! Sample prob = {}", sampled_prob);
+                    // println!("Sampled excitation not valid! Sample prob = {}", sampled_prob);
                 }
                 Some((exciting_det, excite, target_det)) => {
-                    println!("Sampled excitation: Sampled det = {}, Sample prob = {}, (H_ai c_i)^2 / p = {}", target_det, sampled_prob, excite.abs_h * excite.abs_h * exciting_det.coeff * exciting_det.coeff / sampled_prob);
+                    // println!("Sampled excitation: Sampled det = {}, Sample prob = {}, (H_ai c_i)^2 / p = {}", target_det, sampled_prob, excite.abs_h * excite.abs_h * exciting_det.coeff * exciting_det.coeff / sampled_prob);
                     // Collect this sample for the quadratic contribution
                     // This is analogous to the SHCI contribution, but only applies to the (<eps)
                     // terms. The sampling probability (Hc)^2 was chosen because the largest terms

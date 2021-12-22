@@ -1,6 +1,7 @@
 // Module for functions specific to Epstein-Nesbet perturbation theory
 
 use std::collections::HashMap;
+use itertools::enumerate;
 use crate::wf::det::{Config, Det};
 use crate::excite::{Excite, Orbs};
 use crate::ham::Ham;
@@ -79,14 +80,14 @@ impl PtSamples {
         // Add a new sample to PtSamples
         // Compute diagonal element of perturbative determinant if it hasn't already been computed
         self.n += 1;
-        match excite.init {
-            Orbs::Double(_) => {
-                println!("Doubles in add_sample_compute_diag: (Hc)^2 / p = {}", pt_det.coeff * pt_det.coeff / sampled_prob);
-            },
-            Orbs::Single(_) => {
-                println!("Singles in add_sample_compute_diag: (Hc)^2 / p = {}", pt_det.coeff * pt_det.coeff / sampled_prob);
-            }
-        }
+        // match excite.init {
+        //     Orbs::Double(_) => {
+        //         println!("Doubles in add_sample_compute_diag: (Hc)^2 / p = {}", pt_det.coeff * pt_det.coeff / sampled_prob);
+        //     },
+        //     Orbs::Single(_) => {
+        //         println!("Singles in add_sample_compute_diag: (Hc)^2 / p = {}", pt_det.coeff * pt_det.coeff / sampled_prob);
+        //     }
+        // }
         match self.samples.get_mut(&pt_det.config) {
             None => {
                 // New PT det was sampled: compute diagonal element and create new variational det map
@@ -151,23 +152,27 @@ impl PtSamples {
         let mut to_square: f64;
         let mut w_over_p: f64;
 
-        for (pt_det_diag, var_det_map) in self.samples.values() {
+        // TODO: Exclude perturbers that only have large contributions
+
+        for (ind, (pt_det, (pt_det_diag, var_det_map))) in enumerate(&self.samples ){
+            println!("\nPT det {}: {}\n", ind, pt_det);
             diag_term = 0.0;
             to_square = 0.0;
             for (hai_ci, p, w) in var_det_map.values() {
-                // println!("New energy sample! H_ai c_i = {}, p = {}, (H_ai c_i)^2 / p = {}, w = {}, E0 = {}, E_a = {}", hai_ci, p, hai_ci * hai_ci / p, w, e0, pt_det_diag);
+                println!("New energy sample! H_ai c_i = {}, p = {}, (H_ai c_i)^2 / p = {}, w = {}, E0 = {}, E_a = {}", hai_ci, p, hai_ci * hai_ci / p, w, e0, pt_det_diag);
                 if *p < 1e-9 {
-                    println!("Warning! Should not get here! p = {}", p);
+                    println!("Warning! Sample probability very small! p = {}", p);
                 }
                 else {
                     w_over_p = (*w as f64) / p;
-                    // println!("p = {:.2e}", p);
+                    println!("p = {:.2e}", p);
                     println!("(H_ai c_i)^2 / p_i = {:.3}", hai_ci * hai_ci / p);
                     diag_term += ((n_det - 1) as f64 - w_over_p) * w_over_p * hai_ci * hai_ci;
                     to_square += hai_ci * w_over_p;
                 }
             }
             println!("Diag term = {:.3}, off-diag term = {:.3}, diag + off-diag^2 = {:.3}", diag_term, to_square, diag_term + to_square * to_square);
+            println!("Energy estimator: {}", (diag_term + to_square * to_square) / (e0 - pt_det_diag));
             out += (diag_term + to_square * to_square) / (e0 - pt_det_diag);
             tmp += diag_term + to_square * to_square;
         }

@@ -183,7 +183,7 @@ pub fn matmul_sample_remaining(screened_sampler: &mut ScreenedSampler, imp_sampl
             let sample = screened_sampler.det_orb_sampler_hc_squared.sample_with_prob(rand);
             det_orb_sample = screened_sampler.elements[sample.0];
             det_orb_prob = sample.1;
-            println!("Sampled det/orb {}, prob {}", det_orb_sample, det_orb_prob);
+            // println!("Sampled det/orb {}, prob {}", det_orb_sample, det_orb_prob);
 
 
             // Sample excitation from this det/orb pair by binary search the stored cdf with prob H^2
