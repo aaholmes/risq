@@ -21,6 +21,7 @@ pub fn read_ints(global: &Global, filename: &str) -> Ham {
     // Also, create core_orbs and valence_orbs lists using the diagonal Fock elements to determine
     // which norb_core orbitals to freeze
     let mut ham: Ham = Ham::default();
+    ham.diag_computed = false;
     ham.ints.one_body = vec![0.0; combine_2(global.norb + 1, global.norb + 1)];
     ham.ints.two_body = vec![0.0; combine_4(global.norb + 1, global.norb + 1, global.norb + 1, global.norb + 1)];
     if let Ok(lines) = read_lines(filename) {

@@ -13,6 +13,7 @@ use crate::excite::{Orbs, Excite};
 // Also contains information about frozen orbitals
 #[derive(Default)]
 pub struct Ham {
+    diag_computed: bool, // whether a diagonal element has been computed
     ints: Ints,
     pub(crate) core_orbs: Vec<i32>,
     pub(crate) valence_orbs: Vec<i32>,
@@ -45,10 +46,12 @@ impl Ham {
         self.get_int(p + 1, r + 1, q + 1, s + 1) - self.get_int(p + 1, s + 1, q + 1, r + 1)
     }
 
-    pub fn ham_diag(&self, det: &Config) -> f64 {
+    pub fn ham_diag(&mut self, det: &Config) -> f64 {
         // Get the diagonal element corresponding to this determinant
         // Should only be called once
-        println!("Warning: Computing diagonal element (should only happen once!)");
+        if self.diag_computed {
+            panic!("Computing diagonal element in O(n_elec^2) time (should only happen once!)");
+        }
 
         // nuclear-nuclear component
         let mut diag: f64 = self.ints.nuc;
@@ -73,6 +76,9 @@ impl Ham {
         for (i, j) in bit_pairs(det.dn) {
             diag += self.direct_plus_exchange(i, j, i, j);
         }
+
+        self.diag_computed = true;
+
         diag
     }
 

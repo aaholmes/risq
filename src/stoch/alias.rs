@@ -21,16 +21,16 @@ pub struct Alias {
 
 impl Alias {
 
-    pub fn new(relative_probability_vector: Vec<f64>) -> Alias {
-        let size = relative_probability_vector.len();
+    pub fn new(rel_probs: Vec<f64>) -> Alias {
+        let size = rel_probs.len();
 
         // Normalize input probabilities
         let mut sum = 0.0;
-        for p in &relative_probability_vector {
+        for p in &rel_probs {
             sum = sum + p;
         }
         let mut norm_prob: Vec<f64> = Vec::with_capacity(size);
-        for p in &relative_probability_vector {
+        for p in &rel_probs {
             norm_prob.push(p / sum);
         }
 
