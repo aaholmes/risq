@@ -1,4 +1,4 @@
-# ESP - Electronic Structure Package
+# Rust Implementation of Semistochastic Quantum chemistry (RISQ)
 
 Rust implementation of the following electronic structure algorithms:
 1. Heat-bath Configuration Interaction (HCI) - an efficient, deterministic, variational active space solver
