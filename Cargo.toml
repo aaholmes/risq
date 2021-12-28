@@ -1,5 +1,5 @@
 [package]
-name = "esp"
+name = "risq"
 version = "0.1.0"
 authors = ["Adam Holmes <aaholmes@vt.edu>"]
 edition = "2018"

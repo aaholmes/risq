@@ -1,1 +1,0 @@
-initSidebarItems({"trait":[["SpIndex","A sparse matrix index"]]});

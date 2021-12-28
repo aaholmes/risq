@@ -1,1 +1,0 @@
-initSidebarItems({"fn":[["all_opposite_spin_excites",""],["all_same_spin_excites",""],["gen_doubles",""],["gen_sparse_ham_fast",""],["opposite_spin_excites",""],["same_spin_excites",""]],"struct":[["Unique",""]]});

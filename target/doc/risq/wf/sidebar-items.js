@@ -1,1 +1,0 @@
-initSidebarItems({"fn":[["init_var_wf",""]],"mod":[["det",""],["eps",""]],"struct":[["Wf",""]]});

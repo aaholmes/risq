@@ -1,1 +1,0 @@
-initSidebarItems({"struct":[["Parents","Store an etree as the parent information of each node. This reflects the fact that etrees can in fact have multiple roots."]],"type":[["Parent",""],["ParentsOwned",""],["ParentsView",""],["ParentsViewMut",""]]});

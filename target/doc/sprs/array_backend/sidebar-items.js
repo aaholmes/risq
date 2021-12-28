@@ -1,1 +1,0 @@
-initSidebarItems({"struct":[["Array2","Wrapper around a size 2 array, with `Deref` implementation."]]});

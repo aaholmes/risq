@@ -1,3 +1,0 @@
-(function() {var implementors = {};
-implementors["async_task"] = [{"text":"impl&lt;R, T&gt; <a class=\"trait\" href=\"https://doc.rust-lang.org/1.54.0/core/future/future/trait.Future.html\" title=\"trait core::future::future::Future\">Future</a> for <a class=\"struct\" href=\"async_task/struct.JoinHandle.html\" title=\"struct async_task::JoinHandle\">JoinHandle</a>&lt;R, T&gt;","synthetic":false,"types":["async_task::join_handle::JoinHandle"]}];
-if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

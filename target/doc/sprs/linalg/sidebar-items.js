@@ -1,1 +1,0 @@
-initSidebarItems({"fn":[["diag_solve","Diagonal solve"],["reverse_cuthill_mckee","The reverse Cuthill-McKee algorithm."]],"mod":[["etree",""],["ordering",""],["trisolve",""]]});

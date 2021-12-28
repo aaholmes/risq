@@ -1,1 +1,0 @@
-initSidebarItems({"enum":[["DavidsonCorrection","Correction method for the Davidson algorithm"],["SpectrumTarget","Option to compute the lowest, highest or somewhere in the middle part of the spectrum"]],"mod":[["davidson","Davidson Diagonalization"],["lanczos","Hermitian Lanczos algorithm"]]});
