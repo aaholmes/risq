@@ -23,7 +23,7 @@ mod stoch;
 mod semistoch;
 mod pt;
 mod rng;
-mod projector;
+// mod projector;
 
 use utils::read_input::{Global, read_input};
 use crate::var::variational;
