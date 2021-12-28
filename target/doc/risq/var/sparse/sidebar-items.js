@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["SparseMat",""],["SparseMatDoubles",""],["SparseMatUpperTri",""]]});

@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["LinalgError",""],["SprsError","Convenience wrapper around more precise error types. Not returned by functions in this crate, but can be easily obtained from any error returned in this crate using `Into` and `From`."],["StructureError",""],["StructureErrorKind",""]],"struct":[["ShapeMismatchInfo",""],["SingularMatrixInfo",""]]});

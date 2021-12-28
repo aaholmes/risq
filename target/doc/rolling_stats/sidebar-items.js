@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["Info",""],["Stats","Stats object calculates continuous min/max/mean/deviation for tracking of time varying statistics."]]});

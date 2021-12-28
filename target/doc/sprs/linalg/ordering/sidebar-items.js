@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["cuthill_mckee_custom","A customized Cuthill-McKee algorithm."],["reverse_cuthill_mckee","The reverse Cuthill-McKee algorithm."]],"mod":[["order",""],["start",""]],"struct":[["Ordering",""]]});

@@ -1,3 +1,11 @@
+#![crate_name = "risq"]
+#![crate_type = "bin"]
+
+#![doc(html_root_url = "https://aaholmes.github.io/risq/")]
+#![doc(html_logo_url = "https://wherethewindsblow.com/wp-content/uploads/2020/11/crab_dice_red_white.jpg")]
+
+//! This is a comment.
+
 #[macro_use]
 extern crate lazy_static;
 extern crate alloc;
