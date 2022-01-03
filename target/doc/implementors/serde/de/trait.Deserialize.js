@@ -1,0 +1,3 @@
+(function() {var implementors = {};
+implementors["risq"] = [{"text":"impl&lt;'de&gt; <a class=\"trait\" href=\"https://docs.rs/serde/1.0.125/serde/de/trait.Deserialize.html\" title=\"trait serde::de::Deserialize\">Deserialize</a>&lt;'de&gt; for <a class=\"struct\" href=\"risq/utils/read_input/struct.Global.html\" title=\"struct risq::utils::read_input::Global\">Global</a>","synthetic":false,"types":["risq::utils::read_input::Global"]}];
+if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
