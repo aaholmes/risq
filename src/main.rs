@@ -4,7 +4,9 @@
 #![doc(html_root_url = "https://aaholmes.github.io/risq/")]
 #![doc(html_logo_url = "https://wherethewindsblow.com/wp-content/uploads/2020/11/crab_dice_red_white.jpg")]
 
-//! This is a comment.
+//! Rust Implementation of Semistochastic Quantum chemistry (`risq`) implements an efficient selected
+//! configuration interaction algorithm called Semistochastic Heat-bath Configuration Interaction
+//! (SHCI).
 
 #[macro_use]
 extern crate lazy_static;

@@ -4,6 +4,7 @@ use rand::rngs::StdRng;
 use rand::SeedableRng;
 // use rand::prelude::ThreadRng;
 
+/// Contains the seeded random number generator.  Must be used each time a random number is generated
 pub struct Rand {
     // pub rng: ThreadRng, // thread-safe random number generator
     pub rng: StdRng, // seeded rng

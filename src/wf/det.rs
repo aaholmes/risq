@@ -9,14 +9,15 @@ use crate::excite::init::ExciteGenerator;
 use crate::wf::Wf;
 use std::hash::{Hash, Hasher};
 
-// Configuration: up and dn spin occupation bitstrings
+/// Binary representation of the up- and down-spin orbital occupancies of a Slater determinant
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub struct Config {
     pub up: u128,
     pub dn: u128,
 }
 
-// Determinant - configuration with coefficient, diagonal H element
+/// Full determinant struct. Contains the determinant's `Config`, as well as its coefficient `coeff`
+/// and diagonal Hamiltonian matrix element `diag`
 #[derive(Clone, Copy, Debug)]
 pub struct Det {
     pub config: Config,

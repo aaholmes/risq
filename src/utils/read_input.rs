@@ -10,6 +10,7 @@ use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
 
+/// Holds the global variables. Read from the input file `in.json`
 #[derive(Deserialize, Debug)]
 pub struct Global {
     pub norb: i32,
