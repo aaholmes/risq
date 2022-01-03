@@ -204,7 +204,7 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
 // Sample excitations with probability |H| (for the cross term in ENPT2)
 // Currently uses CDF searching, but can replace with Alias sampling later
 impl ExciteGenerator {
-    pub fn sample_excite(&self, init: Orbs, is_alpha: Option<bool>, rand: &mut Rand) -> Option<(Excite, f64)> {
+    pub fn sample_excite(&self, init: Orbs, is_alpha: Option<bool>, imp_sampling_dist: &ImpSampleDist, rand: &mut Rand) -> Option<(Excite, f64)> {
         // Sample an excitation from the selected orbs with probability proportional to |H|
         // Returns an excite and the sample probability
         // Can sample an invalid excitation
@@ -212,22 +212,18 @@ impl ExciteGenerator {
         match is_alpha {
             None => {
                 // Opposite-spin double
-                sample = sample_cdf(&self.opp_doub_sorted_list.get(&init).unwrap(), &ImpSampleDist::AbsHc, None, rand);
-                // Some((Excite { init, target: sample.0.target, abs_h: sample.0.abs_h, is_alpha }, sample.1))
+                sample = sample_cdf(&self.opp_doub_sorted_list.get(&init).unwrap(), imp_sampling_dist, None, rand);
             }
             Some(_) => {
                 // Same-spin single or double
                 match init {
                     Orbs::Double(_) => {
                         // Same-spin double
-                        sample = sample_cdf(&self.same_doub_sorted_list.get(&init).unwrap(), &ImpSampleDist::AbsHc, None, rand);
-                        // Some((Excite { init, target: sample.0.target, abs_h: sample.0.abs_h, is_alpha }, sample.1))
+                        sample = sample_cdf(&self.same_doub_sorted_list.get(&init).unwrap(), imp_sampling_dist, None, rand);
                     },
                     Orbs::Single(_) => {
                         // Same-spin single
-                        // println!("Sing sorted list: {}", self.sing_sorted_list.get(&init).unwrap()[0].sum_remaining_abs_h);
-                        sample = sample_cdf(&self.sing_sorted_list.get(&init).unwrap(), &ImpSampleDist::AbsHc, None, rand);
-                        // Some((Excite { init, target: sample.0.target, abs_h: sample.0.abs_h, is_alpha }, sample.1))
+                        sample = sample_cdf(&self.sing_sorted_list.get(&init).unwrap(), imp_sampling_dist, None, rand);
                     }
                 }
             }
@@ -238,7 +234,7 @@ impl ExciteGenerator {
         }
     }
 
-    pub fn sample_excites_from_all_pairs(&self, det: Config, rand: &mut Rand) -> Vec<(Excite, f64)> {
+    pub fn sample_excites_from_all_pairs(&self, det: Config, imp_sampling_dist: &ImpSampleDist, rand: &mut Rand) -> Vec<(Excite, f64)> {
         // Sample an excitation from each electron pair in the occupied determinant
         // Returns a vector of (Excite, sampling probability) pairs
         // Some of which may be invalid (excitations to already-occupied orbitals)
@@ -246,7 +242,7 @@ impl ExciteGenerator {
         // Opposite-spin double
         for i in bits(self.valence & det.up) {
             for j in bits(self.valence & det.dn) {
-                match self.sample_excite(Orbs::Double((i, j)), None, rand) {
+                match self.sample_excite(Orbs::Double((i, j)), None, imp_sampling_dist, rand) {
                     None => {},
                     Some(v) => out.push(v)
                 }
@@ -255,7 +251,7 @@ impl ExciteGenerator {
         // Same-spin double
         for (config, is_alpha) in &[(det.up, true), (det.dn, false)] {
             for (i, j) in bit_pairs(self.valence & *config) {
-                match self.sample_excite(Orbs::Double((i, j)), Some(*is_alpha), rand) {
+                match self.sample_excite(Orbs::Double((i, j)), Some(*is_alpha), imp_sampling_dist, rand) {
                     None => {},
                     Some(v) => out.push(v)
                 }
@@ -264,7 +260,7 @@ impl ExciteGenerator {
         // Single excitations
         for (config, is_alpha) in &[(det.up, true), (det.dn, false)] {
             for i in bits(self.valence & *config) {
-                match self.sample_excite(Orbs::Single(i), Some(*is_alpha), rand) {
+                match self.sample_excite(Orbs::Single(i), Some(*is_alpha), imp_sampling_dist, rand) {
                     None => {},
                     Some(v) => out.push(v)
                 }

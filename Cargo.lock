@@ -196,24 +196,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457"
 
 [[package]]
-name = "esp"
-version = "0.1.0"
-dependencies = [
- "itertools",
- "lazy_static",
- "lexical",
- "nalgebra",
- "ndarray",
- "rand 0.8.3",
- "rayon",
- "rolling-stats",
- "serde",
- "serde_json",
- "sprs",
- "threads_pool",
-]
-
-[[package]]
 name = "fuchsia-cprng"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -751,6 +733,24 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "678054eb77286b51581ba43620cc911abf02758c91f93f479767aed0f90458b2"
 dependencies = [
  "rand_core 0.3.1",
+]
+
+[[package]]
+name = "risq"
+version = "0.1.0"
+dependencies = [
+ "itertools",
+ "lazy_static",
+ "lexical",
+ "nalgebra",
+ "ndarray",
+ "rand 0.8.3",
+ "rayon",
+ "rolling-stats",
+ "serde",
+ "serde_json",
+ "sprs",
+ "threads_pool",
 ]
 
 [[package]]

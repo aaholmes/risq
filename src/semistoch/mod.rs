@@ -240,6 +240,8 @@ pub fn fast_stoch_enpt2(input_wf: &Wf, global: &Global, ham: &Ham, excite_gen: &
         (4f64 * stoch_enpt2_cross_term.std_dev * stoch_enpt2_cross_term.std_dev + stoch_enpt2_quadratic.std_dev * stoch_enpt2_quadratic.std_dev).sqrt()
     )
 }
+
+
 pub fn faster_semistoch_enpt2(input_wf: &Wf, global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, rand: &mut Rand) -> (f64, f64) {
     // Semistochastic Epstein-Nesbet PT2
     // In earlier SHCI paper, used the following strategy:
@@ -356,7 +358,7 @@ pub fn faster_semistoch_enpt2(input_wf: &Wf, global: &Global, ham: &Ham, excite_
         let sampled_dtm_det = dtm_result.dets[sampled_dtm_det_ind];
 
         // Sample O(N^2) excitations from the sampled det, one for each occupied orb/pair
-        let sampled_excites = excite_gen.sample_excites_from_all_pairs(sampled_dtm_det.config, rand);
+        let sampled_excites = excite_gen.sample_excites_from_all_pairs(sampled_dtm_det.config, &ImpSampleDist::HcSquared, rand);
 
         // Check each valid excitation to see whether it excites to a variational det; if so, update energy estimator
         for (excite, excite_prob) in sampled_excites {
