@@ -23,7 +23,7 @@ pub struct Excite {
     pub is_alpha: Option<bool>, // if None, then opposite spin
 }
 
-a// Excitation information to be stored in `ExciteGenerator`.  Contains only `target` and `abs_h`
+/// Excitation information to be stored in `ExciteGenerator`.  Contains only `target` and `abs_h`
 /// (since `init` and `is_alpha` are already known by the time `StoredExcite`s are needed).
 /// Also contains `sum_remaining_abs_h` and `sum_remaining_h_squared` for importance-sampling the
 /// remaining excitations
