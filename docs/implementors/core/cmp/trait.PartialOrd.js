@@ -1,0 +1,3 @@
+(function() {var implementors = {};
+implementors["risq"] = [{"text":"impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.54.0/core/cmp/trait.PartialOrd.html\" title=\"trait core::cmp::PartialOrd\">PartialOrd</a>&lt;<a class=\"struct\" href=\"risq/utils/display/struct.DetByCoeff.html\" title=\"struct risq::utils::display::DetByCoeff\">DetByCoeff</a>&lt;'_&gt;&gt; for <a class=\"struct\" href=\"risq/utils/display/struct.DetByCoeff.html\" title=\"struct risq::utils::display::DetByCoeff\">DetByCoeff</a>&lt;'_&gt;","synthetic":false,"types":["risq::utils::display::DetByCoeff"]}];
+if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

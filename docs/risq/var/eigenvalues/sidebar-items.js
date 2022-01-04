@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["main",""]],"mod":[["algorithms","Algorithms to compute (some) eigenvalues/eigenvectors for symmetric matrices."],["matrix_operations","Common matrix operations for all the matrix representations."],["modified_gram_schmidt","Modified Gram-Schmidt (MGS)"],["utils","Auxiliar functions to manipulate arrays"]]});
