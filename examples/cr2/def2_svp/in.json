@@ -1,0 +1,14 @@
+{
+    "norb": 62,
+    "norb_core": 18,
+    "nup": 24,
+    "ndn": 24,
+    "n_states": 1,
+    "eps_var": 1e-3,
+    "eps_pt_dtm": 5e-4,
+    "opp_algo": 1,
+    "same_algo": 1,
+    "n_samples_per_batch": 200,
+    "n_batches": 10,
+    "n_cross_term_samples": 10000
+}

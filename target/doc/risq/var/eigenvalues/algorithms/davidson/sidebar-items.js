@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["sort_diagonal",""],["update_subspace","Update the subpace with new vectors"]],"struct":[["Config","Structure containing the initial configuration data"],["CorrectionMethod","Structure containing the correction methods"],["Davidson","Structure with the configuration data"],["DavidsonError",""]]});

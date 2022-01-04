@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["variational",""]],"mod":[["davidson",""],["eigenvalues",""],["ham_gen",""],["off_diag",""],["sparse",""],["utils",""]]});

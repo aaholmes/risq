@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["fmt_det",""]],"struct":[["DetByCoeff",""]]});

@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["read_input",""]],"struct":[["Global","Holds the global variables. Read from the input file `in.json`"]]});
