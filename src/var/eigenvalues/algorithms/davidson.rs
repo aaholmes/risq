@@ -19,17 +19,17 @@ Available correction methods are:
 */
 
 use super::{DavidsonCorrection, SpectrumTarget};
+use crate::excite::init::ExciteGenerator;
+use crate::ham::Ham;
 use crate::var::eigenvalues::matrix_operations::MatrixOperations;
 use crate::var::eigenvalues::modified_gram_schmidt::MGS;
+use crate::var::eigenvalues::utils::{sort_eigenpairs, sort_vector};
+use crate::wf::Wf;
 use nalgebra::linalg::SymmetricEigen;
 use nalgebra::{DMatrix, DVector, Dynamic};
 use std::error;
 use std::f64;
 use std::fmt;
-use crate::var::eigenvalues::utils::{sort_vector, sort_eigenpairs};
-use crate::excite::init::ExciteGenerator;
-use crate::ham::Ham;
-use crate::wf::Wf;
 
 /// Structure containing the initial configuration data
 struct Config {
@@ -40,7 +40,7 @@ struct Config {
     max_search_space: usize,
     init_dim: usize,   // Initial dimension of the subpace
     update_dim: usize, // number of vector to add to the search space
-    reset_dim: usize, // dimension to reset to once max_search_space is reached
+    reset_dim: usize,  // dimension to reset to once max_search_space is reached
     energy_tolerance: f64,
 }
 impl Config {
@@ -57,7 +57,7 @@ impl Config {
         method: DavidsonCorrection,
         target: SpectrumTarget,
         tolerance: f64,
-        energy_tolerance: f64
+        energy_tolerance: f64,
     ) -> Self {
         let mut max_search_space = if nvalues + 10 < dim {
             nvalues + 10
@@ -113,15 +113,23 @@ impl Davidson {
         energy_tolerance: f64,
         ham: &Ham,
         excite_gen: &ExciteGenerator,
-        wf: &Wf
+        wf: &Wf,
     ) -> Result<Self, DavidsonError> {
         // Initial configuration
         let mut init_dim;
         match init {
-            None => init_dim = 2, // If no input wf, start from a subspace of size 2
+            None => init_dim = 2,    // If no input wf, start from a subspace of size 2
             Some(_) => init_dim = 1, // Else, just start from the input wf
         }
-        let conf = Config::new(nvalues, h.nrows(), init_dim, method, spectrum_target, tolerance, energy_tolerance);
+        let conf = Config::new(
+            nvalues,
+            h.nrows(),
+            init_dim,
+            method,
+            spectrum_target,
+            tolerance,
+            energy_tolerance,
+        );
 
         // Initial subpace
         let mut dim_sub = conf.init_dim;
@@ -145,7 +153,12 @@ impl Davidson {
 
             let eig = sort_eigenpairs(SymmetricEigen::new(matrix_proj.clone()), ord_sort);
 
-            if i > 0 { println!("Davidson Iteration {}: energy = {:.6}", i, eig.eigenvalues[0]); }
+            if i > 0 {
+                println!(
+                    "Davidson Iteration {}: energy = {:.6}",
+                    i, eig.eigenvalues[0]
+                );
+            }
 
             // 4. Check for convergence
             // 4.1 Compute the residues
@@ -163,10 +176,14 @@ impl Davidson {
             // 4.3 Check if all eigenvalues/eigenvectors have converged
             // println!("Errors: {}", errors);
             // Check whether all coefficients and energies have converged:
-            if h.nrows() <= 2 || (
-                errors.iter().all(|&x| x < conf.tolerance) &&
-                eig.eigenvalues.iter().zip(last_eig.iter()).all(|(&x, &y)| (x - y).abs() < conf.energy_tolerance)
-            ) {
+            if h.nrows() <= 2
+                || (errors.iter().all(|&x| x < conf.tolerance)
+                    && eig
+                        .eigenvalues
+                        .iter()
+                        .zip(last_eig.iter())
+                        .all(|(&x, &y)| (x - y).abs() < conf.energy_tolerance))
+            {
                 result = Ok(Self::create_results(
                     &eig.eigenvalues,
                     &ritz_vectors,
@@ -180,8 +197,15 @@ impl Davidson {
             // 5. Update subspace basis set
             // 5.1 Add the correction vectors to the current basis
             if dim_sub + conf.update_dim <= conf.max_search_space {
-                let correction =
-                    corrector.compute_correction(&residues, &eig.eigenvalues, &ritz_vectors, conf.update_dim, ham, excite_gen, wf);
+                let correction = corrector.compute_correction(
+                    &residues,
+                    &eig.eigenvalues,
+                    &ritz_vectors,
+                    conf.update_dim,
+                    ham,
+                    excite_gen,
+                    wf,
+                );
                 // correction vector can be close to zero!
                 if correction.norm() < 1e-9 {
                     println!("Davidson converged because correction is too small!");
@@ -291,17 +315,23 @@ impl Davidson {
     }
 
     /// Generate initial orthonormal subspace
-    fn generate_subspace(diag: &DVector<f64>, conf: &Config, init: Option<DMatrix<f64>>) -> DMatrix<f64> {
+    fn generate_subspace(
+        diag: &DVector<f64>,
+        conf: &Config,
+        init: Option<DMatrix<f64>>,
+    ) -> DMatrix<f64> {
         match init {
             None => {
                 // If no input vector, start with the two basis states with lowest diagonal element
                 DMatrix::<f64>::identity(diag.nrows(), conf.max_search_space)
-            },
+            }
             Some(v) => {
                 // If input vector exists, start with it (and other low-energy basis states if needed)
                 let mut basis = DMatrix::<f64>::identity(diag.nrows(), conf.max_search_space);
                 update_subspace(&mut basis, v, (conf.init_dim - 1, conf.init_dim));
-                if conf.init_dim > 1 { MGS::orthonormalize(&mut basis, conf.init_dim - 1, conf.init_dim); }
+                if conf.init_dim > 1 {
+                    MGS::orthonormalize(&mut basis, conf.init_dim - 1, conf.init_dim);
+                }
                 basis
             }
         }
@@ -336,12 +366,24 @@ where
         update_dim: usize,
         ham: &Ham,
         excite_gen: &ExciteGenerator,
-        wf: &Wf
+        wf: &Wf,
     ) -> DMatrix<f64> {
         match self.method {
-            DavidsonCorrection::DPR => self.compute_dpr_correction(residues, eigenvalues, update_dim),
-            DavidsonCorrection::GJD => self.compute_gjd_correction(residues, eigenvalues, ritz_vectors),
-            DavidsonCorrection::HPR(eps) => self.compute_hpr_correction(residues, eigenvalues, update_dim, ham, excite_gen, wf, eps),
+            DavidsonCorrection::DPR => {
+                self.compute_dpr_correction(residues, eigenvalues, update_dim)
+            }
+            DavidsonCorrection::GJD => {
+                self.compute_gjd_correction(residues, eigenvalues, ritz_vectors)
+            }
+            DavidsonCorrection::HPR(eps) => self.compute_hpr_correction(
+                residues,
+                eigenvalues,
+                update_dim,
+                ham,
+                excite_gen,
+                wf,
+                eps,
+            ),
         }
     }
 
@@ -355,7 +397,9 @@ where
         let d = self.target.diagonal();
         let mut correction = DMatrix::<f64>::zeros(self.target.nrows(), residues.ncols());
         for (k, lambda) in eigenvalues.iter().enumerate() {
-            if k == update_dim { break; }
+            if k == update_dim {
+                break;
+            }
             let tmp = DVector::<f64>::repeat(self.target.nrows(), *lambda) - &d;
             let rs = residues.column(k).component_div(&tmp);
             correction.set_column(k, &rs);
@@ -383,20 +427,27 @@ where
         ham: &Ham,
         excite_gen: &ExciteGenerator,
         wf: &Wf,
-        eps: f64
+        eps: f64,
     ) -> DMatrix<f64> {
         let d = self.target.diagonal();
         let mut correction = DMatrix::<f64>::zeros(self.target.nrows(), residues.ncols());
         for (k, lambda) in eigenvalues.iter().enumerate() {
-            if k == update_dim { break; }
+            if k == update_dim {
+                break;
+            }
             let mut tmp = DVector::<f64>::repeat(self.target.nrows(), *lambda) - &d;
             let rs = residues.column(k).component_div(&tmp);
             // rs is (D - E) ^ {-1} * residual
             println!("DPR Correctioin: {:?}", rs);
             println!("Performing HB...");
             let scaled_eps = eps; // * (rs[0] / wf.dets[0].coeff).abs();
-            println!("Wf eps = {}, but using scaled eps = {} instead", eps, scaled_eps);
-            let mut hb_off_times_rs = DVector::from(wf.approx_matmul_off_diag_variational_no_singles(&rs, ham, excite_gen, scaled_eps)); // Perform off-diagonal heat-bath here
+            println!(
+                "Wf eps = {}, but using scaled eps = {} instead",
+                eps, scaled_eps
+            );
+            let mut hb_off_times_rs = DVector::from(
+                wf.approx_matmul_off_diag_variational_no_singles(&rs, ham, excite_gen, scaled_eps),
+            ); // Perform off-diagonal heat-bath here
             println!("Done performing HB...");
             println!("{:?}", hb_off_times_rs);
             for i in 0..5 {

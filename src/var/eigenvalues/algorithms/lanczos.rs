@@ -8,11 +8,11 @@ eigenvalues of an hermitian matrix using a [Krylov subspace](https://en.wikipedi
 */
 use super::SpectrumTarget;
 use crate::var::eigenvalues::matrix_operations::MatrixOperations;
+use crate::var::eigenvalues::utils::sort_eigenpairs;
 use nalgebra::linalg::SymmetricEigen;
 use nalgebra::{DMatrix, DVector};
 use std::error;
 use std::fmt;
-use crate::var::eigenvalues::utils::sort_eigenpairs;
 
 #[derive(Debug, PartialEq)]
 pub struct LanczosError;

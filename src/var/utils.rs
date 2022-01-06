@@ -14,10 +14,12 @@ pub fn remove_2e(config: u128) -> impl Iterator<Item = u128> {
 }
 
 // Iterate over intersection of 2 sorted lists:
-pub fn intersection<'a>(v1: &'a Vec<(Config, usize)>, v2: &'a Vec<(Config, usize)>) -> impl Iterator<Item = (usize, usize)> + 'a {
+pub fn intersection<'a>(
+    v1: &'a Vec<(Config, usize)>,
+    v2: &'a Vec<(Config, usize)>,
+) -> impl Iterator<Item = (usize, usize)> + 'a {
     Intersection::new(v1, v2).into_iter()
 }
-
 
 // Backend for remove_1e
 
@@ -61,7 +63,6 @@ impl Iterator for Remove1IntoIterator {
         Some(ibclr(self.config, next_bit))
     }
 }
-
 
 // Backend for remove_2e
 
@@ -185,8 +186,10 @@ impl<'a> Iterator for IntersectionIntoIterator<'a> {
                     self.ind1 += 1;
                     self.ind2 += 1;
                     return res;
-                } else if self.v1[self.ind1].0.up < self.v2[self.ind2].0.up ||
-                    (self.v1[self.ind1].0.up == self.v2[self.ind2].0.up && self.v1[self.ind1].0.dn < self.v2[self.ind2].0.dn) {
+                } else if self.v1[self.ind1].0.up < self.v2[self.ind2].0.up
+                    || (self.v1[self.ind1].0.up == self.v2[self.ind2].0.up
+                        && self.v1[self.ind1].0.dn < self.v2[self.ind2].0.dn)
+                {
                     self.ind1 += 1;
                 } else {
                     self.ind2 += 1;
@@ -196,8 +199,10 @@ impl<'a> Iterator for IntersectionIntoIterator<'a> {
         } else {
             while self.ind1 != self.n1 {
                 // search for ind1 in v2
-                let ind2 = self.v2.partition_point(|&(det, _)| {det.up < self.v1[self.ind1].0.up ||
-                    (det.up == self.v1[self.ind1].0.up && det.dn < self.v1[self.ind1].0.dn) } );
+                let ind2 = self.v2.partition_point(|&(det, _)| {
+                    det.up < self.v1[self.ind1].0.up
+                        || (det.up == self.v1[self.ind1].0.up && det.dn < self.v1[self.ind1].0.dn)
+                });
                 if ind2 < self.n2 {
                     if self.v1[self.ind1].0 == self.v2[ind2].0 {
                         // Found by binary search

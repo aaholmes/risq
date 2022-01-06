@@ -4,10 +4,10 @@ pub mod read_ints;
 
 use super::utils::bits::{bits, det_bits};
 use super::utils::ints::{combine_2, combine_4, permute, permute_2};
+use crate::excite::{Excite, Orbs};
+use crate::utils::bits::bit_pairs;
 use crate::wf::det::Config;
 use read_ints::Ints;
-use crate::utils::bits::bit_pairs;
-use crate::excite::{Orbs, Excite};
 
 // Hamiltonian, containing integrals and matrix element computing functions
 // Also contains information about frozen orbitals
@@ -21,7 +21,6 @@ pub struct Ham {
 }
 
 impl Ham {
-
     fn get_int(&self, p: i32, q: i32, r: i32, s: i32) -> f64 {
         // Get the integral corresponding to pqrs
         // incorporates symmetries p-q, r-s, pq-rs
@@ -87,7 +86,6 @@ impl Ham {
         // the excitation from det1 to det2
         let mut out: f64;
         if det1.dn == det2.dn {
-
             let i: i32 = (det1.up & !det2.up).trailing_zeros() as i32;
             let j: i32 = (det2.up & !det1.up).trailing_zeros() as i32;
 
@@ -107,9 +105,7 @@ impl Ham {
                 out += self.direct(i, k, j, k);
             }
             out *= permute(det1.up, det2.up) as f64;
-
         } else {
-
             let i: i32 = (det1.dn & !det2.dn).trailing_zeros() as i32;
             let j: i32 = (det2.dn & !det1.dn).trailing_zeros() as i32;
 
@@ -129,7 +125,6 @@ impl Ham {
                 out += self.direct(i, k, j, k);
             }
             out *= permute(det1.dn, det2.dn) as f64;
-
         }
 
         out
@@ -140,7 +135,6 @@ impl Ham {
         // the excitation from det1 to det2
 
         if det1.dn == det2.dn {
-
             // Same spin, up
             let mut ind: [i32; 4] = [0; 4];
             let mut n = 0;
@@ -154,9 +148,7 @@ impl Ham {
             }
             (permute_2(det1.up, det2.up, ind) as f64)
                 * self.direct_plus_exchange(ind[0], ind[1], ind[2], ind[3])
-
         } else if det1.up == det2.up {
-
             // Same spin, dn
             let mut ind: [i32; 4] = [0; 4];
             let mut n = 0;
@@ -170,9 +162,7 @@ impl Ham {
             }
             (permute_2(det1.dn, det2.dn, ind) as f64)
                 * self.direct_plus_exchange(ind[0], ind[1], ind[2], ind[3])
-
         } else {
-
             // Opposite spin
             let mut ind1: [i32; 2] = [0; 2];
             let mut n = 0;
@@ -196,7 +186,6 @@ impl Ham {
             }
             ((permute(det1.up, det2.up) * permute(det1.dn, det2.dn)) as f64)
                 * self.direct(ind1[0], ind2[0], ind1[1], ind2[1])
-
         }
     }
 
@@ -205,7 +194,7 @@ impl Ham {
         // using the information stored in excite
         match excite.init {
             Orbs::Double(_) => self.ham_doub(det1, det2),
-            Orbs::Single(_) => self.ham_sing(det1, det2)
+            Orbs::Single(_) => self.ham_sing(det1, det2),
         }
     }
 
@@ -213,14 +202,16 @@ impl Ham {
         // Compute off-diagonal element (either single or double),
         // without excite information
         match (det1.up == det2.up, det1.dn == det2.dn) {
-            (true, true) => { 0.0 }
+            (true, true) => 0.0,
             (false, false) => {
                 // Opposite spin double
                 for det in &[det1.up & !det2.up, det1.dn & !det2.dn] {
                     let mut n = 0;
                     for _ in bits(*det) {
                         n += 1;
-                        if n > 1 { return 0.0; }
+                        if n > 1 {
+                            return 0.0;
+                        }
                     }
                 }
                 self.ham_doub(det1, det2)
@@ -229,19 +220,30 @@ impl Ham {
                 let mut n = 0;
                 for _ in bits(det1.dn & !det2.dn) {
                     n += 1;
-                    if n > 2 { return 0.0; }
+                    if n > 2 {
+                        return 0.0;
+                    }
                 }
-                if n == 1 { self.ham_sing(det1, det2) } else { self.ham_doub(det1, det2) }
+                if n == 1 {
+                    self.ham_sing(det1, det2)
+                } else {
+                    self.ham_doub(det1, det2)
+                }
             }
             (false, true) => {
                 let mut n = 0;
                 for _ in bits(det1.up & !det2.up) {
                     n += 1;
-                    if n > 2 { return 0.0; }
+                    if n > 2 {
+                        return 0.0;
+                    }
                 }
-                if n == 1 { self.ham_sing(det1, det2) } else { self.ham_doub(det1, det2) }
+                if n == 1 {
+                    self.ham_sing(det1, det2)
+                } else {
+                    self.ham_doub(det1, det2)
+                }
             }
         }
     }
-
 }

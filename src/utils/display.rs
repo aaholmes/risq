@@ -1,13 +1,13 @@
 // Display definitions for custom types
 
-use std::fmt;
-use crate::wf::det::{Config, Det};
 use crate::excite::Orbs;
 use crate::stoch::DetOrbSample;
+use crate::wf::det::{Config, Det};
 use crate::wf::Wf;
-use std::collections::BinaryHeap;
 use std::cmp::Ordering::Equal;
-use std::cmp::{Reverse, Ordering};
+use std::cmp::{Ordering, Reverse};
+use std::collections::BinaryHeap;
+use std::fmt;
 
 pub(crate) fn fmt_det(d: u128) -> String {
     let mut s = format!("{:#10b}", d);
@@ -23,7 +23,11 @@ impl fmt::Display for Config {
 
 impl fmt::Display for Det {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{} : coeff = {}, diag = {}", self.config, self.coeff, self.diag)
+        write!(
+            f,
+            "{} : coeff = {}, diag = {}",
+            self.config, self.coeff, self.diag
+        )
     }
 }
 
@@ -32,7 +36,7 @@ impl fmt::Display for Orbs {
         match self {
             Orbs::Double((p, q)) => {
                 write!(f, "({}, {})", p, q)
-            },
+            }
             Orbs::Single(p) => {
                 write!(f, "{}", p)
             }
@@ -44,13 +48,25 @@ impl fmt::Display for DetOrbSample<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.is_alpha {
             None => {
-                write!(f, "{}, orbs = {}, opposite-spin double, sum_abs_hc = {}, sum_hc_squared = {}", self.det, self.init, self.sum_abs_hc, self.sum_hc_squared)
-            },
+                write!(
+                    f,
+                    "{}, orbs = {}, opposite-spin double, sum_abs_hc = {}, sum_hc_squared = {}",
+                    self.det, self.init, self.sum_abs_hc, self.sum_hc_squared
+                )
+            }
             Some(is_alpha) => {
                 if is_alpha {
-                    write!(f, "{}, orbs = {}, spin = up, sum_abs_hc = {}, sum_hc_squared = {}", self.det, self.init, self.sum_abs_hc, self.sum_hc_squared)
+                    write!(
+                        f,
+                        "{}, orbs = {}, spin = up, sum_abs_hc = {}, sum_hc_squared = {}",
+                        self.det, self.init, self.sum_abs_hc, self.sum_hc_squared
+                    )
                 } else {
-                    write!(f, "{}, orbs = {}, spin = dn, sum_abs_hc = {}, sum_hc_squared = {}", self.det, self.init, self.sum_abs_hc, self.sum_hc_squared)
+                    write!(
+                        f,
+                        "{}, orbs = {}, spin = dn, sum_abs_hc = {}, sum_hc_squared = {}",
+                        self.det, self.init, self.sum_abs_hc, self.sum_hc_squared
+                    )
                 }
             }
         }
@@ -59,10 +75,19 @@ impl fmt::Display for DetOrbSample<'_> {
 
 impl Wf {
     pub fn print(&self) {
-        println!("\nWavefunction has {} dets with energy {:.4}", self.n, self.energy);
+        println!(
+            "\nWavefunction has {} dets with energy {:.4}",
+            self.n, self.energy
+        );
         println!("Coeff     Det_up     Det_dn    <D|H|D>");
         for d in self.dets.iter() {
-            println!("{:.4}   {}   {}   {:.3}", d.coeff, fmt_det(d.config.up), fmt_det(d.config.dn), d.diag);
+            println!(
+                "{:.4}   {}   {}   {:.3}",
+                d.coeff,
+                fmt_det(d.config.up),
+                fmt_det(d.config.dn),
+                d.diag
+            );
         }
         println!("\n");
     }
@@ -76,22 +101,37 @@ impl Wf {
 
         for (ind, det) in self.dets.iter().enumerate() {
             if ind < k {
-                heap.push(Reverse(DetByCoeff{det}));
+                heap.push(Reverse(DetByCoeff { det }));
             } else {
                 if det.coeff.abs() > heap.peek().unwrap().0.det.coeff.abs() {
                     heap.pop();
-                    heap.push(Reverse(DetByCoeff{det}));
+                    heap.push(Reverse(DetByCoeff { det }));
                 }
             }
         }
 
         let mut top_k = heap.into_vec();
-        top_k.sort_by(|a, b| b.0.det.coeff.abs().partial_cmp(&a.0.det.coeff.abs()).unwrap_or(Equal));
+        top_k.sort_by(|a, b| {
+            b.0.det
+                .coeff
+                .abs()
+                .partial_cmp(&a.0.det.coeff.abs())
+                .unwrap_or(Equal)
+        });
 
-        println!("\nWavefunction has {} dets with energy {:.4}", self.n, self.energy);
+        println!(
+            "\nWavefunction has {} dets with energy {:.4}",
+            self.n, self.energy
+        );
         println!("Coeff     Det_up     Det_dn    <D|H|D>");
         for d in top_k {
-            println!("{:.4}   {}   {}   {:.3}", d.0.det.coeff, fmt_det(d.0.det.config.up), fmt_det(d.0.det.config.dn), d.0.det.diag);
+            println!(
+                "{:.4}   {}   {}   {:.3}",
+                d.0.det.coeff,
+                fmt_det(d.0.det.config.up),
+                fmt_det(d.0.det.config.dn),
+                d.0.det.diag
+            );
         }
         println!("\n");
     }
@@ -104,7 +144,11 @@ pub struct DetByCoeff<'a> {
 
 impl Ord for DetByCoeff<'_> {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.det.coeff.abs().partial_cmp(&other.det.coeff.abs()).unwrap_or(Equal)
+        self.det
+            .coeff
+            .abs()
+            .partial_cmp(&other.det.coeff.abs())
+            .unwrap_or(Equal)
     }
 }
 
@@ -120,4 +164,4 @@ impl PartialEq for DetByCoeff<'_> {
     }
 }
 
-impl Eq for DetByCoeff<'_> { }
+impl Eq for DetByCoeff<'_> {}

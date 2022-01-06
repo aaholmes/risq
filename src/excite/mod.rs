@@ -1,5 +1,4 @@
-// Excitation generation module:
-// Includes sorted excitations for heat-bath algorithm
+//! Generating most important excitations, importance sampling the rest
 
 pub mod init;
 pub mod iterator;
@@ -10,7 +9,7 @@ use std::hash::{Hash, Hasher};
 #[derive(Debug, PartialEq, Eq, Hash, Copy, Clone)]
 pub enum Orbs {
     Double((i32, i32)),
-    Single(i32)
+    Single(i32),
 }
 
 /// Candidate excitation from one determinant to another.  Contains the initial orbs `init`, target

@@ -1,8 +1,9 @@
 #![crate_name = "risq"]
 #![crate_type = "bin"]
-
 #![doc(html_root_url = "https://aaholmes.github.io/risq/")]
-#![doc(html_logo_url = "https://wherethewindsblow.com/wp-content/uploads/2020/11/crab_dice_red_white.jpg")]
+#![doc(
+    html_logo_url = "https://wherethewindsblow.com/wp-content/uploads/2020/11/crab_dice_red_white.jpg"
+)]
 
 //! Rust Implementation of Semistochastic Quantum chemistry (`risq`) implements an efficient selected
 //! configuration interaction algorithm called Semistochastic Heat-bath Configuration Interaction
@@ -13,33 +14,31 @@ extern crate lazy_static;
 extern crate alloc;
 use std::time::Instant;
 mod ham;
-use ham::Ham;
 use ham::read_ints::read_ints;
+use ham::Ham;
 mod excite;
-use excite::init::{ExciteGenerator, init_excite_generator};
+use excite::init::{init_excite_generator, ExciteGenerator};
 pub mod wf;
-use wf::{Wf, init_var_wf};
-mod var;
-mod utils;
-mod stoch;
-mod semistoch;
+use wf::{init_var_wf, Wf};
 mod pt;
 mod rng;
+mod semistoch;
+mod stoch;
+mod utils;
+mod var;
 // mod projector;
 
-use utils::read_input::{Global, read_input};
-use crate::var::variational;
 use crate::pt::perturbative;
+use crate::var::variational;
+use utils::read_input::{read_input, Global};
 
 fn main() {
-
     let start: Instant = Instant::now();
 
     println!(" //==================================================================\\\\");
     println!("//   Rust Implementation of Semistochastic Quantum chemistry (RISQ)   \\\\");
     println!("\\\\                        Adam A Holmes, 2021                         //");
     println!(" \\\\==================================================================//");
-
 
     println!("\n\n=====\nSetup\n=====\n");
     let start_setup: Instant = Instant::now();
@@ -64,18 +63,15 @@ fn main() {
     wf.print();
     println!("Time for setup: {:?}", start_setup.elapsed());
 
-
     println!("\n\n=================\nVariational stage\n=================\n");
     let start_var: Instant = Instant::now();
     variational(&GLOBAL, &HAM, &EXCITE_GEN, &mut wf);
     println!("Time for variational stage: {:?}", start_var.elapsed());
 
-
     println!("\n\n==================\nPerturbative stage\n==================\n");
     let start_enpt2: Instant = Instant::now();
     perturbative(&GLOBAL, &HAM, &EXCITE_GEN, &wf);
     println!("Time for perturbative stage: {:?}", start_enpt2.elapsed());
-
 
     println!("Total Time: {:?}", start.elapsed());
 }

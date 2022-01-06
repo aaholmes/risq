@@ -3,12 +3,11 @@
 // wf, then drops by a factor of 2 every iteration until it reaches the target value set in the
 // input file
 
-use crate::wf::Wf;
-use crate::utils::bits::{bits, btest, bit_pairs};
-use crate::utils::read_input::Global;
-use crate::excite::Orbs;
 use crate::excite::init::ExciteGenerator;
-
+use crate::excite::Orbs;
+use crate::utils::bits::{bit_pairs, bits, btest};
+use crate::utils::read_input::Global;
+use crate::wf::Wf;
 
 #[derive(Clone, Copy)]
 pub struct Eps {
@@ -21,7 +20,11 @@ impl Iterator for Eps {
 
     fn next(&mut self) -> Option<f64> {
         let curr: f64 = self.next;
-        self.next = if self.next / 2.0 > self.target { self.next / 2.0 } else { self.target };
+        self.next = if self.next / 2.0 > self.target {
+            self.next / 2.0
+        } else {
+            self.target
+        };
         // self.next = if self.next * 0.9 > self.target { self.next * 0.9 } else { self.target };
         Some(curr)
     }
@@ -29,7 +32,10 @@ impl Iterator for Eps {
 
 impl Default for Eps {
     fn default() -> Eps {
-        Eps{next: 0.0, target: 0.0}
+        Eps {
+            next: 0.0,
+            target: 0.0,
+        }
     }
 }
 
@@ -50,7 +56,11 @@ pub fn init_eps(wf: &Wf, global: &Global, excite_gen: &ExciteGenerator) -> Eps {
             for j in bits(excite_gen.valence & det.config.dn) {
                 let mut found_sym = false;
                 let mut found_asym = false;
-                for excite in excite_gen.opp_doub_sorted_list.get(&Orbs::Double((i, j))).unwrap() {
+                for excite in excite_gen
+                    .opp_doub_sorted_list
+                    .get(&Orbs::Double((i, j)))
+                    .unwrap()
+                {
                     match excite.target {
                         Orbs::Double(t) => {
                             if !btest(det.config.up, t.0) && !btest(det.config.dn, t.1) {
@@ -68,9 +78,11 @@ pub fn init_eps(wf: &Wf, global: &Global, excite_gen: &ExciteGenerator) -> Eps {
                                         max_asym = this_doub;
                                     }
                                 }
-                                if found_sym && found_asym { break; };
+                                if found_sym && found_asym {
+                                    break;
+                                };
                             }
-                        },
+                        }
                         _ => {}
                     }
                 }
@@ -79,7 +91,11 @@ pub fn init_eps(wf: &Wf, global: &Global, excite_gen: &ExciteGenerator) -> Eps {
         // Same spin
         for config in &[det.config.up, det.config.dn] {
             for (i, j) in bit_pairs(excite_gen.valence & *config) {
-                for excite in excite_gen.same_doub_sorted_list.get(&Orbs::Double((i, j))).unwrap() {
+                for excite in excite_gen
+                    .same_doub_sorted_list
+                    .get(&Orbs::Double((i, j)))
+                    .unwrap()
+                {
                     match excite.target {
                         Orbs::Double(t) => {
                             if !btest(*config, t.0) && !btest(*config, t.1) {
@@ -89,7 +105,7 @@ pub fn init_eps(wf: &Wf, global: &Global, excite_gen: &ExciteGenerator) -> Eps {
                                 }
                                 break;
                             }
-                        },
+                        }
                         _ => {}
                     }
                 }
@@ -97,7 +113,13 @@ pub fn init_eps(wf: &Wf, global: &Global, excite_gen: &ExciteGenerator) -> Eps {
         }
     } // det
 
-    let max_doub = { if max_sym < max_asym { max_sym } else { max_asym } };
+    let max_doub = {
+        if max_sym < max_asym {
+            max_sym
+        } else {
+            max_asym
+        }
+    };
     Eps {
         next: max_doub - 1e-9, // Slightly less than max_doub in case there are two or more elements that are off by machine precision
         target: global.eps_var,

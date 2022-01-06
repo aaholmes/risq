@@ -2,12 +2,17 @@ extern crate rand;
 use rand::prelude::*;
 
 use crate::excite::StoredExcite;
+use crate::rng::Rand;
 use crate::stoch::ImpSampleDist;
 use std::collections::HashMap;
-use crate::rng::Rand;
 // use std::intrinsics::offset;
 
-pub fn sample_cdf<'a>(cdf: &'a Vec<StoredExcite>, imp_sample_dist: &ImpSampleDist, max_cdf: Option<f64>, rand: &mut Rand) -> Option<(&'a StoredExcite, f64)> {
+pub fn sample_cdf<'a>(
+    cdf: &'a Vec<StoredExcite>,
+    imp_sample_dist: &ImpSampleDist,
+    max_cdf: Option<f64>,
+    rand: &mut Rand,
+) -> Option<(&'a StoredExcite, f64)> {
     // Sample a CDF (in decreasing order) by sampling a uniform random number up to max_cdf
     // and binary searching the CDF
     // cdf is a vector of StoredExcites, and we access their stored cumulative sums depending on imp_sample_dist
@@ -27,10 +32,12 @@ pub fn sample_cdf<'a>(cdf: &'a Vec<StoredExcite>, imp_sample_dist: &ImpSampleDis
 
     let mut max: f64;
     match max_cdf {
-        None => {
-            match imp_sample_dist {
-                ImpSampleDist::AbsHc => { max = cdf[0].sum_remaining_abs_h; }
-                ImpSampleDist::HcSquared => { max = cdf[0].sum_remaining_h_squared; }
+        None => match imp_sample_dist {
+            ImpSampleDist::AbsHc => {
+                max = cdf[0].sum_remaining_abs_h;
+            }
+            ImpSampleDist::HcSquared => {
+                max = cdf[0].sum_remaining_h_squared;
             }
         },
         Some(m) => {
@@ -76,11 +83,12 @@ pub fn sample_cdf<'a>(cdf: &'a Vec<StoredExcite>, imp_sample_dist: &ImpSampleDis
             // println!("Computing abs_h sample_prob, {}, {}", cdf[ind].sum_remaining_abs_h, cdf[ind + 1].sum_remaining_abs_h);
             sample_prob = (cdf[ind].sum_remaining_abs_h - cdf[ind + 1].sum_remaining_abs_h) / max;
             // println!("Selected element {} with probability {}", cdf[ind].sum_remaining_abs_h, sample_prob);
-        },
+        }
         ImpSampleDist::HcSquared => {
             ind = cdf.partition_point(|x| x.sum_remaining_h_squared > target) - 1;
             // println!("Computing h_sq sample_prob, {}, {}", cdf[ind].sum_remaining_h_squared, cdf[ind + 1].sum_remaining_h_squared);
-            sample_prob = (cdf[ind].sum_remaining_h_squared - cdf[ind + 1].sum_remaining_h_squared) / max;
+            sample_prob =
+                (cdf[ind].sum_remaining_h_squared - cdf[ind + 1].sum_remaining_h_squared) / max;
             // println!("Selected element {} with probability {}", cdf[ind].sum_remaining_h_squared, sample_prob);
         }
     }
@@ -89,8 +97,13 @@ pub fn sample_cdf<'a>(cdf: &'a Vec<StoredExcite>, imp_sample_dist: &ImpSampleDis
     Some((&cdf[ind], sample_prob))
 }
 
-
-pub fn test_cdf(cdf: &Vec<StoredExcite>, imp_sample_dist: &ImpSampleDist, max_cdf: Option<f64>, rand: &mut Rand, n_samples: i32) {
+pub fn test_cdf(
+    cdf: &Vec<StoredExcite>,
+    imp_sample_dist: &ImpSampleDist,
+    max_cdf: Option<f64>,
+    rand: &mut Rand,
+    n_samples: i32,
+) {
     // Test the sample_cdf routine by taking n_samples samples and showing frequency of samples vs probability for full distribution
     println!("Calling test_cdf");
     let n: usize = cdf.len();
@@ -101,7 +114,7 @@ pub fn test_cdf(cdf: &Vec<StoredExcite>, imp_sample_dist: &ImpSampleDist, max_cd
                 expected.push(cdf[i - 1].sum_remaining_abs_h - cdf[i].sum_remaining_abs_h);
             }
             expected.push(cdf[n - 1].sum_remaining_abs_h);
-        },
+        }
         ImpSampleDist::HcSquared => {
             for i in 1..n {
                 expected.push(cdf[i - 1].sum_remaining_h_squared - cdf[i].sum_remaining_h_squared);
@@ -119,6 +132,11 @@ pub fn test_cdf(cdf: &Vec<StoredExcite>, imp_sample_dist: &ImpSampleDist, max_cd
     }
     println!("Target prob, sampled prob");
     for (i, exc) in cdf.iter().enumerate() {
-        println!("{:.6},   {:.6},   {:.6}", expected[i], (freq[exc] as f64) / (n_samples as f64), (freq[exc] as f64) / (n_samples as f64) / expected[i]);
+        println!(
+            "{:.6},   {:.6},   {:.6}",
+            expected[i],
+            (freq[exc] as f64) / (n_samples as f64),
+            (freq[exc] as f64) / (n_samples as f64) / expected[i]
+        );
     }
 }

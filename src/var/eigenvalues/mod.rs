@@ -3,12 +3,11 @@ pub mod matrix_operations;
 pub mod modified_gram_schmidt;
 pub mod utils;
 
-
 use nalgebra as na;
 
 use algorithms::lanczos::HermitianLanczos;
-use utils::{generate_random_sparse_symmetric, sort_eigenpairs};
 use algorithms::SpectrumTarget;
+use utils::{generate_random_sparse_symmetric, sort_eigenpairs};
 
 fn main() {
     let matrix = generate_random_sparse_symmetric(200, 5, 0.5);

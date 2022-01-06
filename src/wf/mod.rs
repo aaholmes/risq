@@ -5,40 +5,39 @@
 pub mod det;
 mod eps;
 
-use std::collections::{HashMap, BinaryHeap};
+use std::collections::{BinaryHeap, HashMap};
 
-use super::utils::read_input::Global;
 use super::ham::Ham;
-use crate::excite::{Excite, Orbs};
+use super::utils::read_input::Global;
 use crate::excite::init::ExciteGenerator;
-use det::{Det, Config};
-use eps::{Eps, init_eps};
+use crate::excite::{Excite, Orbs};
+use crate::stoch::{generate_screened_sampler, DetOrbSample, ScreenedSampler};
 use crate::utils::bits::{bit_pairs, bits};
-use crate::stoch::{DetOrbSample, ScreenedSampler, generate_screened_sampler};
-use itertools::enumerate;
-use crate::var::sparse::SparseMatUpperTri;
-use nalgebra::{VecStorage, Dynamic, Const, Matrix};
-use rolling_stats::Stats;
-use std::time::Instant;
-use std::cmp::Reverse;
 use crate::utils::display::DetByCoeff;
+use crate::var::sparse::SparseMatUpperTri;
+use det::{Config, Det};
+use eps::{init_eps, Eps};
+use itertools::enumerate;
+use nalgebra::{Const, Dynamic, Matrix, VecStorage};
+use rolling_stats::Stats;
+use std::cmp::Reverse;
+use std::time::Instant;
 
 #[derive(Default)]
 pub struct Wf {
     pub n_states: i32, // number of states - same as in input file, but want it attached to the wf
     pub converged: bool, // whether variational wf is converged. Update at end of each HCI iteration
     pub eps_iter: Eps, // iterator that produces the variational epsilon for each HCI iteration
-    pub eps: f64, // current eps value
-    pub n: usize,                         // number of dets
-    pub energy: f64,                    // variational energy
-    pub inds: HashMap<Config, usize>,            // hashtable : det -> usize for looking up index by det
-    pub dets: Vec<Det>,                     // for looking up det by index
+    pub eps: f64,      // current eps value
+    pub n: usize,      // number of dets
+    pub energy: f64,   // variational energy
+    pub inds: HashMap<Config, usize>, // hashtable : det -> usize for looking up index by det
+    pub dets: Vec<Det>, // for looking up det by index
     n_stored_h: usize, // n for which the variational H has already been stored
     pub sparse_ham: SparseMatUpperTri, // store the sparse variational H off-diagonal elements here
 }
 
 impl Wf {
-
     pub fn push(&mut self, d: Det) {
         // Just adds a new det to the wf
         if !self.inds.contains_key(&d.config) {
@@ -48,7 +47,14 @@ impl Wf {
         }
     }
 
-    pub fn add_det_with_coeff(&mut self, exciting_det: &Det, ham: &Ham, excite: &Excite, new_det: Config, coeff: f64) {
+    pub fn add_det_with_coeff(
+        &mut self,
+        exciting_det: &Det,
+        ham: &Ham,
+        excite: &Excite,
+        new_det: Config,
+        coeff: f64,
+    ) {
         // Add det with its coefficient
         // If det already exists in wf, add its coefficient to that det
         // Also, computes diagonal element if necessary (that's what exciting_det, ham and excite are needed for)
@@ -58,18 +64,21 @@ impl Wf {
             None => {
                 self.inds.insert(new_det, self.n);
                 self.n += 1;
-                self.dets.push(
-                    Det {
-                        config: new_det,
-                        coeff: coeff,
-                        diag: exciting_det.new_diag(ham, excite)
-                    }
-                );
+                self.dets.push(Det {
+                    config: new_det,
+                    coeff: coeff,
+                    diag: exciting_det.new_diag(ham, excite),
+                });
             }
         }
     }
 
-    pub fn approx_matmul_external_dtm_only(&self, ham: &Ham, excite_gen: &ExciteGenerator, eps: f64) -> (Wf, Vec<f64>) {
+    pub fn approx_matmul_external_dtm_only(
+        &self,
+        ham: &Ham,
+        excite_gen: &ExciteGenerator,
+        eps: f64,
+    ) -> (Wf, Vec<f64>) {
         // Approximate matrix-vector multiplication
         // Uses eps as a cutoff for both singles and doubles, as in SHCI (but faster of course)
         // Only returns dets that are "external" to self, i.e., dets not in self (variational space)
@@ -97,7 +106,11 @@ impl Wf {
             if excite_gen.max_opp_doub >= local_eps {
                 for i in bits(excite_gen.valence & det.config.up) {
                     for j in bits(excite_gen.valence & det.config.dn) {
-                        for stored_excite in excite_gen.opp_doub_sorted_list.get(&Orbs::Double((i, j))).unwrap() {
+                        for stored_excite in excite_gen
+                            .opp_doub_sorted_list
+                            .get(&Orbs::Double((i, j)))
+                            .unwrap()
+                        {
                             if stored_excite.abs_h < local_eps {
                                 // No more deterministic excitations will meet the eps cutoff
                                 sum_remaining_this_det += stored_excite.sum_remaining_h_squared;
@@ -107,7 +120,7 @@ impl Wf {
                                 init: Orbs::Double((i, j)),
                                 target: stored_excite.target,
                                 abs_h: stored_excite.abs_h,
-                                is_alpha: None
+                                is_alpha: None,
                             };
                             new_det = det.config.safe_excite_det(&excite);
                             match new_det {
@@ -116,7 +129,13 @@ impl Wf {
                                         // Valid excite: add to H*psi
                                         // Compute matrix element and add to H*psi
                                         // TODO: Do this in a cache efficient way
-                                        out_wf.add_det_with_coeff(det, ham, &excite, d, ham.ham_doub(&det.config, &d) * det.coeff);
+                                        out_wf.add_det_with_coeff(
+                                            det,
+                                            ham,
+                                            &excite,
+                                            d,
+                                            ham.ham_doub(&det.config, &d) * det.coeff,
+                                        );
                                     }
                                 }
                                 None => {}
@@ -130,7 +149,11 @@ impl Wf {
             if excite_gen.max_same_doub >= local_eps {
                 for (config, is_alpha) in &[(det.config.up, true), (det.config.dn, false)] {
                     for (i, j) in bit_pairs(excite_gen.valence & *config) {
-                        for stored_excite in excite_gen.same_doub_sorted_list.get(&Orbs::Double((i, j))).unwrap() {
+                        for stored_excite in excite_gen
+                            .same_doub_sorted_list
+                            .get(&Orbs::Double((i, j)))
+                            .unwrap()
+                        {
                             if stored_excite.abs_h < local_eps {
                                 // No more deterministic excitations will meet the eps cutoff
                                 sum_remaining_this_det += stored_excite.sum_remaining_h_squared;
@@ -140,7 +163,7 @@ impl Wf {
                                 init: Orbs::Double((i, j)),
                                 target: stored_excite.target,
                                 abs_h: stored_excite.abs_h,
-                                is_alpha: Some(*is_alpha)
+                                is_alpha: Some(*is_alpha),
                             };
                             new_det = det.config.safe_excite_det(&excite);
                             match new_det {
@@ -149,7 +172,13 @@ impl Wf {
                                         // Valid excite: add to H*psi
                                         // Compute matrix element and add to H*psi
                                         // TODO: Do this in a cache efficient way
-                                        out_wf.add_det_with_coeff(det, ham, &excite, d, ham.ham_doub(&det.config, &d) * det.coeff);
+                                        out_wf.add_det_with_coeff(
+                                            det,
+                                            ham,
+                                            &excite,
+                                            d,
+                                            ham.ham_doub(&det.config, &d) * det.coeff,
+                                        );
                                     }
                                 }
                                 None => {}
@@ -163,7 +192,9 @@ impl Wf {
             if excite_gen.max_sing >= local_eps {
                 for (config, is_alpha) in &[(det.config.up, true), (det.config.dn, false)] {
                     for i in bits(excite_gen.valence & *config) {
-                        for stored_excite in excite_gen.sing_sorted_list.get(&Orbs::Single(i)).unwrap() {
+                        for stored_excite in
+                            excite_gen.sing_sorted_list.get(&Orbs::Single(i)).unwrap()
+                        {
                             if stored_excite.abs_h < local_eps {
                                 // No more deterministic excitations will meet the eps cutoff
                                 sum_remaining_this_det += stored_excite.sum_remaining_h_squared;
@@ -173,7 +204,7 @@ impl Wf {
                                 init: Orbs::Single(i),
                                 target: stored_excite.target,
                                 abs_h: stored_excite.abs_h,
-                                is_alpha: Some(*is_alpha)
+                                is_alpha: Some(*is_alpha),
                             };
                             new_det = det.config.safe_excite_det(&excite);
                             match new_det {
@@ -184,7 +215,13 @@ impl Wf {
                                         let sing: f64 = ham.ham_sing(&det.config, &d);
                                         if sing.abs() >= local_eps {
                                             // TODO: Do this in a cache efficient way
-                                            out_wf.add_det_with_coeff(det, ham, &excite, d, sing * det.coeff);
+                                            out_wf.add_det_with_coeff(
+                                                det,
+                                                ham,
+                                                &excite,
+                                                d,
+                                                sing * det.coeff,
+                                            );
                                         }
                                     }
                                 }
@@ -200,7 +237,12 @@ impl Wf {
         (out_wf, out_sum_remaining)
     }
 
-    pub fn approx_matmul_external(&self, ham: &Ham, excite_gen: &ExciteGenerator, eps: f64) -> (Wf, ScreenedSampler) {
+    pub fn approx_matmul_external(
+        &self,
+        ham: &Ham,
+        excite_gen: &ExciteGenerator,
+        eps: f64,
+    ) -> (Wf, ScreenedSampler) {
         // Approximate matrix-vector multiplication
         // Uses eps as a cutoff for doubles, but uses additional singles (since checking whether
         // they meet the cutoff is as expensive as actually calculating the matrix element)
@@ -229,18 +271,24 @@ impl Wf {
             if excite_gen.max_opp_doub >= local_eps {
                 for i in bits(excite_gen.valence & det.config.up) {
                     for j in bits(excite_gen.valence & det.config.dn) {
-                        for stored_excite in excite_gen.opp_doub_sorted_list.get(&Orbs::Double((i, j))).unwrap() {
+                        for stored_excite in excite_gen
+                            .opp_doub_sorted_list
+                            .get(&Orbs::Double((i, j)))
+                            .unwrap()
+                        {
                             if stored_excite.abs_h < local_eps {
                                 // No more deterministic excitations will meet the eps cutoff
                                 // Update the screened sampler, then break
-                                det_orbs.push(DetOrbSample{
+                                det_orbs.push(DetOrbSample {
                                     det: det,
                                     init: Orbs::Double((i, j)),
                                     is_alpha: None,
                                     sum_abs_h: stored_excite.sum_remaining_abs_h,
                                     sum_h_squared: stored_excite.sum_remaining_h_squared,
                                     sum_abs_hc: det.coeff.abs() * stored_excite.sum_remaining_abs_h,
-                                    sum_hc_squared: det.coeff * det.coeff * stored_excite.sum_remaining_h_squared,
+                                    sum_hc_squared: det.coeff
+                                        * det.coeff
+                                        * stored_excite.sum_remaining_h_squared,
                                 });
                                 break;
                             }
@@ -248,7 +296,7 @@ impl Wf {
                                 init: Orbs::Double((i, j)),
                                 target: stored_excite.target,
                                 abs_h: stored_excite.abs_h,
-                                is_alpha: None
+                                is_alpha: None,
                             };
                             new_det = det.config.safe_excite_det(&excite);
                             match new_det {
@@ -257,7 +305,13 @@ impl Wf {
                                         // Valid excite: add to H*psi
                                         // Compute matrix element and add to H*psi
                                         // TODO: Do this in a cache efficient way
-                                        out_wf.add_det_with_coeff(det, ham, &excite, d, ham.ham_doub(&det.config, &d) * det.coeff);
+                                        out_wf.add_det_with_coeff(
+                                            det,
+                                            ham,
+                                            &excite,
+                                            d,
+                                            ham.ham_doub(&det.config, &d) * det.coeff,
+                                        );
                                     }
                                 }
                                 None => {}
@@ -271,18 +325,24 @@ impl Wf {
             if excite_gen.max_same_doub >= local_eps {
                 for (config, is_alpha) in &[(det.config.up, true), (det.config.dn, false)] {
                     for (i, j) in bit_pairs(excite_gen.valence & *config) {
-                        for stored_excite in excite_gen.same_doub_sorted_list.get(&Orbs::Double((i, j))).unwrap() {
+                        for stored_excite in excite_gen
+                            .same_doub_sorted_list
+                            .get(&Orbs::Double((i, j)))
+                            .unwrap()
+                        {
                             if stored_excite.abs_h < local_eps {
                                 // No more deterministic excitations will meet the eps cutoff
                                 // Update the screened sampler, then break
-                                det_orbs.push(DetOrbSample{
+                                det_orbs.push(DetOrbSample {
                                     det: det,
                                     init: Orbs::Double((i, j)),
                                     is_alpha: Some(*is_alpha),
                                     sum_abs_h: stored_excite.sum_remaining_abs_h,
                                     sum_h_squared: stored_excite.sum_remaining_h_squared,
                                     sum_abs_hc: det.coeff.abs() * stored_excite.sum_remaining_abs_h,
-                                    sum_hc_squared: det.coeff * det.coeff * stored_excite.sum_remaining_h_squared,
+                                    sum_hc_squared: det.coeff
+                                        * det.coeff
+                                        * stored_excite.sum_remaining_h_squared,
                                 });
                                 break;
                             }
@@ -290,7 +350,7 @@ impl Wf {
                                 init: Orbs::Double((i, j)),
                                 target: stored_excite.target,
                                 abs_h: stored_excite.abs_h,
-                                is_alpha: Some(*is_alpha)
+                                is_alpha: Some(*is_alpha),
                             };
                             new_det = det.config.safe_excite_det(&excite);
                             match new_det {
@@ -299,7 +359,13 @@ impl Wf {
                                         // Valid excite: add to H*psi
                                         // Compute matrix element and add to H*psi
                                         // TODO: Do this in a cache efficient way
-                                        out_wf.add_det_with_coeff(det, ham, &excite, d, ham.ham_doub(&det.config, &d) * det.coeff);
+                                        out_wf.add_det_with_coeff(
+                                            det,
+                                            ham,
+                                            &excite,
+                                            d,
+                                            ham.ham_doub(&det.config, &d) * det.coeff,
+                                        );
                                     }
                                 }
                                 None => {}
@@ -313,18 +379,22 @@ impl Wf {
             if excite_gen.max_sing >= local_eps {
                 for (config, is_alpha) in &[(det.config.up, true), (det.config.dn, false)] {
                     for i in bits(excite_gen.valence & *config) {
-                        for stored_excite in excite_gen.sing_sorted_list.get(&Orbs::Single(i)).unwrap() {
+                        for stored_excite in
+                            excite_gen.sing_sorted_list.get(&Orbs::Single(i)).unwrap()
+                        {
                             if stored_excite.abs_h < local_eps {
                                 // No more deterministic excitations will meet the eps cutoff
                                 // Update the screened sampler, then break
-                                det_orbs.push(DetOrbSample{
+                                det_orbs.push(DetOrbSample {
                                     det: det,
                                     init: Orbs::Single(i),
                                     is_alpha: Some(*is_alpha),
                                     sum_abs_h: stored_excite.sum_remaining_abs_h,
                                     sum_h_squared: stored_excite.sum_remaining_h_squared,
                                     sum_abs_hc: det.coeff.abs() * stored_excite.sum_remaining_abs_h,
-                                    sum_hc_squared: det.coeff * det.coeff * stored_excite.sum_remaining_h_squared,
+                                    sum_hc_squared: det.coeff
+                                        * det.coeff
+                                        * stored_excite.sum_remaining_h_squared,
                                 });
                                 break;
                             }
@@ -332,7 +402,7 @@ impl Wf {
                                 init: Orbs::Single(i),
                                 target: stored_excite.target,
                                 abs_h: stored_excite.abs_h,
-                                is_alpha: Some(*is_alpha)
+                                is_alpha: Some(*is_alpha),
                             };
                             new_det = det.config.safe_excite_det(&excite);
                             match new_det {
@@ -341,7 +411,13 @@ impl Wf {
                                         // Valid excite: add to H*psi
                                         // Compute matrix element and add to H*psi
                                         // TODO: Do this in a cache efficient way
-                                        out_wf.add_det_with_coeff(det, ham, &excite, d, ham.ham_sing(&det.config, &d) * det.coeff);
+                                        out_wf.add_det_with_coeff(
+                                            det,
+                                            ham,
+                                            &excite,
+                                            d,
+                                            ham.ham_sing(&det.config, &d) * det.coeff,
+                                        );
                                     }
                                 }
                                 None => {}
@@ -356,7 +432,12 @@ impl Wf {
         (out_wf, generate_screened_sampler(eps, det_orbs))
     }
 
-    pub fn approx_matmul_external_semistoch_singles(&self, ham: &Ham, excite_gen: &ExciteGenerator, eps: f64) -> (Wf, ScreenedSampler) {
+    pub fn approx_matmul_external_semistoch_singles(
+        &self,
+        ham: &Ham,
+        excite_gen: &ExciteGenerator,
+        eps: f64,
+    ) -> (Wf, ScreenedSampler) {
         // Approximate matrix-vector multiplication
         // Deterministic step uses eps as a cutoff for both doubles and singles
         // Prepares screened sampler that is intended to sample singles and doubles separately
@@ -370,7 +451,6 @@ impl Wf {
         // the amount by which they would be oversampled (for the singles we loop over deterministically),
         // and use that computed oversampling value to reduce the sampling of singles later on
 
-
         // Iterate over all dets; for each, use eps to truncate the excitations; for each excitation,
         // add to output wf
         let mut local_eps: f64;
@@ -383,7 +463,6 @@ impl Wf {
         // Diagonal component - none because this is 'external' to the current wf (i.e., perturbative space rather than variational space)
         let mut out_wf: Wf = Wf::default();
 
-
         // Off-diagonal component
 
         // Keep track of statistics for how much singles would be oversampled
@@ -391,7 +470,6 @@ impl Wf {
         let mut singles_oversampled_hc_squared: Stats<f64> = Stats::new();
 
         for det in &self.dets {
-
             local_eps = eps / det.coeff.abs();
 
             // Double excitations
@@ -399,25 +477,25 @@ impl Wf {
             // Opposite spin
             for i in bits(excite_gen.valence & det.config.up) {
                 for j in bits(excite_gen.valence & det.config.dn) {
-                    for stored_excite in excite_gen.opp_doub_sorted_list.get(&Orbs::Double((i, j))).unwrap() {
-
+                    for stored_excite in excite_gen
+                        .opp_doub_sorted_list
+                        .get(&Orbs::Double((i, j)))
+                        .unwrap()
+                    {
                         excite = Excite {
                             init: Orbs::Double((i, j)),
                             target: stored_excite.target,
                             abs_h: stored_excite.abs_h,
-                            is_alpha: None
+                            is_alpha: None,
                         };
 
                         new_det = det.config.safe_excite_det(&excite);
 
                         match new_det {
-
-                            None => {}, // If not a valid excitation, do nothing
+                            None => {} // If not a valid excitation, do nothing
 
                             Some(d) => {
-
                                 if stored_excite.abs_h >= local_eps {
-
                                     // |H| >= eps: deterministic component
                                     // First check whether this is a valid excite
                                     // Make sure excite is to a perturbative det (not a variational one)
@@ -425,11 +503,15 @@ impl Wf {
                                         // Valid excite: add to H*psi
                                         // Compute matrix element and compare its magnitude to eps
                                         // TODO: Do this in a cache efficient way
-                                        out_wf.add_det_with_coeff(det, ham, &excite, d, ham.ham_doub(&det.config, &d) * det.coeff);
+                                        out_wf.add_det_with_coeff(
+                                            det,
+                                            ham,
+                                            &excite,
+                                            d,
+                                            ham.ham_doub(&det.config, &d) * det.coeff,
+                                        );
                                     }
-
                                 } else {
-
                                     // |H| < eps: no more deterministic pieces allowed
 
                                     // Update the screened sampler if this excite is valid and points to
@@ -444,8 +526,11 @@ impl Wf {
                                             is_alpha: None,
                                             sum_abs_h: stored_excite.sum_remaining_abs_h,
                                             sum_h_squared: stored_excite.sum_remaining_h_squared,
-                                            sum_abs_hc: det.coeff.abs() * stored_excite.sum_remaining_abs_h,
-                                            sum_hc_squared: det.coeff * det.coeff * stored_excite.sum_remaining_h_squared,
+                                            sum_abs_hc: det.coeff.abs()
+                                                * stored_excite.sum_remaining_abs_h,
+                                            sum_hc_squared: det.coeff
+                                                * det.coeff
+                                                * stored_excite.sum_remaining_h_squared,
                                         });
                                         break;
                                     }
@@ -459,25 +544,25 @@ impl Wf {
             // Same spin
             for (config, is_alpha) in &[(det.config.up, true), (det.config.dn, false)] {
                 for (i, j) in bit_pairs(excite_gen.valence & *config) {
-                    for stored_excite in excite_gen.same_doub_sorted_list.get(&Orbs::Double((i, j))).unwrap() {
-
+                    for stored_excite in excite_gen
+                        .same_doub_sorted_list
+                        .get(&Orbs::Double((i, j)))
+                        .unwrap()
+                    {
                         excite = Excite {
                             init: Orbs::Double((i, j)),
                             target: stored_excite.target,
                             abs_h: stored_excite.abs_h,
-                            is_alpha: Some(*is_alpha)
+                            is_alpha: Some(*is_alpha),
                         };
 
                         new_det = det.config.safe_excite_det(&excite);
 
                         match new_det {
-
-                            None => {}, // If not a valid excitation, do nothing
+                            None => {} // If not a valid excitation, do nothing
 
                             Some(d) => {
-
                                 if stored_excite.abs_h >= local_eps {
-
                                     // |H| >= eps: deterministic component
                                     // First check whether this is a valid excite
                                     // Make sure excite is to a perturbative det (not a variational one)
@@ -485,11 +570,15 @@ impl Wf {
                                         // Valid excite: add to H*psi
                                         // Compute matrix element and compare its magnitude to eps
                                         // TODO: Do this in a cache efficient way
-                                        out_wf.add_det_with_coeff(det, ham, &excite, d, ham.ham_doub(&det.config, &d) * det.coeff);
+                                        out_wf.add_det_with_coeff(
+                                            det,
+                                            ham,
+                                            &excite,
+                                            d,
+                                            ham.ham_doub(&det.config, &d) * det.coeff,
+                                        );
                                     }
-
                                 } else {
-
                                     // |H| < eps: no more deterministic pieces allowed
 
                                     // Update the screened sampler if this excite is valid and points to
@@ -504,8 +593,11 @@ impl Wf {
                                             is_alpha: Some(*is_alpha),
                                             sum_abs_h: stored_excite.sum_remaining_abs_h,
                                             sum_h_squared: stored_excite.sum_remaining_h_squared,
-                                            sum_abs_hc: det.coeff.abs() * stored_excite.sum_remaining_abs_h,
-                                            sum_hc_squared: det.coeff * det.coeff * stored_excite.sum_remaining_h_squared,
+                                            sum_abs_hc: det.coeff.abs()
+                                                * stored_excite.sum_remaining_abs_h,
+                                            sum_hc_squared: det.coeff
+                                                * det.coeff
+                                                * stored_excite.sum_remaining_h_squared,
                                         });
                                         break;
                                     }
@@ -515,7 +607,6 @@ impl Wf {
                     }
                 }
             }
-
 
             // Single excitations
 
@@ -527,14 +618,16 @@ impl Wf {
                 for (config, is_alpha) in &[(det.config.up, true), (det.config.dn, false)] {
                     for i in bits(excite_gen.valence & *config) {
                         let mut stored_sampler: bool = false;
-                        for stored_excite in excite_gen.sing_sorted_list.get(&Orbs::Single(i)).unwrap() {
+                        for stored_excite in
+                            excite_gen.sing_sorted_list.get(&Orbs::Single(i)).unwrap()
+                        {
                             if stored_excite.abs_h >= local_eps {
                                 // *max* |H| >= eps: deterministic component
                                 excite = Excite {
                                     init: Orbs::Single(i),
                                     target: stored_excite.target,
                                     abs_h: stored_excite.abs_h,
-                                    is_alpha: Some(*is_alpha)
+                                    is_alpha: Some(*is_alpha),
                                 };
                                 // First check whether this is a valid excite
                                 new_det = det.config.safe_excite_det(&excite);
@@ -546,8 +639,10 @@ impl Wf {
                                             // Compute matrix element and compare its magnitude to eps
                                             let sing: f64 = ham.ham_sing(&det.config, &d);
                                             // If this excite were sampled, the oversampling would be by a factor of |excite.abs_h / sing| (or that value squared)
-                                            singles_oversampled_abs_hc.update(excite.abs_h / sing.abs());
-                                            singles_oversampled_hc_squared.update(excite.abs_h * excite.abs_h / sing / sing);
+                                            singles_oversampled_abs_hc
+                                                .update(excite.abs_h / sing.abs());
+                                            singles_oversampled_hc_squared
+                                                .update(excite.abs_h * excite.abs_h / sing / sing);
 
                                             // Figure out what's going on with crazy ratios here
                                             // if excite.abs_h / sing.abs() >  1770584291294.0 {
@@ -556,7 +651,13 @@ impl Wf {
                                             if sing.abs() >= local_eps {
                                                 // *exact* |H| >= eps; add to output wf
                                                 // TODO: Do this in a cache efficient way
-                                                out_wf.add_det_with_coeff(det, ham, &excite, d, sing * det.coeff);
+                                                out_wf.add_det_with_coeff(
+                                                    det,
+                                                    ham,
+                                                    &excite,
+                                                    d,
+                                                    sing * det.coeff,
+                                                );
                                             } else {
                                                 // *exact* |H| < eps; store remaining excites in sampler so this valid excite and subsequent ones can be sampled
                                                 if !stored_sampler {
@@ -565,10 +666,15 @@ impl Wf {
                                                         det: det,
                                                         init: Orbs::Single(i),
                                                         is_alpha: Some(*is_alpha),
-                                                        sum_abs_h: stored_excite.sum_remaining_abs_h,
-                                                        sum_h_squared: stored_excite.sum_remaining_h_squared,
-                                                        sum_abs_hc: det.coeff.abs() * stored_excite.sum_remaining_abs_h,
-                                                        sum_hc_squared: det.coeff * det.coeff * stored_excite.sum_remaining_h_squared,
+                                                        sum_abs_h: stored_excite
+                                                            .sum_remaining_abs_h,
+                                                        sum_h_squared: stored_excite
+                                                            .sum_remaining_h_squared,
+                                                        sum_abs_hc: det.coeff.abs()
+                                                            * stored_excite.sum_remaining_abs_h,
+                                                        sum_hc_squared: det.coeff
+                                                            * det.coeff
+                                                            * stored_excite.sum_remaining_h_squared,
                                                     });
                                                     stored_sampler = true;
                                                 }
@@ -578,13 +684,10 @@ impl Wf {
                                     None => {}
                                 }
                             } else if stored_sampler {
-
                                 // max |H| < eps: no more deterministic pieces allowed, and stochastic sampler
                                 // already stored, so done with this orb
                                 break;
-
                             } else {
-
                                 // max |H| < eps: no more deterministic pieces allowed
 
                                 // Update the screened sampler if this excite is valid and points to
@@ -594,13 +697,13 @@ impl Wf {
                                     init: Orbs::Single(i),
                                     target: stored_excite.target,
                                     abs_h: stored_excite.abs_h,
-                                    is_alpha: Some(*is_alpha)
+                                    is_alpha: Some(*is_alpha),
                                 };
 
                                 // First check whether this is a valid excite
                                 new_det = det.config.safe_excite_det(&excite);
                                 match new_det {
-                                    None => {},
+                                    None => {}
                                     Some(d) => {
                                         // Make sure excite is to a perturbative det (not a variational one)
                                         if !self.inds.contains_key(&d) {
@@ -609,10 +712,18 @@ impl Wf {
                                                 det: det,
                                                 init: Orbs::Single(i),
                                                 is_alpha: Some(*is_alpha),
-                                                sum_abs_h: stored_excite.sum_remaining_abs_h * single_sample_factor,
-                                                sum_h_squared: stored_excite.sum_remaining_h_squared * single_sample_factor,
-                                                sum_abs_hc: det.coeff.abs() * stored_excite.sum_remaining_abs_h * single_sample_factor,
-                                                sum_hc_squared: det.coeff * det.coeff * stored_excite.sum_remaining_h_squared * single_sample_factor,
+                                                sum_abs_h: stored_excite.sum_remaining_abs_h
+                                                    * single_sample_factor,
+                                                sum_h_squared: stored_excite
+                                                    .sum_remaining_h_squared
+                                                    * single_sample_factor,
+                                                sum_abs_hc: det.coeff.abs()
+                                                    * stored_excite.sum_remaining_abs_h
+                                                    * single_sample_factor,
+                                                sum_hc_squared: det.coeff
+                                                    * det.coeff
+                                                    * stored_excite.sum_remaining_h_squared
+                                                    * single_sample_factor,
                                             });
                                             break;
                                         }
@@ -623,20 +734,36 @@ impl Wf {
                     }
                 }
             }
-
         } // for det in self.dets
 
         // Print out factor by which singles would have been oversampled
         println!("Singles encountered during deterministic PT and importance sampling setup oversampled by the following factors:");
-        println!("p ~ |Hc| : min: {}, max: {}, mean: {}, std_dev: {}", singles_oversampled_abs_hc.min, singles_oversampled_abs_hc.max, singles_oversampled_abs_hc.mean, singles_oversampled_abs_hc.std_dev);
-        println!("p ~ (Hc)^2 : min: {}, max: {}, mean: {}, std_dev: {}", singles_oversampled_hc_squared.min, singles_oversampled_hc_squared.max, singles_oversampled_hc_squared.mean, singles_oversampled_hc_squared.std_dev);
-
+        println!(
+            "p ~ |Hc| : min: {}, max: {}, mean: {}, std_dev: {}",
+            singles_oversampled_abs_hc.min,
+            singles_oversampled_abs_hc.max,
+            singles_oversampled_abs_hc.mean,
+            singles_oversampled_abs_hc.std_dev
+        );
+        println!(
+            "p ~ (Hc)^2 : min: {}, max: {}, mean: {}, std_dev: {}",
+            singles_oversampled_hc_squared.min,
+            singles_oversampled_hc_squared.max,
+            singles_oversampled_hc_squared.mean,
+            singles_oversampled_hc_squared.std_dev
+        );
 
         // Now, convert det_orbs to a screened_sampler
         (out_wf, generate_screened_sampler(eps, det_orbs))
     }
 
-    pub fn approx_matmul_external_dtm_singles(&self, global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, eps: f64) -> (Wf, ScreenedSampler) {
+    pub fn approx_matmul_external_dtm_singles(
+        &self,
+        global: &Global,
+        ham: &Ham,
+        excite_gen: &ExciteGenerator,
+        eps: f64,
+    ) -> (Wf, ScreenedSampler) {
         // Approximate matrix-vector multiplication
         // Doubles are done semistochastically with full importance sampling (using eps threshold)
         // Singles are done semistochastically in a simpler method: excites from the largest-magnitude
@@ -650,7 +777,6 @@ impl Wf {
         // Note: we can't use the max_sing and max_doub values here, because we have to create the sampler,
         // which requires iterating over exciting electrons even if they will all be screened out deterministically
 
-
         // Iterate over all dets; for each, use eps to truncate the excitations; for each excitation,
         // add to output wf
         let mut local_eps: f64;
@@ -663,7 +789,6 @@ impl Wf {
         // Diagonal component - none because this is 'external' to the current wf (i.e., perturbative space rather than variational space)
         let mut out_wf: Wf = Wf::default();
 
-
         // Off-diagonal component
 
         // Double excitations
@@ -675,23 +800,26 @@ impl Wf {
             // Opposite spin
             for i in bits(excite_gen.valence & det.config.up) {
                 for j in bits(excite_gen.valence & det.config.dn) {
-                    for stored_excite in excite_gen.opp_doub_sorted_list.get(&Orbs::Double((i, j))).unwrap() {
+                    for stored_excite in excite_gen
+                        .opp_doub_sorted_list
+                        .get(&Orbs::Double((i, j)))
+                        .unwrap()
+                    {
                         num_doub_excites += 1;
                         excite = Excite {
                             init: Orbs::Double((i, j)),
                             target: stored_excite.target,
                             abs_h: stored_excite.abs_h,
-                            is_alpha: None
+                            is_alpha: None,
                         };
 
                         new_det = det.config.safe_excite_det(&excite);
 
                         match new_det {
-                            None => {}, // If not a valid excitation, do nothing
+                            None => {} // If not a valid excitation, do nothing
 
                             Some(d) => {
                                 if stored_excite.abs_h >= local_eps {
-
                                     // |H| >= eps: deterministic component
                                     // First check whether this is a valid excite
                                     // Make sure excite is to a perturbative det (not a variational one)
@@ -699,10 +827,15 @@ impl Wf {
                                         // Valid excite: add to H*psi
                                         // Compute matrix element and compare its magnitude to eps
                                         // TODO: Do this in a cache efficient way
-                                        out_wf.add_det_with_coeff(det, ham, &excite, d, ham.ham_doub(&det.config, &d) * det.coeff);
+                                        out_wf.add_det_with_coeff(
+                                            det,
+                                            ham,
+                                            &excite,
+                                            d,
+                                            ham.ham_doub(&det.config, &d) * det.coeff,
+                                        );
                                     }
                                 } else {
-
                                     // |H| < eps: no more deterministic pieces allowed
 
                                     // Update the screened sampler if this excite is valid and points to
@@ -717,8 +850,11 @@ impl Wf {
                                             is_alpha: None,
                                             sum_abs_h: stored_excite.sum_remaining_abs_h,
                                             sum_h_squared: stored_excite.sum_remaining_h_squared,
-                                            sum_abs_hc: det.coeff.abs() * stored_excite.sum_remaining_abs_h,
-                                            sum_hc_squared: det.coeff * det.coeff * stored_excite.sum_remaining_h_squared,
+                                            sum_abs_hc: det.coeff.abs()
+                                                * stored_excite.sum_remaining_abs_h,
+                                            sum_hc_squared: det.coeff
+                                                * det.coeff
+                                                * stored_excite.sum_remaining_h_squared,
                                         });
                                         break;
                                     }
@@ -732,23 +868,26 @@ impl Wf {
             // Same spin
             for (config, is_alpha) in &[(det.config.up, true), (det.config.dn, false)] {
                 for (i, j) in bit_pairs(excite_gen.valence & *config) {
-                    for stored_excite in excite_gen.same_doub_sorted_list.get(&Orbs::Double((i, j))).unwrap() {
+                    for stored_excite in excite_gen
+                        .same_doub_sorted_list
+                        .get(&Orbs::Double((i, j)))
+                        .unwrap()
+                    {
                         num_doub_excites += 1;
                         excite = Excite {
                             init: Orbs::Double((i, j)),
                             target: stored_excite.target,
                             abs_h: stored_excite.abs_h,
-                            is_alpha: Some(*is_alpha)
+                            is_alpha: Some(*is_alpha),
                         };
 
                         new_det = det.config.safe_excite_det(&excite);
 
                         match new_det {
-                            None => {}, // If not a valid excitation, do nothing
+                            None => {} // If not a valid excitation, do nothing
 
                             Some(d) => {
                                 if stored_excite.abs_h >= local_eps {
-
                                     // |H| >= eps: deterministic component
                                     // First check whether this is a valid excite
                                     // Make sure excite is to a perturbative det (not a variational one)
@@ -756,10 +895,15 @@ impl Wf {
                                         // Valid excite: add to H*psi
                                         // Compute matrix element and compare its magnitude to eps
                                         // TODO: Do this in a cache efficient way
-                                        out_wf.add_det_with_coeff(det, ham, &excite, d, ham.ham_doub(&det.config, &d) * det.coeff);
+                                        out_wf.add_det_with_coeff(
+                                            det,
+                                            ham,
+                                            &excite,
+                                            d,
+                                            ham.ham_doub(&det.config, &d) * det.coeff,
+                                        );
                                     }
                                 } else {
-
                                     // |H| < eps: no more deterministic pieces allowed
 
                                     // Update the screened sampler if this excite is valid and points to
@@ -774,8 +918,11 @@ impl Wf {
                                             is_alpha: Some(*is_alpha),
                                             sum_abs_h: stored_excite.sum_remaining_abs_h,
                                             sum_h_squared: stored_excite.sum_remaining_h_squared,
-                                            sum_abs_hc: det.coeff.abs() * stored_excite.sum_remaining_abs_h,
-                                            sum_hc_squared: det.coeff * det.coeff * stored_excite.sum_remaining_h_squared,
+                                            sum_abs_hc: det.coeff.abs()
+                                                * stored_excite.sum_remaining_abs_h,
+                                            sum_hc_squared: det.coeff
+                                                * det.coeff
+                                                * stored_excite.sum_remaining_h_squared,
                                         });
                                         break;
                                     }
@@ -786,13 +933,23 @@ impl Wf {
                 }
             }
         }
-        println!("Time for dtm double excitations: {:?}\n", start_doubs.elapsed());
+        println!(
+            "Time for dtm double excitations: {:?}\n",
+            start_doubs.elapsed()
+        );
 
-        println!("Number of deterministic double excitations: {}", num_doub_excites);
+        println!(
+            "Number of deterministic double excitations: {}",
+            num_doub_excites
+        );
 
         // Choose a number of single excitations such that the timing is comparable to the timing
         // for the double excitation part
-        let n_dets_dtm_sings = num_doub_excites / ((4 * (global.nup - global.norb_core) * (global.norb - global.nup) * (global.nup - global.norb_core - 1)) as usize);
+        let n_dets_dtm_sings = num_doub_excites
+            / ((4
+                * (global.nup - global.norb_core)
+                * (global.norb - global.nup)
+                * (global.nup - global.norb_core - 1)) as usize);
         println!("Performing single excitations deterministically for the {} largest-magnitude determinants", n_dets_dtm_sings);
 
         // Single excitations
@@ -803,29 +960,34 @@ impl Wf {
         let mut heap = BinaryHeap::with_capacity(n_dets_dtm_sings);
         for (ind, det) in self.dets.iter().enumerate() {
             if ind < n_dets_dtm_sings {
-                heap.push(Reverse(DetByCoeff{det}));
+                heap.push(Reverse(DetByCoeff { det }));
             } else {
                 if det.coeff.abs() > heap.peek().unwrap().0.det.coeff.abs() {
                     heap.pop();
-                    heap.push(Reverse(DetByCoeff{det}));
+                    heap.push(Reverse(DetByCoeff { det }));
                 }
             }
         }
 
         // Iterating over heap in this way produces dets in reverse order. We can easily invert the
         // list if needed
-        println!("The magnitude of the {}th largest-magnitude coefficient is {}", n_dets_dtm_sings, heap.peek().unwrap().0.det.coeff.abs());
+        println!(
+            "The magnitude of the {}th largest-magnitude coefficient is {}",
+            n_dets_dtm_sings,
+            heap.peek().unwrap().0.det.coeff.abs()
+        );
         while let Some(wrapped_det) = heap.pop() {
             let det = wrapped_det.0.det;
 
             for (config, is_alpha) in &[(det.config.up, true), (det.config.dn, false)] {
                 for i in bits(excite_gen.valence & *config) {
-                    for stored_excite in excite_gen.sing_sorted_list.get(&Orbs::Single(i)).unwrap() {
+                    for stored_excite in excite_gen.sing_sorted_list.get(&Orbs::Single(i)).unwrap()
+                    {
                         excite = Excite {
                             init: Orbs::Single(i),
                             target: stored_excite.target,
                             abs_h: stored_excite.abs_h,
-                            is_alpha: Some(*is_alpha)
+                            is_alpha: Some(*is_alpha),
                         };
                         // First check whether this is a valid excite
                         new_det = det.config.safe_excite_det(&excite);
@@ -835,7 +997,13 @@ impl Wf {
                                 if !self.inds.contains_key(&d) {
                                     // Valid excite: add to H*psi
                                     // Compute matrix element
-                                    out_wf.add_det_with_coeff(det, ham, &excite, d, ham.ham_sing(&det.config, &d) * det.coeff);
+                                    out_wf.add_det_with_coeff(
+                                        det,
+                                        ham,
+                                        &excite,
+                                        d,
+                                        ham.ham_sing(&det.config, &d) * det.coeff,
+                                    );
                                 }
                             }
                             None => {}
@@ -843,9 +1011,11 @@ impl Wf {
                     }
                 }
             }
-
         } // for det in self.dets
-        println!("Time for dtm single excitations: {:?}\n", start_sings.elapsed());
+        println!(
+            "Time for dtm single excitations: {:?}\n",
+            start_sings.elapsed()
+        );
 
         // Now, convert the double excitation det_orbs to a screened_sampler, and return
         // the number of dets whose singles were treated deterministically already
@@ -853,8 +1023,12 @@ impl Wf {
         (out_wf, generate_screened_sampler(eps, det_orbs))
     }
 
-
-    pub fn approx_matmul_external_no_singles(&self, ham: &Ham, excite_gen: &ExciteGenerator, eps: f64) -> (Wf, ScreenedSampler) {
+    pub fn approx_matmul_external_no_singles(
+        &self,
+        ham: &Ham,
+        excite_gen: &ExciteGenerator,
+        eps: f64,
+    ) -> (Wf, ScreenedSampler) {
         // Same as above, but no single excitations in deterministic step (still sets up singles for sampling later)
         // Approximate matrix-vector multiplication
         // Deterministic step uses eps as a cutoff for doubles, but ignores singles
@@ -889,7 +1063,11 @@ impl Wf {
             // Opposite spin
             for i in bits(excite_gen.valence & det.config.up) {
                 for j in bits(excite_gen.valence & det.config.dn) {
-                    for stored_excite in excite_gen.opp_doub_sorted_list.get(&Orbs::Double((i, j))).unwrap() {
+                    for stored_excite in excite_gen
+                        .opp_doub_sorted_list
+                        .get(&Orbs::Double((i, j)))
+                        .unwrap()
+                    {
                         if stored_excite.abs_h < local_eps {
                             // No more deterministic excitations will meet the eps cutoff
                             // Update the screened sampler, then break
@@ -900,7 +1078,9 @@ impl Wf {
                                 sum_abs_h: stored_excite.sum_remaining_abs_h,
                                 sum_h_squared: stored_excite.sum_remaining_h_squared,
                                 sum_abs_hc: det.coeff.abs() * stored_excite.sum_remaining_abs_h,
-                                sum_hc_squared: det.coeff * det.coeff * stored_excite.sum_remaining_h_squared,
+                                sum_hc_squared: det.coeff
+                                    * det.coeff
+                                    * stored_excite.sum_remaining_h_squared,
                             });
                             break;
                         }
@@ -908,7 +1088,7 @@ impl Wf {
                             init: Orbs::Double((i, j)),
                             target: stored_excite.target,
                             abs_h: stored_excite.abs_h,
-                            is_alpha: None
+                            is_alpha: None,
                         };
                         new_det = det.config.safe_excite_det(&excite);
                         match new_det {
@@ -917,7 +1097,13 @@ impl Wf {
                                     // Valid excite: add to H*psi
                                     // Compute matrix element and add to H*psi
                                     // TODO: Do this in a cache efficient way
-                                    out_wf.add_det_with_coeff(det, ham, &excite, d, ham.ham_doub(&det.config, &d) * det.coeff);
+                                    out_wf.add_det_with_coeff(
+                                        det,
+                                        ham,
+                                        &excite,
+                                        d,
+                                        ham.ham_doub(&det.config, &d) * det.coeff,
+                                    );
                                 }
                                 // if stored_excite.abs_h < 1e-4 {
                                 //     sum_abs_h_external += stored_excite.abs_h;
@@ -938,18 +1124,24 @@ impl Wf {
             // Same spin
             for (config, is_alpha) in &[(det.config.up, true), (det.config.dn, false)] {
                 for (i, j) in bit_pairs(excite_gen.valence & *config) {
-                    for stored_excite in excite_gen.same_doub_sorted_list.get(&Orbs::Double((i, j))).unwrap() {
+                    for stored_excite in excite_gen
+                        .same_doub_sorted_list
+                        .get(&Orbs::Double((i, j)))
+                        .unwrap()
+                    {
                         if stored_excite.abs_h < local_eps {
                             // No more deterministic excitations will meet the eps cutoff
                             // Update the screened sampler, then break
-                            det_orbs.push(DetOrbSample{
+                            det_orbs.push(DetOrbSample {
                                 det: det,
                                 init: Orbs::Double((i, j)),
                                 is_alpha: Some(*is_alpha),
                                 sum_abs_h: stored_excite.sum_remaining_abs_h,
                                 sum_h_squared: stored_excite.sum_remaining_h_squared,
                                 sum_abs_hc: det.coeff.abs() * stored_excite.sum_remaining_abs_h,
-                                sum_hc_squared: det.coeff * det.coeff * stored_excite.sum_remaining_h_squared,
+                                sum_hc_squared: det.coeff
+                                    * det.coeff
+                                    * stored_excite.sum_remaining_h_squared,
                             });
                             break;
                         }
@@ -957,7 +1149,7 @@ impl Wf {
                             init: Orbs::Double((i, j)),
                             target: stored_excite.target,
                             abs_h: stored_excite.abs_h,
-                            is_alpha: Some(*is_alpha)
+                            is_alpha: Some(*is_alpha),
                         };
                         new_det = det.config.safe_excite_det(&excite);
                         match new_det {
@@ -966,7 +1158,13 @@ impl Wf {
                                     // Valid excite: add to H*psi
                                     // Compute matrix element and add to H*psi
                                     // TODO: Do this in a cache efficient way
-                                    out_wf.add_det_with_coeff(det, ham, &excite, d, ham.ham_doub(&det.config, &d) * det.coeff);
+                                    out_wf.add_det_with_coeff(
+                                        det,
+                                        ham,
+                                        &excite,
+                                        d,
+                                        ham.ham_doub(&det.config, &d) * det.coeff,
+                                    );
                                 }
                                 // if stored_excite.abs_h < 1e-4 {
                                 //     sum_abs_h_external += stored_excite.abs_h;
@@ -984,32 +1182,38 @@ impl Wf {
                 }
             }
 
-
             // Single excitations (no deterministic contribution - just set up for sampling later)
             for (config, is_alpha) in &[(det.config.up, true), (det.config.dn, false)] {
                 for i in bits(excite_gen.valence & *config) {
-                    let stored_excite = &excite_gen.sing_sorted_list.get(&Orbs::Single(i)).unwrap()[0];
-                    det_orbs.push(DetOrbSample{
+                    let stored_excite =
+                        &excite_gen.sing_sorted_list.get(&Orbs::Single(i)).unwrap()[0];
+                    det_orbs.push(DetOrbSample {
                         det: det,
                         init: Orbs::Single(i),
                         is_alpha: Some(*is_alpha),
                         sum_abs_h: stored_excite.sum_remaining_abs_h,
                         sum_h_squared: stored_excite.sum_remaining_h_squared,
                         sum_abs_hc: det.coeff.abs() * stored_excite.sum_remaining_abs_h,
-                        sum_hc_squared: det.coeff * det.coeff * stored_excite.sum_remaining_h_squared,
+                        sum_hc_squared: det.coeff
+                            * det.coeff
+                            * stored_excite.sum_remaining_h_squared,
                     });
                 }
             }
             // println!("Percentage discarded: |H|: {}, H^2: {}", sum_abs_h_discarded / (sum_abs_h_discarded + sum_abs_h_external), sum_h_sq_discarded / (sum_h_sq_discarded + sum_h_sq_external));
-
         } // for det in self.dets
-
 
         // Now, convert det_orbs to a screened_sampler
         (out_wf, generate_screened_sampler(eps, det_orbs))
     }
 
-    pub fn approx_matmul_variational(&self, input_coeffs: &Vec<f64>, ham: &Ham, excite_gen: &ExciteGenerator, eps: f64) -> Vec<f64> {
+    pub fn approx_matmul_variational(
+        &self,
+        input_coeffs: &Vec<f64>,
+        ham: &Ham,
+        excite_gen: &ExciteGenerator,
+        eps: f64,
+    ) -> Vec<f64> {
         // Approximate matrix-vector multiplication within variational space only
         // WARNING: Uses self only to define and access variational dets; uses input_coeffs as the vector to multiply with
         // instead of wf.dets[:].coeff
@@ -1030,20 +1234,25 @@ impl Wf {
         // Iterate over all dets; for each, use eps to truncate the excitations; for each excitation,
         // only add if it is already in variational wf
         for (i_det, det) in enumerate(self.dets.iter()) {
-
             local_eps = eps / input_coeffs[i_det].abs();
             // Double excitations
             // Opposite spin
             if excite_gen.max_opp_doub >= local_eps {
                 for i in bits(excite_gen.valence & det.config.up) {
                     for j in bits(excite_gen.valence & det.config.dn) {
-                        for stored_excite in excite_gen.opp_doub_sorted_list.get(&Orbs::Double((i, j))).unwrap() {
-                            if stored_excite.abs_h < local_eps { break; }
+                        for stored_excite in excite_gen
+                            .opp_doub_sorted_list
+                            .get(&Orbs::Double((i, j)))
+                            .unwrap()
+                        {
+                            if stored_excite.abs_h < local_eps {
+                                break;
+                            }
                             excite = Excite {
                                 init: Orbs::Double((i, j)),
                                 target: stored_excite.target,
                                 abs_h: stored_excite.abs_h,
-                                is_alpha: None
+                                is_alpha: None,
                             };
                             new_det = det.config.safe_excite_det(&excite);
                             match new_det {
@@ -1053,8 +1262,9 @@ impl Wf {
                                         // Compute matrix element and add to H*psi
                                         // TODO: Do this in a cache efficient way
                                         Some(ind) => {
-                                            out[*ind] += ham.ham_doub(&det.config, &d) * input_coeffs[i_det]
-                                        },
+                                            out[*ind] +=
+                                                ham.ham_doub(&det.config, &d) * input_coeffs[i_det]
+                                        }
                                         _ => {}
                                     }
                                 }
@@ -1069,13 +1279,19 @@ impl Wf {
             if excite_gen.max_same_doub >= local_eps {
                 for (config, is_alpha) in &[(det.config.up, true), (det.config.dn, false)] {
                     for (i, j) in bit_pairs(excite_gen.valence & *config) {
-                        for stored_excite in excite_gen.same_doub_sorted_list.get(&Orbs::Double((i, j))).unwrap() {
-                            if stored_excite.abs_h < local_eps { break; }
+                        for stored_excite in excite_gen
+                            .same_doub_sorted_list
+                            .get(&Orbs::Double((i, j)))
+                            .unwrap()
+                        {
+                            if stored_excite.abs_h < local_eps {
+                                break;
+                            }
                             excite = Excite {
                                 init: Orbs::Double((i, j)),
                                 target: stored_excite.target,
                                 abs_h: stored_excite.abs_h,
-                                is_alpha: Some(*is_alpha)
+                                is_alpha: Some(*is_alpha),
                             };
                             new_det = det.config.safe_excite_det(&excite);
                             match new_det {
@@ -1086,8 +1302,9 @@ impl Wf {
                                         // Compute matrix element and add to H*psi
                                         // TODO: Do this in a cache efficient way
                                         Some(ind) => {
-                                            out[*ind] += ham.ham_doub(&det.config, &d) * input_coeffs[i_det]
-                                        },
+                                            out[*ind] +=
+                                                ham.ham_doub(&det.config, &d) * input_coeffs[i_det]
+                                        }
                                         _ => {}
                                     }
                                 }
@@ -1102,13 +1319,17 @@ impl Wf {
             if excite_gen.max_sing >= local_eps {
                 for (config, is_alpha) in &[(det.config.up, true), (det.config.dn, false)] {
                     for i in bits(excite_gen.valence & *config) {
-                        for stored_excite in excite_gen.sing_sorted_list.get(&Orbs::Single(i)).unwrap() {
-                            if stored_excite.abs_h < local_eps { break; }
+                        for stored_excite in
+                            excite_gen.sing_sorted_list.get(&Orbs::Single(i)).unwrap()
+                        {
+                            if stored_excite.abs_h < local_eps {
+                                break;
+                            }
                             excite = Excite {
                                 init: Orbs::Single(i),
                                 target: stored_excite.target,
                                 abs_h: stored_excite.abs_h,
-                                is_alpha: Some(*is_alpha)
+                                is_alpha: Some(*is_alpha),
                             };
                             new_det = det.config.safe_excite_det(&excite);
                             match new_det {
@@ -1118,8 +1339,9 @@ impl Wf {
                                         // Compute matrix element and add to H*psi
                                         // TODO: Do this in a cache efficient way
                                         Some(ind) => {
-                                            out[*ind] += ham.ham_sing(&det.config, &d) * input_coeffs[i_det]
-                                        },
+                                            out[*ind] +=
+                                                ham.ham_sing(&det.config, &d) * input_coeffs[i_det]
+                                        }
                                         _ => {}
                                     }
                                 }
@@ -1134,7 +1356,18 @@ impl Wf {
         out
     }
 
-    pub fn approx_matmul_off_diag_variational_no_singles(&self, input_coeffs: &Matrix<f64, Dynamic, Const<1_usize>, VecStorage<f64, Dynamic, Const<1_usize>>>, ham: &Ham, excite_gen: &ExciteGenerator, eps: f64) -> Vec<f64> {
+    pub fn approx_matmul_off_diag_variational_no_singles(
+        &self,
+        input_coeffs: &Matrix<
+            f64,
+            Dynamic,
+            Const<1_usize>,
+            VecStorage<f64, Dynamic, Const<1_usize>>,
+        >,
+        ham: &Ham,
+        excite_gen: &ExciteGenerator,
+        eps: f64,
+    ) -> Vec<f64> {
         // Approximate matrix-vector multiplication within variational space only
         // WARNING: Uses self only to define and access variational dets; uses input_coeffs as the vector to multiply with
         // instead of wf.dets[:].coeff
@@ -1158,13 +1391,19 @@ impl Wf {
             if excite_gen.max_opp_doub >= local_eps {
                 for i in bits(excite_gen.valence & det.config.up) {
                     for j in bits(excite_gen.valence & det.config.dn) {
-                        for stored_excite in excite_gen.opp_doub_sorted_list.get(&Orbs::Double((i, j))).unwrap() {
-                            if stored_excite.abs_h < local_eps { break; }
+                        for stored_excite in excite_gen
+                            .opp_doub_sorted_list
+                            .get(&Orbs::Double((i, j)))
+                            .unwrap()
+                        {
+                            if stored_excite.abs_h < local_eps {
+                                break;
+                            }
                             excite = Excite {
                                 init: Orbs::Double((i, j)),
                                 target: stored_excite.target,
                                 abs_h: stored_excite.abs_h,
-                                is_alpha: None
+                                is_alpha: None,
                             };
                             new_det = det.config.safe_excite_det(&excite);
                             match new_det {
@@ -1174,8 +1413,9 @@ impl Wf {
                                         // Compute matrix element and add to H*psi
                                         // TODO: Do this in a cache efficient way
                                         Some(ind) => {
-                                            out[*ind] += ham.ham_doub(&det.config, &d) * input_coeffs[i_det]
-                                        },
+                                            out[*ind] +=
+                                                ham.ham_doub(&det.config, &d) * input_coeffs[i_det]
+                                        }
                                         _ => {}
                                     }
                                 }
@@ -1190,13 +1430,19 @@ impl Wf {
             if excite_gen.max_same_doub >= local_eps {
                 for (config, is_alpha) in &[(det.config.up, true), (det.config.dn, false)] {
                     for (i, j) in bit_pairs(excite_gen.valence & *config) {
-                        for stored_excite in excite_gen.same_doub_sorted_list.get(&Orbs::Double((i, j))).unwrap() {
-                            if stored_excite.abs_h < local_eps { break; }
+                        for stored_excite in excite_gen
+                            .same_doub_sorted_list
+                            .get(&Orbs::Double((i, j)))
+                            .unwrap()
+                        {
+                            if stored_excite.abs_h < local_eps {
+                                break;
+                            }
                             excite = Excite {
                                 init: Orbs::Double((i, j)),
                                 target: stored_excite.target,
                                 abs_h: stored_excite.abs_h,
-                                is_alpha: Some(*is_alpha)
+                                is_alpha: Some(*is_alpha),
                             };
                             new_det = det.config.safe_excite_det(&excite);
                             match new_det {
@@ -1206,8 +1452,9 @@ impl Wf {
                                         // Compute matrix element and add to H*psi
                                         // TODO: Do this in a cache efficient way
                                         Some(ind) => {
-                                            out[*ind] += ham.ham_doub(&det.config, &d) * input_coeffs[i_det]
-                                        },
+                                            out[*ind] +=
+                                                ham.ham_doub(&det.config, &d) * input_coeffs[i_det]
+                                        }
                                         _ => {}
                                     }
                                 }
@@ -1222,7 +1469,12 @@ impl Wf {
         out
     }
 
-    pub fn find_new_dets(&mut self, global: &Global, ham: &Ham, excite_gen: &ExciteGenerator) -> bool {
+    pub fn find_new_dets(
+        &mut self,
+        global: &Global,
+        ham: &Ham,
+        excite_gen: &ExciteGenerator,
+    ) -> bool {
         // Get new dets: iterate over all dets; for each, propose all excitations; for each, check if new;
         // if new, add to wf
         // Returns true if no new dets (i.e., returns whether already converged)
@@ -1239,7 +1491,14 @@ impl Wf {
         new_dets.n == 0
     }
 
-    fn iterate_excites(&mut self, global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, eps: f64, matmul: bool) -> Wf {
+    fn iterate_excites(
+        &mut self,
+        global: &Global,
+        ham: &Ham,
+        excite_gen: &ExciteGenerator,
+        eps: f64,
+        matmul: bool,
+    ) -> Wf {
         // Iterate over excitations using heat-bath cutoff eps
         // Used internally by both approx_matmul and get_new_dets
         // If matmul, then return H*psi; else, return a wf composed of new dets
@@ -1256,13 +1515,19 @@ impl Wf {
             if excite_gen.max_opp_doub >= local_eps {
                 for i in bits(excite_gen.valence & det.config.up) {
                     for j in bits(excite_gen.valence & det.config.dn) {
-                        for stored_excite in excite_gen.opp_doub_sorted_list.get(&Orbs::Double((i, j))).unwrap() {
-                            if stored_excite.abs_h < local_eps { break; }
+                        for stored_excite in excite_gen
+                            .opp_doub_sorted_list
+                            .get(&Orbs::Double((i, j)))
+                            .unwrap()
+                        {
+                            if stored_excite.abs_h < local_eps {
+                                break;
+                            }
                             excite = Excite {
                                 init: Orbs::Double((i, j)),
                                 target: stored_excite.target,
                                 abs_h: stored_excite.abs_h,
-                                is_alpha: None
+                                is_alpha: None,
                             };
                             new_det = det.config.safe_excite_det(&excite);
                             match new_det {
@@ -1280,13 +1545,11 @@ impl Wf {
                                             if !out.inds.contains_key(&d) {
                                                 match excite.target {
                                                     Orbs::Double(rs) => {
-                                                        out.push(
-                                                            Det {
-                                                                config: d,
-                                                                coeff: 0.0,
-                                                                diag: det.new_diag_opp(ham, (i, j), rs)
-                                                            }
-                                                        );
+                                                        out.push(Det {
+                                                            config: d,
+                                                            coeff: 0.0,
+                                                            diag: det.new_diag_opp(ham, (i, j), rs),
+                                                        });
                                                     }
                                                     _ => {}
                                                 }
@@ -1305,13 +1568,19 @@ impl Wf {
             if excite_gen.max_same_doub >= local_eps {
                 for (config, is_alpha) in &[(det.config.up, true), (det.config.dn, false)] {
                     for (i, j) in bit_pairs(excite_gen.valence & *config) {
-                        for stored_excite in excite_gen.same_doub_sorted_list.get(&Orbs::Double((i, j))).unwrap() {
-                            if stored_excite.abs_h < local_eps { break; }
+                        for stored_excite in excite_gen
+                            .same_doub_sorted_list
+                            .get(&Orbs::Double((i, j)))
+                            .unwrap()
+                        {
+                            if stored_excite.abs_h < local_eps {
+                                break;
+                            }
                             excite = Excite {
                                 init: Orbs::Double((i, j)),
                                 target: stored_excite.target,
                                 abs_h: stored_excite.abs_h,
-                                is_alpha: Some(*is_alpha)
+                                is_alpha: Some(*is_alpha),
                             };
                             new_det = det.config.safe_excite_det(&excite);
                             match new_det {
@@ -1327,13 +1596,16 @@ impl Wf {
                                             if !out.inds.contains_key(&d) {
                                                 match excite.target {
                                                     Orbs::Double(rs) => {
-                                                        out.push(
-                                                            Det {
-                                                                config: d,
-                                                                coeff: 0.0,
-                                                                diag: det.new_diag_same(ham, (i, j), rs, *is_alpha)
-                                                            }
-                                                        );
+                                                        out.push(Det {
+                                                            config: d,
+                                                            coeff: 0.0,
+                                                            diag: det.new_diag_same(
+                                                                ham,
+                                                                (i, j),
+                                                                rs,
+                                                                *is_alpha,
+                                                            ),
+                                                        });
                                                     }
                                                     _ => {}
                                                 }
@@ -1432,16 +1704,25 @@ impl Wf {
         // Just create empty rows to fill up the dimension to new size wf.n
         // Also, fill up all of the new diagonal elements
         // Don't update self.n_stored_h yet, because we haven't computed the off-diagonal elements yet
-        println!("Expanding variational H from size {} to size {}", self.sparse_ham.n, self.n);
-        self.sparse_ham.diag.append(&mut vec![0.0; self.n - self.sparse_ham.n]);
-        self.sparse_ham.nnz.append(&mut vec![0; self.n - self.sparse_ham.n]);
-        self.sparse_ham.off_diag.append(&mut vec![Vec::with_capacity(100); self.n - self.sparse_ham.n]);
+        println!(
+            "Expanding variational H from size {} to size {}",
+            self.sparse_ham.n, self.n
+        );
+        self.sparse_ham
+            .diag
+            .append(&mut vec![0.0; self.n - self.sparse_ham.n]);
+        self.sparse_ham
+            .nnz
+            .append(&mut vec![0; self.n - self.sparse_ham.n]);
+        self.sparse_ham.off_diag.append(&mut vec![
+            Vec::with_capacity(100);
+            self.n - self.sparse_ham.n
+        ]);
         for i in self.sparse_ham.n..self.n {
             self.sparse_ham.diag[i] = self.dets[i].diag;
         }
         self.sparse_ham.n = self.n;
     }
-
 }
 
 // Initialize variational wf to the HF det (only needs to be called once)

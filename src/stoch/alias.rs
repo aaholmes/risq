@@ -3,11 +3,11 @@
 // - Use vectors of indices to avoid all hash tables
 // - Don't discretize probabilities to multiples of 1%
 
-use std::fmt::Debug;
 use rand::Rng;
+use std::fmt::Debug;
 // use rand::rngs::ThreadRng;
-use rand::distributions::Uniform;
 use crate::rng::Rand;
+use rand::distributions::Uniform;
 
 #[derive(Debug, Clone)]
 pub struct Alias {
@@ -20,7 +20,6 @@ pub struct Alias {
 }
 
 impl Alias {
-
     pub fn new(rel_probs: Vec<f64>) -> Alias {
         let size = rel_probs.len();
 
@@ -97,7 +96,7 @@ impl Alias {
             sample_prob: norm_prob,
             alias: alias,
             alias_prob: prob,
-            uniform: Uniform::from(0..size)
+            uniform: Uniform::from(0..size),
         }
     }
 
@@ -149,7 +148,12 @@ impl Alias {
         }
         println!("Target prob, sampled prob, element");
         for i in 0..n {
-            println!("{:.6},   {:.6},   {}", self.sample_prob[i], (freq[i] as f64) / (n_samples as f64), i);
+            println!(
+                "{:.6},   {:.6},   {}",
+                self.sample_prob[i],
+                (freq[i] as f64) / (n_samples as f64),
+                i
+            );
         }
     }
 }

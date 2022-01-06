@@ -31,7 +31,6 @@ pub struct Global {
 }
 
 pub fn read_input<P: AsRef<Path>>(path: P) -> Result<Global> {
-
     let file = File::open(path).unwrap();
     let reader = BufReader::new(file);
 

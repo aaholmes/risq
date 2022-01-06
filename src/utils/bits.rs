@@ -17,7 +17,6 @@ pub fn bit_pairs(det: u128) -> impl Iterator<Item = (i32, i32)> {
     BitPairs::new(det).into_iter()
 }
 
-
 // // Single iterator (same as bits, but return type is Orbs)
 // pub fn sing_iter(det: u128) -> impl Iterator<Item = Orbs> {
 //     SingIter::new(det).into_iter()
@@ -33,7 +32,6 @@ pub fn bit_pairs(det: u128) -> impl Iterator<Item = (i32, i32)> {
 //     //pub fn opp_iter(det: &Config) -> impl Iterator<Item = Orbs> {
 //     OppIter::new(det).into_iter()
 // }
-
 
 // Iterate over set bits in a Config
 pub fn det_bits(det: &Config) -> impl Iterator<Item = i32> {
@@ -72,7 +70,6 @@ pub fn parity(mut n: u128) -> i32 {
     n ^= n >> 1;
     1 - 2 * ((n & 1) as i32)
 }
-
 
 // Backend for bits()
 
@@ -299,7 +296,6 @@ impl Iterator for BitPairsIntoIterator {
 //     }
 // }
 
-
 // Backend for bit_and_bit_pairs()
 
 // struct BitsAndBitPairs {
@@ -364,9 +360,6 @@ impl Iterator for BitPairsIntoIterator {
 //         }
 //     }
 // }
-
-
-
 
 #[cfg(test)]
 mod tests {

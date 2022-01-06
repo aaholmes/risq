@@ -2,24 +2,23 @@
 
 extern crate nalgebra;
 extern crate sprs;
-use sprs::CsMat;
-use nalgebra::base::{DVector, DMatrixSlice, DVectorSlice};
+use nalgebra::base::{DMatrixSlice, DVector, DVectorSlice};
 use nalgebra::DMatrix;
+use sprs::CsMat;
 use std::collections::HashMap;
 // use rayon::prelude::into_par_iter;
 // use rayon::iter::IntoParallelIterator;
 
-use crate::wf::det::Config;
-use crate::var::utils::intersection;
 use crate::ham::Ham;
-use crate::wf::Wf;
 use crate::var::eigenvalues::matrix_operations::MatrixOperations;
-
+use crate::var::utils::intersection;
+use crate::wf::det::Config;
+use crate::wf::Wf;
 
 // Upper triangular sparse matrix
 // nonzero off-diagonal elements are at (ind1, ind2) where ind1 < ind2
 #[derive(Default)]
-pub struct SparseMatUpperTri{
+pub struct SparseMatUpperTri {
     pub(crate) n: usize,
     pub(crate) diag: Vec<f64>,
     pub(crate) nnz: Vec<usize>, // Number of nonzero off-diagonal elements in each row
@@ -81,13 +80,16 @@ impl MatrixOperations for SparseMatUpperTri {
         }
     }
 
-    fn ncols(&self) -> usize { self.n }
+    fn ncols(&self) -> usize {
+        self.n
+    }
 
-    fn nrows(&self) -> usize { self.n }
+    fn nrows(&self) -> usize {
+        self.n
+    }
 }
 
-
-pub struct SparseMat{
+pub struct SparseMat {
     pub n: usize,
     pub diag: DVector<f64>,
     pub off_diag: CsMat<f64>,
@@ -127,11 +129,14 @@ impl SparseMat {
         }
         indptr.push(nnz);
 
-        println!("Constructing {} x {} matrix with {} nonzero elements", n, n, nnz);
-        SparseMat{
+        println!(
+            "Constructing {} x {} matrix with {} nonzero elements",
+            n, n, nnz
+        );
+        SparseMat {
             n,
             diag: DVector::from(diag),
-            off_diag: sprs::CsMat::new((n, n), indptr, indices, data)
+            off_diag: sprs::CsMat::new((n, n), indptr, indices, data),
         }
     }
 }
@@ -171,11 +176,14 @@ impl MatrixOperations for SparseMat {
         self.diag = diag.clone();
     }
 
-    fn ncols(&self) -> usize { self.n }
+    fn ncols(&self) -> usize {
+        self.n
+    }
 
-    fn nrows(&self) -> usize { self.n }
+    fn nrows(&self) -> usize {
+        self.n
+    }
 }
-
 
 pub struct SparseMatDoubles<'a> {
     // Sparse mat with doubles stored as a lookup data structure that is smaller than the actual H
@@ -184,7 +192,7 @@ pub struct SparseMatDoubles<'a> {
     pub singles: CsMat<f64>,
     pub doubles: HashMap<(i32, i32, Option<bool>), Vec<(Config, usize)>>,
     pub ham: &'a Ham, // point to ham, so we can compute matrix elements as needed
-    pub wf: &'a Wf, // point to wf, so we can look up configs as needed
+    pub wf: &'a Wf,   // point to wf, so we can look up configs as needed
 }
 
 impl MatrixOperations for SparseMatDoubles<'_> {
@@ -207,8 +215,14 @@ impl MatrixOperations for SparseMatDoubles<'_> {
         // Doubles
         for (k, v_k) in self.doubles.iter() {
             for l in self.doubles.keys() {
-                if k.2 == l.2 { // Same total spin
-                    if if k.2 == None { l.0 > k.0 } else { l.0 > k.0 || (l.0 == k.0 && l.1 > k.1) } { // No double counting
+                if k.2 == l.2 {
+                    // Same total spin
+                    if if k.2 == None {
+                        l.0 > k.0
+                    } else {
+                        l.0 > k.0 || (l.0 == k.0 && l.1 > k.1)
+                    } {
+                        // No double counting
                         // Check that these are 4 distinct spin-orbitals
                         if {
                             if k.2 == None {
@@ -220,13 +234,20 @@ impl MatrixOperations for SparseMatDoubles<'_> {
                             }
                         } {
                             let h_kl = {
-                                if k.2 == None { self.ham.direct(k.0, k.1, l.0, l.1) } else { self.ham.direct_plus_exchange(k.0, k.1, l.0, l.1) }
+                                if k.2 == None {
+                                    self.ham.direct(k.0, k.1, l.0, l.1)
+                                } else {
+                                    self.ham.direct_plus_exchange(k.0, k.1, l.0, l.1)
+                                }
                             };
-                            if h_kl != 0.0 { // Skip zero elements
+                            if h_kl != 0.0 {
+                                // Skip zero elements
                                 // Loop over intersection of v_k.0 and v_l.0
                                 // Read off the corresponding pairs of indices: these are connected with this type of double exctie matrix element!
                                 for (i, j) in intersection(v_k, self.doubles.get(&l).unwrap()) {
-                                    let h_ij = self.ham.ham_doub(&self.wf.dets[i].config, &self.wf.dets[j].config);
+                                    let h_ij = self
+                                        .ham
+                                        .ham_doub(&self.wf.dets[i].config, &self.wf.dets[j].config);
                                     // println!("({} {}) {}, ({} {}) {}: H = {}",
                                     //          k.0, k.1, { match k.2 { None => { "opp spin" }, Some(b) => if b { "spin up" } else { "spin dn" } } },
                                     //          l.0, l.1, { match l.2 { None => { "opp spin" }, Some(b) => if b { "spin up" } else { "spin dn" } } },
@@ -240,7 +261,6 @@ impl MatrixOperations for SparseMatDoubles<'_> {
                     }
                 }
             }
-
         }
 
         res
@@ -254,7 +274,7 @@ impl MatrixOperations for SparseMatDoubles<'_> {
         res
     }
 
-    fn diagonal(&self) -> DVector<f64> { 
+    fn diagonal(&self) -> DVector<f64> {
         self.diag.clone()
     }
 
@@ -262,11 +282,14 @@ impl MatrixOperations for SparseMatDoubles<'_> {
         self.diag = diag.clone();
     }
 
-    fn ncols(&self) -> usize { self.n }
+    fn ncols(&self) -> usize {
+        self.n
+    }
 
-    fn nrows(&self) -> usize { self.n }
+    fn nrows(&self) -> usize {
+        self.n
+    }
 }
-
 
 // #[cfg(test)]
 // mod tests {

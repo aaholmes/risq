@@ -47,5 +47,3 @@ impl MatrixOperations for DMatrix<f64> {
         self.nrows()
     }
 }
-
-

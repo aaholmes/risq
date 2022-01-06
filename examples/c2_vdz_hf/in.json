@@ -5,5 +5,11 @@
     "ndn": 6,
     "n_states": 1,
     "eps_var": 1e-4,
-    "eps_pt": 1e-5
+    "eps_pt_dtm": 1e-5,
+    "opp_algo": 1,
+    "same_algo": 1,
+    "target_uncertainty": 1e-3,
+    "n_samples_per_batch": 1000,
+    "n_batches": 100,
+    "n_cross_term_samples": 0
 }
