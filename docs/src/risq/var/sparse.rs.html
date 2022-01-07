@@ -1,6 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/var/sparse.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>sparse.rs - source</title><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../light.css"  id="themeStyle"><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled ><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled ><script id="default-settings"></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="icon" type="image/svg+xml" href="../../../favicon.svg">
-<link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png">
-<link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><style type="text/css">#crate-search{background-image:url("../../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu" role="button">&#9776;</div><a href='../../../risq/index.html'><div class='logo-container'><img src='https://wherethewindsblow.com/wp-content/uploads/2020/11/crab_dice_red_white.jpg' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img src="../../../brush.svg" width="18" height="18" alt="Pick another theme!"></button><div id="theme-choices" role="menu"></div></div><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../settings.html" title="settings"><img src="../../../wheel.svg" width="18" height="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">  1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src&#x2F;var&#x2F;sparse.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>sparse.rs - source</title><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../light.css"  id="themeStyle"><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled ><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled ><script id="default-settings" ></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"><style type="text/css">#crate-search{background-image:url("../../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu" role="button">&#9776;</div><a href='../../../risq/index.html'><div class='logo-container rust-logo'><img src='https:&#x2F;&#x2F;wherethewindsblow.com&#x2F;wp-content&#x2F;uploads&#x2F;2020&#x2F;11&#x2F;crab_dice_red_white.jpg' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="18" height="18" alt="Pick another theme!" src="../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../settings.html" title="settings"><img width="18" height="18" alt="Change settings" src="../../../wheel.svg"></a></div></form></nav><section id="main" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">  1</span>
 <span id="2">  2</span>
 <span id="3">  3</span>
 <span id="4">  4</span>
@@ -309,29 +307,50 @@
 <span id="307">307</span>
 <span id="308">308</span>
 <span id="309">309</span>
-</pre><pre class="rust">
-<span class="comment">// Sparse matrix datatype that works with eigenvalues module</span>
+<span id="310">310</span>
+<span id="311">311</span>
+<span id="312">312</span>
+<span id="313">313</span>
+<span id="314">314</span>
+<span id="315">315</span>
+<span id="316">316</span>
+<span id="317">317</span>
+<span id="318">318</span>
+<span id="319">319</span>
+<span id="320">320</span>
+<span id="321">321</span>
+<span id="322">322</span>
+<span id="323">323</span>
+<span id="324">324</span>
+<span id="325">325</span>
+<span id="326">326</span>
+<span id="327">327</span>
+<span id="328">328</span>
+<span id="329">329</span>
+<span id="330">330</span>
+<span id="331">331</span>
+<span id="332">332</span>
+</pre><pre class="rust"><code><span class="doccomment">//! Sparse matrix datatype that works with eigenvalues module</span>
 
 <span class="kw">extern</span> <span class="kw">crate</span> <span class="ident">nalgebra</span>;
 <span class="kw">extern</span> <span class="kw">crate</span> <span class="ident">sprs</span>;
-<span class="kw">use</span> <span class="ident">sprs::CsMat</span>;
-<span class="kw">use</span> <span class="ident">nalgebra::base</span>::{<span class="ident">DVector</span>, <span class="ident">DMatrixSlice</span>, <span class="ident">DVectorSlice</span>};
+<span class="kw">use</span> <span class="ident">nalgebra::base</span>::{<span class="ident">DMatrixSlice</span>, <span class="ident">DVector</span>, <span class="ident">DVectorSlice</span>};
 <span class="kw">use</span> <span class="ident">nalgebra::DMatrix</span>;
+<span class="kw">use</span> <span class="ident">sprs::CsMat</span>;
 <span class="kw">use</span> <span class="ident">std::collections::HashMap</span>;
 <span class="comment">// use rayon::prelude::into_par_iter;</span>
 <span class="comment">// use rayon::iter::IntoParallelIterator;</span>
 
-<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::wf::det::Config</span>;
-<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::var::utils::intersection</span>;
-<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::ham::Ham</span>;
-<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::wf::Wf</span>;
-<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::var::eigenvalues::matrix_operations::MatrixOperations</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::ham::Ham</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::var::eigenvalues::matrix_operations::MatrixOperations</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::var::utils::intersection</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::wf::det::Config</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::wf::Wf</span>;
 
-
-<span class="comment">// Upper triangular sparse matrix</span>
-<span class="comment">// nonzero off-diagonal elements are at (ind1, ind2) where ind1 &lt; ind2</span>
+<span class="doccomment">/// Upper triangular sparse matrix</span>
+<span class="doccomment">/// nonzero off-diagonal elements are at (ind1, ind2) where ind1 &lt; ind2</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Default</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">SparseMatUpperTri</span>{
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">SparseMatUpperTri</span> {
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">n</span>: <span class="ident">usize</span>,
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">diag</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">f64</span><span class="op">&gt;</span>,
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">nnz</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>, <span class="comment">// Number of nonzero off-diagonal elements in each row</span>
@@ -359,7 +378,7 @@
 }
 
 <span class="kw">impl</span> <span class="ident">MatrixOperations</span> <span class="kw">for</span> <span class="ident">SparseMatUpperTri</span> {
-    <span class="kw">fn</span> <span class="ident">matrix_vector_prod</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">vs</span>: <span class="ident">DVectorSlice</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span>, <span class="ident">f64</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">DVector</span><span class="op">&lt;</span><span class="ident">f64</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">matrix_vector_prod</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">vs</span>: <span class="ident">DVectorSlice</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span>, <span class="ident">f64</span><span class="op">&gt;</span>) -&gt; <span class="ident">DVector</span><span class="op">&lt;</span><span class="ident">f64</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">res</span>: <span class="ident">DVector</span><span class="op">&lt;</span><span class="ident">f64</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">DVector::from</span>(<span class="macro">vec!</span>[<span class="number">0.0</span>; <span class="self">self</span>.<span class="ident">n</span>]);
 
         <span class="kw">for</span> <span class="ident">row_ind</span> <span class="kw">in</span> (<span class="number">0</span>..<span class="self">self</span>.<span class="ident">n</span>).<span class="ident">into_iter</span>() {
@@ -375,7 +394,7 @@
         <span class="ident">res</span>
     }
 
-    <span class="kw">fn</span> <span class="ident">matrix_matrix_prod</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">mtx</span>: <span class="ident">DMatrixSlice</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span>, <span class="ident">f64</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">DMatrix</span><span class="op">&lt;</span><span class="ident">f64</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">matrix_matrix_prod</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">mtx</span>: <span class="ident">DMatrixSlice</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span>, <span class="ident">f64</span><span class="op">&gt;</span>) -&gt; <span class="ident">DMatrix</span><span class="op">&lt;</span><span class="ident">f64</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">res</span>: <span class="ident">DMatrix</span><span class="op">&lt;</span><span class="ident">f64</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">mtx</span>.<span class="ident">clone</span>().<span class="ident">into</span>();
         <span class="kw">for</span> (<span class="ident">in_col</span>, <span class="kw-2">mut</span> <span class="ident">out_col</span>) <span class="kw">in</span> <span class="ident">mtx</span>.<span class="ident">column_iter</span>().<span class="ident">zip</span>(<span class="ident">res</span>.<span class="ident">column_iter_mut</span>()) {
             <span class="ident">out_col</span>.<span class="ident">copy_from</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">matrix_vector_prod</span>(<span class="ident">in_col</span>));
@@ -383,7 +402,7 @@
         <span class="ident">res</span>
     }
 
-    <span class="kw">fn</span> <span class="ident">diagonal</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">DVector</span><span class="op">&lt;</span><span class="ident">f64</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">diagonal</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">DVector</span><span class="op">&lt;</span><span class="ident">f64</span><span class="op">&gt;</span> {
         <span class="ident">DVector::from</span>(<span class="self">self</span>.<span class="ident">diag</span>.<span class="ident">clone</span>())
     }
 
@@ -393,22 +412,25 @@
         }
     }
 
-    <span class="kw">fn</span> <span class="ident">ncols</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">usize</span> { <span class="self">self</span>.<span class="ident">n</span> }
+    <span class="kw">fn</span> <span class="ident">ncols</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
+        <span class="self">self</span>.<span class="ident">n</span>
+    }
 
-    <span class="kw">fn</span> <span class="ident">nrows</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">usize</span> { <span class="self">self</span>.<span class="ident">n</span> }
+    <span class="kw">fn</span> <span class="ident">nrows</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
+        <span class="self">self</span>.<span class="ident">n</span>
+    }
 }
 
-
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">SparseMat</span>{
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">SparseMat</span> {
     <span class="kw">pub</span> <span class="ident">n</span>: <span class="ident">usize</span>,
     <span class="kw">pub</span> <span class="ident">diag</span>: <span class="ident">DVector</span><span class="op">&lt;</span><span class="ident">f64</span><span class="op">&gt;</span>,
     <span class="kw">pub</span> <span class="ident">off_diag</span>: <span class="ident">CsMat</span><span class="op">&lt;</span><span class="ident">f64</span><span class="op">&gt;</span>,
 }
 
 <span class="kw">impl</span> <span class="ident">SparseMat</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">from_dense</span>(<span class="ident">mtx</span>: <span class="ident">DMatrix</span><span class="op">&lt;</span><span class="ident">f64</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
-        <span class="comment">// Convert a dense matrix to a sparse matrix</span>
-        <span class="comment">// (for testing only)</span>
+    <span class="doccomment">/// Convert a dense matrix to a sparse matrix</span>
+    <span class="doccomment">/// (for testing only)</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">from_dense</span>(<span class="ident">mtx</span>: <span class="ident">DMatrix</span><span class="op">&lt;</span><span class="ident">f64</span><span class="op">&gt;</span>) -&gt; <span class="self">Self</span> {
 
         <span class="kw">let</span> <span class="ident">n</span> <span class="op">=</span> <span class="ident">mtx</span>.<span class="ident">ncols</span>();
         <span class="macro">println!</span>(<span class="string">&quot;n = {}&quot;</span>, <span class="ident">n</span>);
@@ -439,17 +461,20 @@
         }
         <span class="ident">indptr</span>.<span class="ident">push</span>(<span class="ident">nnz</span>);
 
-        <span class="macro">println!</span>(<span class="string">&quot;Constructing {} x {} matrix with {} nonzero elements&quot;</span>, <span class="ident">n</span>, <span class="ident">n</span>, <span class="ident">nnz</span>);
-        <span class="ident">SparseMat</span>{
+        <span class="macro">println!</span>(
+            <span class="string">&quot;Constructing {} x {} matrix with {} nonzero elements&quot;</span>,
+            <span class="ident">n</span>, <span class="ident">n</span>, <span class="ident">nnz</span>
+        );
+        <span class="ident">SparseMat</span> {
             <span class="ident">n</span>,
             <span class="ident">diag</span>: <span class="ident">DVector::from</span>(<span class="ident">diag</span>),
-            <span class="ident">off_diag</span>: <span class="ident">sprs::CsMat::new</span>((<span class="ident">n</span>, <span class="ident">n</span>), <span class="ident">indptr</span>, <span class="ident">indices</span>, <span class="ident">data</span>)
+            <span class="ident">off_diag</span>: <span class="ident">sprs::CsMat::new</span>((<span class="ident">n</span>, <span class="ident">n</span>), <span class="ident">indptr</span>, <span class="ident">indices</span>, <span class="ident">data</span>),
         }
     }
 }
 
 <span class="kw">impl</span> <span class="ident">MatrixOperations</span> <span class="kw">for</span> <span class="ident">SparseMat</span> {
-    <span class="kw">fn</span> <span class="ident">matrix_vector_prod</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">vs</span>: <span class="ident">DVectorSlice</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span>, <span class="ident">f64</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">DVector</span><span class="op">&lt;</span><span class="ident">f64</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">matrix_vector_prod</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">vs</span>: <span class="ident">DVectorSlice</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span>, <span class="ident">f64</span><span class="op">&gt;</span>) -&gt; <span class="ident">DVector</span><span class="op">&lt;</span><span class="ident">f64</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">res</span>: <span class="ident">DVector</span><span class="op">&lt;</span><span class="ident">f64</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">vs</span>.<span class="ident">clone</span>().<span class="ident">into</span>();
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">dprod</span>: <span class="ident">f64</span>;
 
@@ -467,7 +492,7 @@
         <span class="ident">res</span>
     }
 
-    <span class="kw">fn</span> <span class="ident">matrix_matrix_prod</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">mtx</span>: <span class="ident">DMatrixSlice</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span>, <span class="ident">f64</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">DMatrix</span><span class="op">&lt;</span><span class="ident">f64</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">matrix_matrix_prod</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">mtx</span>: <span class="ident">DMatrixSlice</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span>, <span class="ident">f64</span><span class="op">&gt;</span>) -&gt; <span class="ident">DMatrix</span><span class="op">&lt;</span><span class="ident">f64</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">res</span>: <span class="ident">DMatrix</span><span class="op">&lt;</span><span class="ident">f64</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">mtx</span>.<span class="ident">clone</span>().<span class="ident">into</span>();
         <span class="kw">for</span> (<span class="ident">in_col</span>, <span class="kw-2">mut</span> <span class="ident">out_col</span>) <span class="kw">in</span> <span class="ident">mtx</span>.<span class="ident">column_iter</span>().<span class="ident">zip</span>(<span class="ident">res</span>.<span class="ident">column_iter_mut</span>()) {
             <span class="ident">out_col</span>.<span class="ident">copy_from</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">matrix_vector_prod</span>(<span class="ident">in_col</span>));
@@ -475,7 +500,7 @@
         <span class="ident">res</span>
     }
 
-    <span class="kw">fn</span> <span class="ident">diagonal</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">DVector</span><span class="op">&lt;</span><span class="ident">f64</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">diagonal</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">DVector</span><span class="op">&lt;</span><span class="ident">f64</span><span class="op">&gt;</span> {
         <span class="self">self</span>.<span class="ident">diag</span>.<span class="ident">clone</span>()
     }
 
@@ -483,11 +508,14 @@
         <span class="self">self</span>.<span class="ident">diag</span> <span class="op">=</span> <span class="ident">diag</span>.<span class="ident">clone</span>();
     }
 
-    <span class="kw">fn</span> <span class="ident">ncols</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">usize</span> { <span class="self">self</span>.<span class="ident">n</span> }
+    <span class="kw">fn</span> <span class="ident">ncols</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
+        <span class="self">self</span>.<span class="ident">n</span>
+    }
 
-    <span class="kw">fn</span> <span class="ident">nrows</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">usize</span> { <span class="self">self</span>.<span class="ident">n</span> }
+    <span class="kw">fn</span> <span class="ident">nrows</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
+        <span class="self">self</span>.<span class="ident">n</span>
+    }
 }
-
 
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">SparseMatDoubles</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
     <span class="comment">// Sparse mat with doubles stored as a lookup data structure that is smaller than the actual H</span>
@@ -496,11 +524,11 @@
     <span class="kw">pub</span> <span class="ident">singles</span>: <span class="ident">CsMat</span><span class="op">&lt;</span><span class="ident">f64</span><span class="op">&gt;</span>,
     <span class="kw">pub</span> <span class="ident">doubles</span>: <span class="ident">HashMap</span><span class="op">&lt;</span>(<span class="ident">i32</span>, <span class="ident">i32</span>, <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">bool</span><span class="op">&gt;</span>), <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">Config</span>, <span class="ident">usize</span>)<span class="op">&gt;</span><span class="op">&gt;</span>,
     <span class="kw">pub</span> <span class="ident">ham</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Ham</span>, <span class="comment">// point to ham, so we can compute matrix elements as needed</span>
-    <span class="kw">pub</span> <span class="ident">wf</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Wf</span>, <span class="comment">// point to wf, so we can look up configs as needed</span>
+    <span class="kw">pub</span> <span class="ident">wf</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Wf</span>,   <span class="comment">// point to wf, so we can look up configs as needed</span>
 }
 
 <span class="kw">impl</span> <span class="ident">MatrixOperations</span> <span class="kw">for</span> <span class="ident">SparseMatDoubles</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">matrix_vector_prod</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">vs</span>: <span class="ident">DVectorSlice</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span>, <span class="ident">f64</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">DVector</span><span class="op">&lt;</span><span class="ident">f64</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">matrix_vector_prod</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">vs</span>: <span class="ident">DVectorSlice</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span>, <span class="ident">f64</span><span class="op">&gt;</span>) -&gt; <span class="ident">DVector</span><span class="op">&lt;</span><span class="ident">f64</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">res</span>: <span class="ident">DVector</span><span class="op">&lt;</span><span class="ident">f64</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">vs</span>.<span class="ident">clone</span>().<span class="ident">into</span>();
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">dprod</span>: <span class="ident">f64</span>;
 
@@ -519,11 +547,17 @@
         <span class="comment">// Doubles</span>
         <span class="kw">for</span> (<span class="ident">k</span>, <span class="ident">v_k</span>) <span class="kw">in</span> <span class="self">self</span>.<span class="ident">doubles</span>.<span class="ident">iter</span>() {
             <span class="kw">for</span> <span class="ident">l</span> <span class="kw">in</span> <span class="self">self</span>.<span class="ident">doubles</span>.<span class="ident">keys</span>() {
-                <span class="kw">if</span> <span class="ident">k</span>.<span class="number">2</span> <span class="op">=</span><span class="op">=</span> <span class="ident">l</span>.<span class="number">2</span> { <span class="comment">// Same total spin</span>
-                    <span class="kw">if</span> <span class="kw">if</span> <span class="ident">k</span>.<span class="number">2</span> <span class="op">=</span><span class="op">=</span> <span class="prelude-val">None</span> { <span class="ident">l</span>.<span class="number">0</span> <span class="op">&gt;</span> <span class="ident">k</span>.<span class="number">0</span> } <span class="kw">else</span> { <span class="ident">l</span>.<span class="number">0</span> <span class="op">&gt;</span> <span class="ident">k</span>.<span class="number">0</span> <span class="op">|</span><span class="op">|</span> (<span class="ident">l</span>.<span class="number">0</span> <span class="op">=</span><span class="op">=</span> <span class="ident">k</span>.<span class="number">0</span> <span class="op">&amp;&amp;</span> <span class="ident">l</span>.<span class="number">1</span> <span class="op">&gt;</span> <span class="ident">k</span>.<span class="number">1</span>) } { <span class="comment">// No double counting</span>
+                <span class="kw">if</span> <span class="ident">k</span>.<span class="number">2</span> <span class="op">==</span> <span class="ident">l</span>.<span class="number">2</span> {
+                    <span class="comment">// Same total spin</span>
+                    <span class="kw">if</span> <span class="kw">if</span> <span class="ident">k</span>.<span class="number">2</span> <span class="op">==</span> <span class="prelude-val">None</span> {
+                        <span class="ident">l</span>.<span class="number">0</span> <span class="op">&gt;</span> <span class="ident">k</span>.<span class="number">0</span>
+                    } <span class="kw">else</span> {
+                        <span class="ident">l</span>.<span class="number">0</span> <span class="op">&gt;</span> <span class="ident">k</span>.<span class="number">0</span> <span class="op">|</span><span class="op">|</span> (<span class="ident">l</span>.<span class="number">0</span> <span class="op">==</span> <span class="ident">k</span>.<span class="number">0</span> <span class="op">&amp;&amp;</span> <span class="ident">l</span>.<span class="number">1</span> <span class="op">&gt;</span> <span class="ident">k</span>.<span class="number">1</span>)
+                    } {
+                        <span class="comment">// No double counting</span>
                         <span class="comment">// Check that these are 4 distinct spin-orbitals</span>
                         <span class="kw">if</span> {
-                            <span class="kw">if</span> <span class="ident">k</span>.<span class="number">2</span> <span class="op">=</span><span class="op">=</span> <span class="prelude-val">None</span> {
+                            <span class="kw">if</span> <span class="ident">k</span>.<span class="number">2</span> <span class="op">==</span> <span class="prelude-val">None</span> {
                                 <span class="comment">// Up must be distinct, dn must be distinct</span>
                                 <span class="ident">k</span>.<span class="number">0</span> <span class="op">!</span><span class="op">=</span> <span class="ident">l</span>.<span class="number">0</span> <span class="op">&amp;&amp;</span> <span class="ident">k</span>.<span class="number">1</span> <span class="op">!</span><span class="op">=</span> <span class="ident">l</span>.<span class="number">1</span>
                             } <span class="kw">else</span> {
@@ -532,13 +566,20 @@
                             }
                         } {
                             <span class="kw">let</span> <span class="ident">h_kl</span> <span class="op">=</span> {
-                                <span class="kw">if</span> <span class="ident">k</span>.<span class="number">2</span> <span class="op">=</span><span class="op">=</span> <span class="prelude-val">None</span> { <span class="self">self</span>.<span class="ident">ham</span>.<span class="ident">direct</span>(<span class="ident">k</span>.<span class="number">0</span>, <span class="ident">k</span>.<span class="number">1</span>, <span class="ident">l</span>.<span class="number">0</span>, <span class="ident">l</span>.<span class="number">1</span>) } <span class="kw">else</span> { <span class="self">self</span>.<span class="ident">ham</span>.<span class="ident">direct_plus_exchange</span>(<span class="ident">k</span>.<span class="number">0</span>, <span class="ident">k</span>.<span class="number">1</span>, <span class="ident">l</span>.<span class="number">0</span>, <span class="ident">l</span>.<span class="number">1</span>) }
+                                <span class="kw">if</span> <span class="ident">k</span>.<span class="number">2</span> <span class="op">==</span> <span class="prelude-val">None</span> {
+                                    <span class="self">self</span>.<span class="ident">ham</span>.<span class="ident">direct</span>(<span class="ident">k</span>.<span class="number">0</span>, <span class="ident">k</span>.<span class="number">1</span>, <span class="ident">l</span>.<span class="number">0</span>, <span class="ident">l</span>.<span class="number">1</span>)
+                                } <span class="kw">else</span> {
+                                    <span class="self">self</span>.<span class="ident">ham</span>.<span class="ident">direct_plus_exchange</span>(<span class="ident">k</span>.<span class="number">0</span>, <span class="ident">k</span>.<span class="number">1</span>, <span class="ident">l</span>.<span class="number">0</span>, <span class="ident">l</span>.<span class="number">1</span>)
+                                }
                             };
-                            <span class="kw">if</span> <span class="ident">h_kl</span> <span class="op">!</span><span class="op">=</span> <span class="number">0.0</span> { <span class="comment">// Skip zero elements</span>
+                            <span class="kw">if</span> <span class="ident">h_kl</span> <span class="op">!</span><span class="op">=</span> <span class="number">0.0</span> {
+                                <span class="comment">// Skip zero elements</span>
                                 <span class="comment">// Loop over intersection of v_k.0 and v_l.0</span>
                                 <span class="comment">// Read off the corresponding pairs of indices: these are connected with this type of double exctie matrix element!</span>
                                 <span class="kw">for</span> (<span class="ident">i</span>, <span class="ident">j</span>) <span class="kw">in</span> <span class="ident">intersection</span>(<span class="ident">v_k</span>, <span class="self">self</span>.<span class="ident">doubles</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">l</span>).<span class="ident">unwrap</span>()) {
-                                    <span class="kw">let</span> <span class="ident">h_ij</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">ham</span>.<span class="ident">ham_doub</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">wf</span>.<span class="ident">dets</span>[<span class="ident">i</span>].<span class="ident">config</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">wf</span>.<span class="ident">dets</span>[<span class="ident">j</span>].<span class="ident">config</span>);
+                                    <span class="kw">let</span> <span class="ident">h_ij</span> <span class="op">=</span> <span class="self">self</span>
+                                        .<span class="ident">ham</span>
+                                        .<span class="ident">ham_doub</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">wf</span>.<span class="ident">dets</span>[<span class="ident">i</span>].<span class="ident">config</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">wf</span>.<span class="ident">dets</span>[<span class="ident">j</span>].<span class="ident">config</span>);
                                     <span class="comment">// println!(&quot;({} {}) {}, ({} {}) {}: H = {}&quot;,</span>
                                     <span class="comment">//          k.0, k.1, { match k.2 { None =&gt; { &quot;opp spin&quot; }, Some(b) =&gt; if b { &quot;spin up&quot; } else { &quot;spin dn&quot; } } },</span>
                                     <span class="comment">//          l.0, l.1, { match l.2 { None =&gt; { &quot;opp spin&quot; }, Some(b) =&gt; if b { &quot;spin up&quot; } else { &quot;spin dn&quot; } } },</span>
@@ -552,13 +593,12 @@
                     }
                 }
             }
-
         }
 
         <span class="ident">res</span>
     }
 
-    <span class="kw">fn</span> <span class="ident">matrix_matrix_prod</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">mtx</span>: <span class="ident">DMatrixSlice</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span>, <span class="ident">f64</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">DMatrix</span><span class="op">&lt;</span><span class="ident">f64</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">matrix_matrix_prod</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">mtx</span>: <span class="ident">DMatrixSlice</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span>, <span class="ident">f64</span><span class="op">&gt;</span>) -&gt; <span class="ident">DMatrix</span><span class="op">&lt;</span><span class="ident">f64</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">res</span>: <span class="ident">DMatrix</span><span class="op">&lt;</span><span class="ident">f64</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">mtx</span>.<span class="ident">clone</span>().<span class="ident">into</span>();
         <span class="kw">for</span> (<span class="ident">in_col</span>, <span class="kw-2">mut</span> <span class="ident">out_col</span>) <span class="kw">in</span> <span class="ident">mtx</span>.<span class="ident">column_iter</span>().<span class="ident">zip</span>(<span class="ident">res</span>.<span class="ident">column_iter_mut</span>()) {
             <span class="ident">out_col</span>.<span class="ident">copy_from</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">matrix_vector_prod</span>(<span class="ident">in_col</span>));
@@ -566,7 +606,7 @@
         <span class="ident">res</span>
     }
 
-    <span class="kw">fn</span> <span class="ident">diagonal</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">DVector</span><span class="op">&lt;</span><span class="ident">f64</span><span class="op">&gt;</span> { 
+    <span class="kw">fn</span> <span class="ident">diagonal</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">DVector</span><span class="op">&lt;</span><span class="ident">f64</span><span class="op">&gt;</span> {
         <span class="self">self</span>.<span class="ident">diag</span>.<span class="ident">clone</span>()
     }
 
@@ -574,11 +614,14 @@
         <span class="self">self</span>.<span class="ident">diag</span> <span class="op">=</span> <span class="ident">diag</span>.<span class="ident">clone</span>();
     }
 
-    <span class="kw">fn</span> <span class="ident">ncols</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">usize</span> { <span class="self">self</span>.<span class="ident">n</span> }
+    <span class="kw">fn</span> <span class="ident">ncols</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
+        <span class="self">self</span>.<span class="ident">n</span>
+    }
 
-    <span class="kw">fn</span> <span class="ident">nrows</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">usize</span> { <span class="self">self</span>.<span class="ident">n</span> }
+    <span class="kw">fn</span> <span class="ident">nrows</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
+        <span class="self">self</span>.<span class="ident">n</span>
+    }
 }
-
 
 <span class="comment">// #[cfg(test)]</span>
 <span class="comment">// mod tests {</span>
@@ -618,5 +661,8 @@
 <span class="comment">//         println!(&quot;eigenvectors:{}&quot;, eig.eigenvectors);</span>
 <span class="comment">//         assert_eq!(1, 1);</span>
 <span class="comment">//     }</span>
-<span class="comment">// }</span></pre></div>
-</section><section id="search" class="content hidden"></section><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="risq" data-search-index-js="../../../search-index.js" data-search-js="../../../search.js"></div><script src="../../../main.js"></script><script src="../../../source-script.js"></script><script src="../../../source-files.js"></script></body></html>
+<span class="comment">// }</span>
+</code></pre></div>
+</section><section id="search" class="content hidden"></section><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="risq" data-search-index-js="../../../search-index.js" data-search-js="../../../search.js"></div>
+    <script src="../../../main.js"></script><script src="../../../source-script.js"></script><script src="../../../source-files.js"></script>
+</body></html>

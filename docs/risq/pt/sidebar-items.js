@@ -1,1 +1,1 @@
-initSidebarItems({"fn":[["perturbative",""]],"struct":[["PtSamples",""]]});
+initSidebarItems({"fn":[["perturbative","Perform the perturbative stage (Epstein-Nesbet perturbation theory, that is)"]],"struct":[["PtSamples","Sampled contributions to the ENPT2 correction Samples stored in a hashmap: Key: perturbative det (Config) Value: (perturbative det’s diag, HashMap (key: variational det’s config, value: (H_ai c_i, p_ai, w_ai)))"]]});

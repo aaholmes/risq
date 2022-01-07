@@ -1,4 +1,4 @@
-// Initialize sorted excitation arrays
+//! Initialize sorted excitation arrays
 
 use core::cmp::Ordering::Equal;
 use core::default::Default;
@@ -13,9 +13,9 @@ use crate::utils::bits::{bit_pairs, bits, ibset};
 use crate::utils::read_input::Global;
 use crate::wf::det::Config;
 
-// Heat-bath excitation generator
-// Contains sorted lists of excitations, for efficient deterministic and importance sampled treatment
-// Also contains alias samplers of stored excitations, for fully stochastic importance sampling (TODO)
+/// Heat-bath excitation generator
+/// Contains sorted lists of excitations, for efficient deterministic and importance sampled treatment
+/// Also contains alias samplers of stored excitations, for fully stochastic importance sampling
 pub struct ExciteGenerator {
     // Doubles:
     // max_(same/opp)_spin_doub is the global largest-magnitude double
@@ -38,8 +38,8 @@ pub struct ExciteGenerator {
     pub valence: u128,
 }
 
+/// Initialize by sorting double excitation element for all pairs
 pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
-    // Initialize by sorting double excitation element for all pairs
     let mut excite_gen: ExciteGenerator = ExciteGenerator {
         max_same_doub: 0.0,
         max_opp_doub: 0.0,

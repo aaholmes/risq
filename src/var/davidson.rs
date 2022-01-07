@@ -1,5 +1,5 @@
-// Davidson module
-// For now, just use simple diagonal preconditioning
+//! Davidson module
+//! For now, just use simple diagonal preconditioning
 
 use crate::excite::init::ExciteGenerator;
 use crate::ham::Ham;
@@ -11,6 +11,7 @@ use crate::wf::Wf;
 use nalgebra::DMatrix;
 use std::time::Instant;
 
+/// Generate Ham as a sparse matrix, and optimize using Davidson
 pub fn sparse_optimize(
     global: &Global,
     ham: &Ham,
@@ -20,8 +21,6 @@ pub fn sparse_optimize(
     energy_eps: f64,
     init_last_iter: bool,
 ) {
-    // Generate Ham as a sparse matrix
-    // Optimize using davidson
 
     let start_gen_sparse_ham: Instant = Instant::now();
     gen_sparse_ham_fast(global, wf, ham, excite_gen);

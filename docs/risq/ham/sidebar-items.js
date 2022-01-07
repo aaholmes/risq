@@ -1,1 +1,1 @@
-initSidebarItems({"mod":[["read_ints",""]],"struct":[["Ham",""]]});
+initSidebarItems({"mod":[["read_ints","Read integrals from an FCIDUMP file into the Ham data structure"]],"struct":[["Ham","Hamiltonian, containing integrals and matrix element computing functions Also contains information about frozen orbitals"]]});

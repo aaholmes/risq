@@ -1,6 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/semistoch/mod.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>mod.rs - source</title><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../light.css"  id="themeStyle"><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled ><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled ><script id="default-settings"></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="icon" type="image/svg+xml" href="../../../favicon.svg">
-<link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png">
-<link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><style type="text/css">#crate-search{background-image:url("../../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu" role="button">&#9776;</div><a href='../../../risq/index.html'><div class='logo-container'><img src='https://wherethewindsblow.com/wp-content/uploads/2020/11/crab_dice_red_white.jpg' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img src="../../../brush.svg" width="18" height="18" alt="Pick another theme!"></button><div id="theme-choices" role="menu"></div></div><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../settings.html" title="settings"><img src="../../../wheel.svg" width="18" height="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">  1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src&#x2F;semistoch&#x2F;mod.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>mod.rs - source</title><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../light.css"  id="themeStyle"><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled ><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled ><script id="default-settings" ></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"><style type="text/css">#crate-search{background-image:url("../../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu" role="button">&#9776;</div><a href='../../../risq/index.html'><div class='logo-container rust-logo'><img src='https:&#x2F;&#x2F;wherethewindsblow.com&#x2F;wp-content&#x2F;uploads&#x2F;2020&#x2F;11&#x2F;crab_dice_red_white.jpg' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="18" height="18" alt="Pick another theme!" src="../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../settings.html" title="settings"><img width="18" height="18" alt="Change settings" src="../../../wheel.svg"></a></div></form></nav><section id="main" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">  1</span>
 <span id="2">  2</span>
 <span id="3">  3</span>
 <span id="4">  4</span>
@@ -825,23 +823,160 @@
 <span id="823">823</span>
 <span id="824">824</span>
 <span id="825">825</span>
-</pre><pre class="rust">
-<span class="comment">// Semistochastic methods mod; for now, just includes semistochastic ENPT2</span>
+<span id="826">826</span>
+<span id="827">827</span>
+<span id="828">828</span>
+<span id="829">829</span>
+<span id="830">830</span>
+<span id="831">831</span>
+<span id="832">832</span>
+<span id="833">833</span>
+<span id="834">834</span>
+<span id="835">835</span>
+<span id="836">836</span>
+<span id="837">837</span>
+<span id="838">838</span>
+<span id="839">839</span>
+<span id="840">840</span>
+<span id="841">841</span>
+<span id="842">842</span>
+<span id="843">843</span>
+<span id="844">844</span>
+<span id="845">845</span>
+<span id="846">846</span>
+<span id="847">847</span>
+<span id="848">848</span>
+<span id="849">849</span>
+<span id="850">850</span>
+<span id="851">851</span>
+<span id="852">852</span>
+<span id="853">853</span>
+<span id="854">854</span>
+<span id="855">855</span>
+<span id="856">856</span>
+<span id="857">857</span>
+<span id="858">858</span>
+<span id="859">859</span>
+<span id="860">860</span>
+<span id="861">861</span>
+<span id="862">862</span>
+<span id="863">863</span>
+<span id="864">864</span>
+<span id="865">865</span>
+<span id="866">866</span>
+<span id="867">867</span>
+<span id="868">868</span>
+<span id="869">869</span>
+<span id="870">870</span>
+<span id="871">871</span>
+<span id="872">872</span>
+<span id="873">873</span>
+<span id="874">874</span>
+<span id="875">875</span>
+<span id="876">876</span>
+<span id="877">877</span>
+<span id="878">878</span>
+<span id="879">879</span>
+<span id="880">880</span>
+<span id="881">881</span>
+<span id="882">882</span>
+<span id="883">883</span>
+<span id="884">884</span>
+<span id="885">885</span>
+<span id="886">886</span>
+<span id="887">887</span>
+<span id="888">888</span>
+<span id="889">889</span>
+<span id="890">890</span>
+<span id="891">891</span>
+<span id="892">892</span>
+<span id="893">893</span>
+<span id="894">894</span>
+<span id="895">895</span>
+<span id="896">896</span>
+<span id="897">897</span>
+<span id="898">898</span>
+<span id="899">899</span>
+<span id="900">900</span>
+<span id="901">901</span>
+<span id="902">902</span>
+<span id="903">903</span>
+<span id="904">904</span>
+<span id="905">905</span>
+<span id="906">906</span>
+<span id="907">907</span>
+<span id="908">908</span>
+<span id="909">909</span>
+<span id="910">910</span>
+<span id="911">911</span>
+<span id="912">912</span>
+<span id="913">913</span>
+<span id="914">914</span>
+<span id="915">915</span>
+<span id="916">916</span>
+<span id="917">917</span>
+<span id="918">918</span>
+<span id="919">919</span>
+<span id="920">920</span>
+<span id="921">921</span>
+<span id="922">922</span>
+<span id="923">923</span>
+<span id="924">924</span>
+<span id="925">925</span>
+<span id="926">926</span>
+<span id="927">927</span>
+<span id="928">928</span>
+<span id="929">929</span>
+<span id="930">930</span>
+<span id="931">931</span>
+<span id="932">932</span>
+<span id="933">933</span>
+<span id="934">934</span>
+<span id="935">935</span>
+<span id="936">936</span>
+<span id="937">937</span>
+<span id="938">938</span>
+<span id="939">939</span>
+<span id="940">940</span>
+<span id="941">941</span>
+<span id="942">942</span>
+<span id="943">943</span>
+<span id="944">944</span>
+<span id="945">945</span>
+<span id="946">946</span>
+<span id="947">947</span>
+<span id="948">948</span>
+<span id="949">949</span>
+<span id="950">950</span>
+<span id="951">951</span>
+<span id="952">952</span>
+<span id="953">953</span>
+<span id="954">954</span>
+<span id="955">955</span>
+<span id="956">956</span>
+<span id="957">957</span>
+<span id="958">958</span>
+</pre><pre class="rust"><code><span class="doccomment">//! Semistochastic methods - for now, just includes Epstein-Nesbet perturbation theory</span>
 
-<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::wf::Wf</span>;
-<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::ham::Ham</span>;
-<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::excite::init::ExciteGenerator</span>;
-<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::stoch</span>::{<span class="ident">matmul_sample_remaining</span>, <span class="ident">ImpSampleDist</span>};
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::excite::init::ExciteGenerator</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::ham::Ham</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::pt::PtSamples</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::rng::Rand</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::stoch::alias::Alias</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::stoch</span>::{<span class="ident">matmul_sample_remaining</span>, <span class="ident">ImpSampleDist</span>};
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::utils::read_input::Global</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::wf::Wf</span>;
 <span class="kw">use</span> <span class="ident">rolling_stats::Stats</span>;
-<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::pt::PtSamples</span>;
-<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::utils::read_input::Global</span>;
-<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::stoch::alias::Alias</span>;
 <span class="kw">use</span> <span class="ident">std::time::Instant</span>;
-<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::rng::Rand</span>;
 
-
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">importance_sampled_semistoch_enpt2</span>(<span class="ident">input_wf</span>: <span class="kw-2">&amp;</span><span class="ident">Wf</span>, <span class="ident">global</span>: <span class="kw-2">&amp;</span><span class="ident">Global</span>, <span class="ident">ham</span>: <span class="kw-2">&amp;</span><span class="ident">Ham</span>, <span class="ident">excite_gen</span>: <span class="kw-2">&amp;</span><span class="ident">ExciteGenerator</span>, <span class="ident">rand</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Rand</span>) <span class="op">-</span><span class="op">&gt;</span> (<span class="ident">f64</span>, <span class="ident">f64</span>) {
-    <span class="comment">// Importance sampled semistochastic ENPT2</span>
+<span class="doccomment">/// Importance sampled semistochastic ENPT2</span>
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">importance_sampled_semistoch_enpt2</span>(
+    <span class="ident">input_wf</span>: <span class="kw-2">&amp;</span><span class="ident">Wf</span>,
+    <span class="ident">global</span>: <span class="kw-2">&amp;</span><span class="ident">Global</span>,
+    <span class="ident">ham</span>: <span class="kw-2">&amp;</span><span class="ident">Ham</span>,
+    <span class="ident">excite_gen</span>: <span class="kw-2">&amp;</span><span class="ident">ExciteGenerator</span>,
+    <span class="ident">rand</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Rand</span>,
+) -&gt; (<span class="ident">f64</span>, <span class="ident">f64</span>) {
 
     <span class="comment">// Basically just the original SHCI except the sum on &quot;a&quot; is importance sampled</span>
     <span class="comment">// i.e., instead of computing the sum deterministically, sample according to some</span>
@@ -860,10 +995,12 @@
     <span class="kw">let</span> <span class="ident">start_dtm_enpt2</span>: <span class="ident">Instant</span> <span class="op">=</span> <span class="ident">Instant::now</span>();
 
     <span class="comment">// Create a sampler that importance samples all excitations smaller than eps_var (since excitations that exceed eps_var would have already been used to construct wf_var)</span>
-    <span class="kw">let</span> (<span class="kw">_</span>, <span class="kw-2">mut</span> <span class="ident">screened_sampler_lt_var_eps</span>) <span class="op">=</span> <span class="ident">input_wf</span>.<span class="ident">approx_matmul_external_semistoch_singles</span>(<span class="ident">ham</span>, <span class="ident">excite_gen</span>, <span class="ident">global</span>.<span class="ident">eps_var</span>);
+    <span class="kw">let</span> (<span class="kw">_</span>, <span class="kw-2">mut</span> <span class="ident">screened_sampler_lt_var_eps</span>) <span class="op">=</span>
+        <span class="ident">input_wf</span>.<span class="ident">approx_matmul_external_semistoch_singles</span>(<span class="ident">ham</span>, <span class="ident">excite_gen</span>, <span class="ident">global</span>.<span class="ident">eps_var</span>);
 
     <span class="comment">// Compute deterministic approximation to H psi using large PT eps (i.e., the eps that determines whether a deterministic or stochastic contribution)</span>
-    <span class="kw">let</span> (<span class="ident">dtm_result</span>, <span class="kw-2">mut</span> <span class="ident">screened_sampler_lt_pt_eps</span>) <span class="op">=</span> <span class="ident">input_wf</span>.<span class="ident">approx_matmul_external_semistoch_singles</span>(<span class="ident">ham</span>, <span class="ident">excite_gen</span>, <span class="ident">global</span>.<span class="ident">eps_pt_dtm</span>);
+    <span class="kw">let</span> (<span class="ident">dtm_result</span>, <span class="kw-2">mut</span> <span class="ident">screened_sampler_lt_pt_eps</span>) <span class="op">=</span>
+        <span class="ident">input_wf</span>.<span class="ident">approx_matmul_external_semistoch_singles</span>(<span class="ident">ham</span>, <span class="ident">excite_gen</span>, <span class="ident">global</span>.<span class="ident">eps_pt_dtm</span>);
 
     <span class="macro">println!</span>(<span class="string">&quot;Time for dtm ENPT2: {:?}&quot;</span>, <span class="ident">start_dtm_enpt2</span>.<span class="ident">elapsed</span>());
 
@@ -872,7 +1009,10 @@
     <span class="kw">for</span> <span class="ident">det</span> <span class="kw">in</span> <span class="ident">dtm_result</span>.<span class="ident">dets</span> {
         <span class="ident">dtm_enpt2</span> <span class="op">+</span><span class="op">=</span> <span class="ident">det</span>.<span class="ident">coeff</span> <span class="op">*</span> <span class="ident">det</span>.<span class="ident">coeff</span> <span class="op">/</span> (<span class="ident">input_wf</span>.<span class="ident">energy</span> <span class="op">-</span> <span class="ident">det</span>.<span class="ident">diag</span>);
     }
-    <span class="macro">println!</span>(<span class="string">&quot;Deterministic approximation to Delta E using eps = {} ({} dets): {:.6}&quot;</span>, <span class="ident">global</span>.<span class="ident">eps_pt_dtm</span>, <span class="ident">dtm_result</span>.<span class="ident">n</span>, <span class="ident">dtm_enpt2</span>);
+    <span class="macro">println!</span>(
+        <span class="string">&quot;Deterministic approximation to Delta E using eps = {} ({} dets): {:.6}&quot;</span>,
+        <span class="ident">global</span>.<span class="ident">eps_pt_dtm</span>, <span class="ident">dtm_result</span>.<span class="ident">n</span>, <span class="ident">dtm_enpt2</span>
+    );
 
     <span class="comment">// Sample dets from wf with probability |c|</span>
     <span class="comment">// Update estimate of difference between exact and approximate delta E using deterministic application of H</span>
@@ -885,7 +1025,6 @@
 
     <span class="kw">let</span> <span class="ident">start_quadratic</span>: <span class="ident">Instant</span> <span class="op">=</span> <span class="ident">Instant::now</span>();
     <span class="kw">for</span> <span class="ident">i_batch</span> <span class="kw">in</span> <span class="number">0</span>..<span class="ident">n_batches_max</span> {
-
         <span class="comment">// Sample a batch of samples, updating the stoch component of the energy for each sample</span>
         <span class="macro">println!</span>(<span class="string">&quot;\n Starting batch {}&quot;</span>, <span class="ident">i_batch</span>);
 
@@ -893,72 +1032,102 @@
         <span class="ident">samples_gt_eps</span>.<span class="ident">clear</span>(); <span class="comment">// For estimating the deterministic component of the PT correction</span>
 
         <span class="kw">for</span> <span class="ident">_i_sample</span> <span class="kw">in</span> <span class="number">0</span>..<span class="ident">global</span>.<span class="ident">n_samples_per_batch</span> {
-
             <span class="comment">// Collect samples that exceed eps</span>
             <span class="comment">// TODO: Make this only sample greater than eps component, but this works for now</span>
 
             <span class="comment">// Sample with probability proportional to (Hc)^2</span>
             <span class="kw">let</span> (<span class="ident">sampled_det_info</span>, <span class="ident">sampled_prob</span>) <span class="op">=</span> <span class="ident">matmul_sample_remaining</span>(
-                <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">screened_sampler_lt_var_eps</span>, <span class="ident">ImpSampleDist::HcSquared</span>, <span class="ident">excite_gen</span>, <span class="ident">ham</span>, <span class="ident">rand</span>
+                <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">screened_sampler_lt_var_eps</span>,
+                <span class="ident">ImpSampleDist::HcSquared</span>,
+                <span class="ident">excite_gen</span>,
+                <span class="ident">ham</span>,
+                <span class="ident">rand</span>,
             );
 
             <span class="kw">match</span> <span class="ident">sampled_det_info</span> {
-                <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> {
+                <span class="prelude-val">None</span> =&gt; {
                     <span class="comment">// println!(&quot;Sampled excitation not valid! Sample prob = {}&quot;, sampled_prob);</span>
                 }
-                <span class="prelude-val">Some</span>((<span class="ident">exciting_det</span>, <span class="ident">excite</span>, <span class="ident">target_det</span>)) <span class="op">=</span><span class="op">&gt;</span> {
+                <span class="prelude-val">Some</span>((<span class="ident">exciting_det</span>, <span class="ident">excite</span>, <span class="ident">target_det</span>)) =&gt; {
                     <span class="comment">// println!(&quot;Sampled excitation: Sampled det = {}, Sample prob = {}, (H_ai c_i)^2 / p = {}&quot;, target_det, sampled_prob, excite.abs_h * excite.abs_h * exciting_det.coeff * exciting_det.coeff / sampled_prob);</span>
                     <span class="comment">// Collect this sample for the quadratic contribution</span>
                     <span class="comment">// This is analogous to the SHCI contribution, but only applies to the (&lt;eps)</span>
                     <span class="comment">// terms. The sampling probability (Hc)^2 was chosen because the largest terms</span>
                     <span class="comment">// in this component are (Hc)^2 / (E_0 - E_a).</span>
-                    <span class="kw">if</span> <span class="ident">i_batch</span> <span class="op">=</span><span class="op">=</span> <span class="number">42</span> {
+                    <span class="kw">if</span> <span class="ident">i_batch</span> <span class="op">==</span> <span class="number">42</span> {
                         <span class="macro">println!</span>(<span class="string">&quot;Adding sample to &#39;all&#39; samples: exciting det: {}, target det: {}, sampled prob: {}&quot;</span>, <span class="ident">exciting_det</span>, <span class="ident">target_det</span>, <span class="ident">sampled_prob</span>);
                     }
-                    <span class="ident">samples_all</span>.<span class="ident">add_sample_compute_diag</span>(<span class="ident">exciting_det</span>, <span class="kw-2">&amp;</span><span class="ident">excite</span>, <span class="ident">target_det</span>, <span class="ident">sampled_prob</span>, <span class="ident">ham</span>);
+                    <span class="ident">samples_all</span>.<span class="ident">add_sample_compute_diag</span>(
+                        <span class="ident">exciting_det</span>,
+                        <span class="kw-2">&amp;</span><span class="ident">excite</span>,
+                        <span class="ident">target_det</span>,
+                        <span class="ident">sampled_prob</span>,
+                        <span class="ident">ham</span>,
+                    );
                     <span class="kw">if</span> <span class="ident">excite</span>.<span class="ident">abs_h</span> <span class="op">*</span> <span class="ident">exciting_det</span>.<span class="ident">coeff</span>.<span class="ident">abs</span>() <span class="op">&gt;</span> <span class="ident">global</span>.<span class="ident">eps_pt_dtm</span> {
-                        <span class="kw">if</span> <span class="ident">i_batch</span> <span class="op">=</span><span class="op">=</span> <span class="number">42</span> {
+                        <span class="kw">if</span> <span class="ident">i_batch</span> <span class="op">==</span> <span class="number">42</span> {
                             <span class="macro">println!</span>(<span class="string">&quot;Adding sample to &#39;&gt; eps_pt&#39; samples: exciting det: {}, target det: {}, sampled prob: {}&quot;</span>, <span class="ident">exciting_det</span>, <span class="ident">target_det</span>, <span class="ident">sampled_prob</span>);
                         }
-                        <span class="ident">samples_gt_eps</span>.<span class="ident">add_sample_compute_diag</span>(<span class="ident">exciting_det</span>, <span class="kw-2">&amp;</span><span class="ident">excite</span>, <span class="ident">target_det</span>, <span class="ident">sampled_prob</span>, <span class="ident">ham</span>);
+                        <span class="ident">samples_gt_eps</span>.<span class="ident">add_sample_compute_diag</span>(
+                            <span class="ident">exciting_det</span>,
+                            <span class="kw-2">&amp;</span><span class="ident">excite</span>,
+                            <span class="ident">target_det</span>,
+                            <span class="ident">sampled_prob</span>,
+                            <span class="ident">ham</span>,
+                        );
                     }
-                },
+                }
             }
 
             <span class="comment">// Collect samples less than eps</span>
 
             <span class="comment">// Sample with probability proportional to (Hc)^2</span>
             <span class="kw">let</span> (<span class="ident">sampled_det_info</span>, <span class="ident">sampled_prob</span>) <span class="op">=</span> <span class="ident">matmul_sample_remaining</span>(
-                <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">screened_sampler_lt_pt_eps</span>, <span class="ident">ImpSampleDist::HcSquared</span>, <span class="ident">excite_gen</span>, <span class="ident">ham</span>, <span class="ident">rand</span>
+                <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">screened_sampler_lt_pt_eps</span>,
+                <span class="ident">ImpSampleDist::HcSquared</span>,
+                <span class="ident">excite_gen</span>,
+                <span class="ident">ham</span>,
+                <span class="ident">rand</span>,
             );
 
             <span class="kw">match</span> <span class="ident">sampled_det_info</span> {
-                <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> {
+                <span class="prelude-val">None</span> =&gt; {
                     <span class="comment">// println!(&quot;Sampled excitation not valid! Sample prob = {}&quot;, sampled_prob);</span>
                 }
-                <span class="prelude-val">Some</span>((<span class="ident">exciting_det</span>, <span class="ident">excite</span>, <span class="ident">target_det</span>)) <span class="op">=</span><span class="op">&gt;</span> {
+                <span class="prelude-val">Some</span>((<span class="ident">exciting_det</span>, <span class="ident">excite</span>, <span class="ident">target_det</span>)) =&gt; {
                     <span class="comment">// println!(&quot;Sampled excitation: Sampled det = {}, Sample prob = {}, (H_ai c_i)^2 / p = {}&quot;, target_det, sampled_prob, excite.abs_h * excite.abs_h * exciting_det.coeff * exciting_det.coeff / sampled_prob);</span>
                     <span class="comment">// Collect this sample for the quadratic contribution</span>
                     <span class="comment">// This is analogous to the SHCI contribution, but only applies to the (&lt;eps)</span>
                     <span class="comment">// terms. The sampling probability (Hc)^2 was chosen because the largest terms</span>
                     <span class="comment">// in this component are (Hc)^2 / (E_0 - E_a).</span>
-                    <span class="kw">if</span> <span class="ident">i_batch</span> <span class="op">=</span><span class="op">=</span> <span class="number">42</span> {
+                    <span class="kw">if</span> <span class="ident">i_batch</span> <span class="op">==</span> <span class="number">42</span> {
                         <span class="macro">println!</span>(<span class="string">&quot;Adding sample to &#39;all&#39; samples: exciting det: {}, target det: {}, sampled prob: {}&quot;</span>, <span class="ident">exciting_det</span>, <span class="ident">target_det</span>, <span class="ident">sampled_prob</span>);
                     }
-                    <span class="ident">samples_all</span>.<span class="ident">add_sample_compute_diag</span>(<span class="ident">exciting_det</span>, <span class="kw-2">&amp;</span><span class="ident">excite</span>, <span class="ident">target_det</span>, <span class="ident">sampled_prob</span>, <span class="ident">ham</span>);
-                },
+                    <span class="ident">samples_all</span>.<span class="ident">add_sample_compute_diag</span>(
+                        <span class="ident">exciting_det</span>,
+                        <span class="kw-2">&amp;</span><span class="ident">excite</span>,
+                        <span class="ident">target_det</span>,
+                        <span class="ident">sampled_prob</span>,
+                        <span class="ident">ham</span>,
+                    );
+                }
             }
         }
 
-        <span class="kw">let</span> <span class="ident">e_stoch_all</span>: <span class="ident">f64</span> <span class="op">=</span> <span class="ident">samples_all</span>.<span class="ident">pt_estimator</span>(<span class="ident">input_wf</span>.<span class="ident">energy</span>, <span class="ident">global</span>.<span class="ident">n_samples_per_batch</span>);
-        <span class="kw">let</span> <span class="ident">e_stoch_screened</span>: <span class="ident">f64</span> <span class="op">=</span> <span class="ident">samples_gt_eps</span>.<span class="ident">pt_estimator</span>(<span class="ident">input_wf</span>.<span class="ident">energy</span>, <span class="ident">global</span>.<span class="ident">n_samples_per_batch</span>);
+        <span class="kw">let</span> <span class="ident">e_stoch_all</span>: <span class="ident">f64</span> <span class="op">=</span>
+            <span class="ident">samples_all</span>.<span class="ident">pt_estimator</span>(<span class="ident">input_wf</span>.<span class="ident">energy</span>, <span class="ident">global</span>.<span class="ident">n_samples_per_batch</span>);
+        <span class="kw">let</span> <span class="ident">e_stoch_screened</span>: <span class="ident">f64</span> <span class="op">=</span>
+            <span class="ident">samples_gt_eps</span>.<span class="ident">pt_estimator</span>(<span class="ident">input_wf</span>.<span class="ident">energy</span>, <span class="ident">global</span>.<span class="ident">n_samples_per_batch</span>);
         <span class="macro">println!</span>(<span class="string">&quot;Energy components: {} {}&quot;</span>, <span class="ident">e_stoch_all</span>, <span class="ident">e_stoch_screened</span>);
 
         <span class="kw">let</span> <span class="ident">sampled_e</span>: <span class="ident">f64</span> <span class="op">=</span> <span class="ident">e_stoch_all</span> <span class="op">-</span> <span class="ident">e_stoch_screened</span>;
         <span class="macro">println!</span>(<span class="string">&quot;Sampled energy this batch = {}&quot;</span>, <span class="ident">sampled_e</span>);
 
         <span class="ident">stoch_enpt2</span>.<span class="ident">update</span>(<span class="ident">sampled_e</span>);
-        <span class="macro">println!</span>(<span class="string">&quot;Current estimate of stochastic component: {:.4} +- {:.4}&quot;</span>, <span class="ident">stoch_enpt2</span>.<span class="ident">mean</span>, <span class="ident">stoch_enpt2</span>.<span class="ident">std_dev</span>);
+        <span class="macro">println!</span>(
+            <span class="string">&quot;Current estimate of stochastic component: {:.4} +- {:.4}&quot;</span>,
+            <span class="ident">stoch_enpt2</span>.<span class="ident">mean</span>, <span class="ident">stoch_enpt2</span>.<span class="ident">std_dev</span>
+        );
 
         <span class="kw">if</span> <span class="ident">i_batch</span> <span class="op">&gt;</span> <span class="number">9</span> {
             <span class="kw">if</span> <span class="ident">stoch_enpt2</span>.<span class="ident">std_dev</span> <span class="op">&lt;</span><span class="op">=</span> <span class="ident">global</span>.<span class="ident">target_uncertainty</span> {
@@ -966,19 +1135,24 @@
                 <span class="kw">break</span>;
             }
         }
-
     }
     <span class="macro">println!</span>(<span class="string">&quot;Time for sampling: {:?}&quot;</span>, <span class="ident">start_quadratic</span>.<span class="ident">elapsed</span>());
 
-    <span class="macro">println!</span>(<span class="string">&quot;Stochastic component: {:.4} +- {:.4}&quot;</span>, <span class="ident">stoch_enpt2</span>.<span class="ident">mean</span>, <span class="ident">stoch_enpt2</span>.<span class="ident">std_dev</span>);
+    <span class="macro">println!</span>(
+        <span class="string">&quot;Stochastic component: {:.4} +- {:.4}&quot;</span>,
+        <span class="ident">stoch_enpt2</span>.<span class="ident">mean</span>, <span class="ident">stoch_enpt2</span>.<span class="ident">std_dev</span>
+    );
 
-    (<span class="ident">dtm_enpt2</span> <span class="op">+</span> <span class="ident">stoch_enpt2</span>.<span class="ident">mean</span>,
-     <span class="ident">stoch_enpt2</span>.<span class="ident">std_dev</span>)
-
+    (<span class="ident">dtm_enpt2</span> <span class="op">+</span> <span class="ident">stoch_enpt2</span>.<span class="ident">mean</span>, <span class="ident">stoch_enpt2</span>.<span class="ident">std_dev</span>)
 }
 
-
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">fast_stoch_enpt2</span>(<span class="ident">input_wf</span>: <span class="kw-2">&amp;</span><span class="ident">Wf</span>, <span class="ident">global</span>: <span class="kw-2">&amp;</span><span class="ident">Global</span>, <span class="ident">ham</span>: <span class="kw-2">&amp;</span><span class="ident">Ham</span>, <span class="ident">excite_gen</span>: <span class="kw-2">&amp;</span><span class="ident">ExciteGenerator</span>, <span class="ident">rand</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Rand</span>) <span class="op">-</span><span class="op">&gt;</span> (<span class="ident">f64</span>, <span class="ident">f64</span>) {
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">fast_stoch_enpt2</span>(
+    <span class="ident">input_wf</span>: <span class="kw-2">&amp;</span><span class="ident">Wf</span>,
+    <span class="ident">global</span>: <span class="kw-2">&amp;</span><span class="ident">Global</span>,
+    <span class="ident">ham</span>: <span class="kw-2">&amp;</span><span class="ident">Ham</span>,
+    <span class="ident">excite_gen</span>: <span class="kw-2">&amp;</span><span class="ident">ExciteGenerator</span>,
+    <span class="ident">rand</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Rand</span>,
+) -&gt; (<span class="ident">f64</span>, <span class="ident">f64</span>) {
     <span class="comment">// Stochastic Epstein-Nesbet PT2</span>
     <span class="comment">// In earlier SHCI paper, used the following strategy:</span>
     <span class="comment">// 1. Compute ENPT2 deterministically using large eps</span>
@@ -992,7 +1166,8 @@
 
     <span class="comment">// Compute deterministic component (even though not used), and create sampler object for sampling remaining component</span>
     <span class="kw">let</span> <span class="ident">start_dtm_enpt2</span>: <span class="ident">Instant</span> <span class="op">=</span> <span class="ident">Instant::now</span>();
-    <span class="kw">let</span> (<span class="ident">dtm_result</span>, <span class="kw-2">mut</span> <span class="ident">screened_sampler</span>) <span class="op">=</span> <span class="ident">input_wf</span>.<span class="ident">approx_matmul_external_semistoch_singles</span>(<span class="ident">ham</span>, <span class="ident">excite_gen</span>, <span class="ident">global</span>.<span class="ident">eps_var</span>);
+    <span class="kw">let</span> (<span class="ident">dtm_result</span>, <span class="kw-2">mut</span> <span class="ident">screened_sampler</span>) <span class="op">=</span>
+        <span class="ident">input_wf</span>.<span class="ident">approx_matmul_external_semistoch_singles</span>(<span class="ident">ham</span>, <span class="ident">excite_gen</span>, <span class="ident">global</span>.<span class="ident">eps_var</span>);
     <span class="macro">println!</span>(<span class="string">&quot;Time for sampling setup: {:?}&quot;</span>, <span class="ident">start_dtm_enpt2</span>.<span class="ident">elapsed</span>());
 
     <span class="comment">// Compute dtm approx to observable using dtm_result</span>
@@ -1001,7 +1176,10 @@
     <span class="kw">for</span> <span class="ident">det</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">dtm_result</span>.<span class="ident">dets</span> {
         <span class="ident">dtm_enpt2</span> <span class="op">+</span><span class="op">=</span> (<span class="ident">det</span>.<span class="ident">coeff</span> <span class="op">*</span> <span class="ident">det</span>.<span class="ident">coeff</span>) <span class="op">/</span> (<span class="ident">input_wf</span>.<span class="ident">energy</span> <span class="op">-</span> <span class="ident">det</span>.<span class="ident">diag</span>);
     }
-    <span class="macro">println!</span>(<span class="string">&quot;Deterministic approximation to Delta E using eps = {} ({} dets): {:.6}&quot;</span>, <span class="ident">global</span>.<span class="ident">eps_pt_dtm</span>, <span class="ident">dtm_result</span>.<span class="ident">n</span>, <span class="ident">dtm_enpt2</span>);
+    <span class="macro">println!</span>(
+        <span class="string">&quot;Deterministic approximation to Delta E using eps = {} ({} dets): {:.6}&quot;</span>,
+        <span class="ident">global</span>.<span class="ident">eps_pt_dtm</span>, <span class="ident">dtm_result</span>.<span class="ident">n</span>, <span class="ident">dtm_enpt2</span>
+    );
 
     <span class="comment">// Stochastic component</span>
     <span class="kw">let</span> <span class="ident">stoch_enpt2_cross_term</span>: <span class="ident">Stats</span><span class="op">&lt;</span><span class="ident">f64</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Stats::new</span>(); <span class="comment">// samples overlap with deterministic part</span>
@@ -1015,19 +1193,25 @@
         <span class="macro">println!</span>(<span class="string">&quot;\n Starting batch {}&quot;</span>, <span class="ident">i_batch</span>);
         <span class="ident">samples</span>.<span class="ident">clear</span>();
         <span class="kw">for</span> <span class="ident">_i_sample</span> <span class="kw">in</span> <span class="number">0</span>..<span class="ident">global</span>.<span class="ident">n_samples_per_batch</span> {
-
             <span class="comment">// Sample with probability proportional to (Hc)^2</span>
             <span class="kw">let</span> (<span class="ident">sampled_det_info</span>, <span class="ident">sampled_prob</span>) <span class="op">=</span> <span class="ident">matmul_sample_remaining</span>(
-                <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">screened_sampler</span>, <span class="ident">ImpSampleDist::HcSquared</span>, <span class="ident">excite_gen</span>, <span class="ident">ham</span>, <span class="ident">rand</span>
+                <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">screened_sampler</span>,
+                <span class="ident">ImpSampleDist::HcSquared</span>,
+                <span class="ident">excite_gen</span>,
+                <span class="ident">ham</span>,
+                <span class="ident">rand</span>,
             );
 
             <span class="kw">match</span> <span class="ident">sampled_det_info</span> {
-                <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> {
+                <span class="prelude-val">None</span> =&gt; {
                     <span class="comment">// println!(&quot;Sampled excitation not valid! Sample prob = {}&quot;, sampled_prob);</span>
                 }
-                <span class="prelude-val">Some</span>((<span class="ident">exciting_det</span>, <span class="ident">excite</span>, <span class="ident">target_det</span>)) <span class="op">=</span><span class="op">&gt;</span> {
+                <span class="prelude-val">Some</span>((<span class="ident">exciting_det</span>, <span class="ident">excite</span>, <span class="ident">target_det</span>)) =&gt; {
                     <span class="comment">// println!(&quot;Sampled excitation: Sampled det = {}, Sample prob = {}, (H_ai c_i)^2 / p = {}&quot;, target_det, sampled_prob, excite.abs_h * excite.abs_h * exciting_det.coeff * exciting_det.coeff / sampled_prob);</span>
-                    <span class="kw">if</span> <span class="ident">excite</span>.<span class="ident">abs_h</span> <span class="op">*</span> <span class="ident">excite</span>.<span class="ident">abs_h</span> <span class="op">*</span> <span class="ident">exciting_det</span>.<span class="ident">coeff</span> <span class="op">*</span> <span class="ident">exciting_det</span>.<span class="ident">coeff</span> <span class="op">/</span> <span class="ident">sampled_prob</span> <span class="op">&gt;</span> <span class="number">0.54777</span> {
+                    <span class="kw">if</span> <span class="ident">excite</span>.<span class="ident">abs_h</span> <span class="op">*</span> <span class="ident">excite</span>.<span class="ident">abs_h</span> <span class="op">*</span> <span class="ident">exciting_det</span>.<span class="ident">coeff</span> <span class="op">*</span> <span class="ident">exciting_det</span>.<span class="ident">coeff</span>
+                        <span class="op">/</span> <span class="ident">sampled_prob</span>
+                        <span class="op">&gt;</span> <span class="number">0.54777</span>
+                    {
                         <span class="macro">println!</span>(<span class="string">&quot;Oversampled term!&quot;</span>);
                         <span class="macro">println!</span>(<span class="string">&quot;Exciting det: {}&quot;</span>, <span class="ident">exciting_det</span>);
                         <span class="comment">// println!(&quot;Excite: {}&quot;, excite);</span>
@@ -1037,8 +1221,14 @@
                     <span class="comment">// This is analogous to the SHCI contribution, but only applies to the (&lt;eps)</span>
                     <span class="comment">// terms. The sampling probability (Hc)^2 was chosen because the largest terms</span>
                     <span class="comment">// in this component are (Hc)^2 / (E_0 - E_a).</span>
-                    <span class="ident">samples</span>.<span class="ident">add_sample_compute_diag</span>(<span class="ident">exciting_det</span>, <span class="kw-2">&amp;</span><span class="ident">excite</span>, <span class="ident">target_det</span>, <span class="ident">sampled_prob</span>, <span class="ident">ham</span>);
-                },
+                    <span class="ident">samples</span>.<span class="ident">add_sample_compute_diag</span>(
+                        <span class="ident">exciting_det</span>,
+                        <span class="kw-2">&amp;</span><span class="ident">excite</span>,
+                        <span class="ident">target_det</span>,
+                        <span class="ident">sampled_prob</span>,
+                        <span class="ident">ham</span>,
+                    );
+                }
             }
         }
 
@@ -1048,7 +1238,10 @@
         <span class="kw">let</span> <span class="ident">sampled_e</span>: <span class="ident">f64</span> <span class="op">=</span> <span class="ident">samples</span>.<span class="ident">pt_estimator</span>(<span class="ident">input_wf</span>.<span class="ident">energy</span>, <span class="ident">samples</span>.<span class="ident">n</span>);
         <span class="macro">println!</span>(<span class="string">&quot;Sampled energy this batch = {}&quot;</span>, <span class="ident">sampled_e</span>);
         <span class="ident">stoch_enpt2_quadratic</span>.<span class="ident">update</span>(<span class="ident">sampled_e</span>);
-        <span class="macro">println!</span>(<span class="string">&quot;Current estimate of stochastic component: {:.4} +- {:.4}&quot;</span>, <span class="ident">stoch_enpt2_quadratic</span>.<span class="ident">mean</span>, <span class="ident">stoch_enpt2_quadratic</span>.<span class="ident">std_dev</span>);
+        <span class="macro">println!</span>(
+            <span class="string">&quot;Current estimate of stochastic component: {:.4} +- {:.4}&quot;</span>,
+            <span class="ident">stoch_enpt2_quadratic</span>.<span class="ident">mean</span>, <span class="ident">stoch_enpt2_quadratic</span>.<span class="ident">std_dev</span>
+        );
 
         <span class="kw">if</span> <span class="ident">i_batch</span> <span class="op">&gt;</span> <span class="number">9</span> {
             <span class="kw">if</span> <span class="ident">stoch_enpt2_quadratic</span>.<span class="ident">std_dev</span> <span class="op">&lt;</span><span class="op">=</span> <span class="ident">global</span>.<span class="ident">target_uncertainty</span> <span class="op">/</span> <span class="number">2f64</span>.<span class="ident">sqrt</span>() {
@@ -1056,21 +1249,32 @@
                 <span class="kw">break</span>;
             }
         }
-
     }
     <span class="macro">println!</span>(<span class="string">&quot;Time for sampling: {:?}&quot;</span>, <span class="ident">start_quadratic</span>.<span class="ident">elapsed</span>());
 
-    <span class="macro">println!</span>(<span class="string">&quot;Stochastic components: Cross term: {:.6} +- {:.6},   Quadratic term: {:.6} +- {:.6}&quot;</span>, <span class="number">2f64</span> <span class="op">*</span> <span class="ident">stoch_enpt2_cross_term</span>.<span class="ident">mean</span>,
-             <span class="number">2f64</span> <span class="op">*</span> <span class="ident">stoch_enpt2_cross_term</span>.<span class="ident">std_dev</span>, <span class="ident">stoch_enpt2_quadratic</span>.<span class="ident">mean</span>, <span class="ident">stoch_enpt2_quadratic</span>.<span class="ident">std_dev</span>);
+    <span class="macro">println!</span>(
+        <span class="string">&quot;Stochastic components: Cross term: {:.6} +- {:.6},   Quadratic term: {:.6} +- {:.6}&quot;</span>,
+        <span class="number">2f64</span> <span class="op">*</span> <span class="ident">stoch_enpt2_cross_term</span>.<span class="ident">mean</span>,
+        <span class="number">2f64</span> <span class="op">*</span> <span class="ident">stoch_enpt2_cross_term</span>.<span class="ident">std_dev</span>,
+        <span class="ident">stoch_enpt2_quadratic</span>.<span class="ident">mean</span>,
+        <span class="ident">stoch_enpt2_quadratic</span>.<span class="ident">std_dev</span>
+    );
 
     (
         <span class="ident">dtm_enpt2</span> <span class="op">+</span> <span class="number">2f64</span> <span class="op">*</span> <span class="ident">stoch_enpt2_cross_term</span>.<span class="ident">mean</span> <span class="op">+</span> <span class="ident">stoch_enpt2_quadratic</span>.<span class="ident">mean</span>,
-        (<span class="number">4f64</span> <span class="op">*</span> <span class="ident">stoch_enpt2_cross_term</span>.<span class="ident">std_dev</span> <span class="op">*</span> <span class="ident">stoch_enpt2_cross_term</span>.<span class="ident">std_dev</span> <span class="op">+</span> <span class="ident">stoch_enpt2_quadratic</span>.<span class="ident">std_dev</span> <span class="op">*</span> <span class="ident">stoch_enpt2_quadratic</span>.<span class="ident">std_dev</span>).<span class="ident">sqrt</span>()
+        (<span class="number">4f64</span> <span class="op">*</span> <span class="ident">stoch_enpt2_cross_term</span>.<span class="ident">std_dev</span> <span class="op">*</span> <span class="ident">stoch_enpt2_cross_term</span>.<span class="ident">std_dev</span>
+            <span class="op">+</span> <span class="ident">stoch_enpt2_quadratic</span>.<span class="ident">std_dev</span> <span class="op">*</span> <span class="ident">stoch_enpt2_quadratic</span>.<span class="ident">std_dev</span>)
+            .<span class="ident">sqrt</span>(),
     )
 }
 
-
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">faster_semistoch_enpt2</span>(<span class="ident">input_wf</span>: <span class="kw-2">&amp;</span><span class="ident">Wf</span>, <span class="ident">global</span>: <span class="kw-2">&amp;</span><span class="ident">Global</span>, <span class="ident">ham</span>: <span class="kw-2">&amp;</span><span class="ident">Ham</span>, <span class="ident">excite_gen</span>: <span class="kw-2">&amp;</span><span class="ident">ExciteGenerator</span>, <span class="ident">rand</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Rand</span>) <span class="op">-</span><span class="op">&gt;</span> (<span class="ident">f64</span>, <span class="ident">f64</span>) {
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">faster_semistoch_enpt2</span>(
+    <span class="ident">input_wf</span>: <span class="kw-2">&amp;</span><span class="ident">Wf</span>,
+    <span class="ident">global</span>: <span class="kw-2">&amp;</span><span class="ident">Global</span>,
+    <span class="ident">ham</span>: <span class="kw-2">&amp;</span><span class="ident">Ham</span>,
+    <span class="ident">excite_gen</span>: <span class="kw-2">&amp;</span><span class="ident">ExciteGenerator</span>,
+    <span class="ident">rand</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Rand</span>,
+) -&gt; (<span class="ident">f64</span>, <span class="ident">f64</span>) {
     <span class="comment">// Semistochastic Epstein-Nesbet PT2</span>
     <span class="comment">// In earlier SHCI paper, used the following strategy:</span>
     <span class="comment">// 1. Compute ENPT2 deterministically using large eps</span>
@@ -1089,7 +1293,8 @@
     <span class="comment">// Compute deterministic component, and create sampler object for sampling remaining component</span>
     <span class="kw">let</span> <span class="ident">start_dtm_enpt2</span>: <span class="ident">Instant</span> <span class="op">=</span> <span class="ident">Instant::now</span>();
     <span class="comment">// let (dtm_result, mut screened_sampler) = input_wf.approx_matmul_external_dtm_singles(global, ham, excite_gen, global.eps_pt_dtm);</span>
-    <span class="kw">let</span> (<span class="ident">dtm_result</span>, <span class="kw-2">mut</span> <span class="ident">screened_sampler</span>) <span class="op">=</span> <span class="ident">input_wf</span>.<span class="ident">approx_matmul_external_semistoch_singles</span>(<span class="ident">ham</span>, <span class="ident">excite_gen</span>, <span class="ident">global</span>.<span class="ident">eps_pt_dtm</span>);
+    <span class="kw">let</span> (<span class="ident">dtm_result</span>, <span class="kw-2">mut</span> <span class="ident">screened_sampler</span>) <span class="op">=</span>
+        <span class="ident">input_wf</span>.<span class="ident">approx_matmul_external_semistoch_singles</span>(<span class="ident">ham</span>, <span class="ident">excite_gen</span>, <span class="ident">global</span>.<span class="ident">eps_pt_dtm</span>);
     <span class="comment">// println!(&quot;Testing screened sampler!&quot;);</span>
     <span class="comment">// let n_samples = 1000000;</span>
     <span class="comment">// screened_sampler.det_orb_sampler_abs_hc.test(n_samples);</span>
@@ -1101,7 +1306,10 @@
     <span class="kw">for</span> <span class="ident">det</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">dtm_result</span>.<span class="ident">dets</span> {
         <span class="ident">dtm_enpt2</span> <span class="op">+</span><span class="op">=</span> (<span class="ident">det</span>.<span class="ident">coeff</span> <span class="op">*</span> <span class="ident">det</span>.<span class="ident">coeff</span>) <span class="op">/</span> (<span class="ident">input_wf</span>.<span class="ident">energy</span> <span class="op">-</span> <span class="ident">det</span>.<span class="ident">diag</span>);
     }
-    <span class="macro">println!</span>(<span class="string">&quot;Deterministic approximation to Delta E using eps = {} ({} dets): {:.6}&quot;</span>, <span class="ident">global</span>.<span class="ident">eps_pt_dtm</span>, <span class="ident">dtm_result</span>.<span class="ident">n</span>, <span class="ident">dtm_enpt2</span>);
+    <span class="macro">println!</span>(
+        <span class="string">&quot;Deterministic approximation to Delta E using eps = {} ({} dets): {:.6}&quot;</span>,
+        <span class="ident">global</span>.<span class="ident">eps_pt_dtm</span>, <span class="ident">dtm_result</span>.<span class="ident">n</span>, <span class="ident">dtm_enpt2</span>
+    );
 
     <span class="comment">// Stochastic component</span>
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">stoch_enpt2_cross_term</span>: <span class="ident">Stats</span><span class="op">&lt;</span><span class="ident">f64</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Stats::new</span>(); <span class="comment">// samples overlap with deterministic part</span>
@@ -1115,24 +1323,33 @@
         <span class="macro">println!</span>(<span class="string">&quot;\n Starting batch {}&quot;</span>, <span class="ident">i_batch</span>);
         <span class="ident">samples</span>.<span class="ident">clear</span>();
         <span class="kw">for</span> <span class="ident">_i_sample</span> <span class="kw">in</span> <span class="number">0</span>..<span class="ident">global</span>.<span class="ident">n_samples_per_batch</span> {
-
             <span class="comment">// Sample with probability proportional to (Hc)^2</span>
             <span class="kw">let</span> (<span class="ident">sampled_det_info</span>, <span class="ident">sampled_prob</span>) <span class="op">=</span> <span class="ident">matmul_sample_remaining</span>(
-                <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">screened_sampler</span>, <span class="ident">ImpSampleDist::HcSquared</span>, <span class="ident">excite_gen</span>, <span class="ident">ham</span>, <span class="ident">rand</span>
+                <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">screened_sampler</span>,
+                <span class="ident">ImpSampleDist::HcSquared</span>,
+                <span class="ident">excite_gen</span>,
+                <span class="ident">ham</span>,
+                <span class="ident">rand</span>,
             );
 
             <span class="kw">match</span> <span class="ident">sampled_det_info</span> {
-                <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> {
+                <span class="prelude-val">None</span> =&gt; {
                     <span class="comment">// println!(&quot;Sampled excitation not valid! Sample prob = {}&quot;, sampled_prob);</span>
                 }
-                <span class="prelude-val">Some</span>((<span class="ident">exciting_det</span>, <span class="ident">excite</span>, <span class="ident">target_det</span>)) <span class="op">=</span><span class="op">&gt;</span> {
+                <span class="prelude-val">Some</span>((<span class="ident">exciting_det</span>, <span class="ident">excite</span>, <span class="ident">target_det</span>)) =&gt; {
                     <span class="comment">// println!(&quot;Sampled excitation: Sampled det = {}, Sample prob = {}, (H_ai c_i)^2 / p = {}&quot;, target_det, sampled_prob, excite.abs_h * excite.abs_h * exciting_det.coeff * exciting_det.coeff / sampled_prob);</span>
                     <span class="comment">// Collect this sample for the quadratic contribution</span>
                     <span class="comment">// This is analogous to the SHCI contribution, but only applies to the (&lt;eps)</span>
                     <span class="comment">// terms. The sampling probability (Hc)^2 was chosen because the largest terms</span>
                     <span class="comment">// in this component are (Hc)^2 / (E_0 - E_a).</span>
-                    <span class="ident">samples</span>.<span class="ident">add_sample_compute_diag</span>(<span class="ident">exciting_det</span>, <span class="kw-2">&amp;</span><span class="ident">excite</span>, <span class="ident">target_det</span>, <span class="ident">sampled_prob</span>, <span class="ident">ham</span>);
-                },
+                    <span class="ident">samples</span>.<span class="ident">add_sample_compute_diag</span>(
+                        <span class="ident">exciting_det</span>,
+                        <span class="kw-2">&amp;</span><span class="ident">excite</span>,
+                        <span class="ident">target_det</span>,
+                        <span class="ident">sampled_prob</span>,
+                        <span class="ident">ham</span>,
+                    );
+                }
             }
         }
 
@@ -1142,7 +1359,10 @@
         <span class="kw">let</span> <span class="ident">sampled_e</span>: <span class="ident">f64</span> <span class="op">=</span> <span class="ident">samples</span>.<span class="ident">pt_estimator</span>(<span class="ident">input_wf</span>.<span class="ident">energy</span>, <span class="ident">samples</span>.<span class="ident">n</span>);
         <span class="macro">println!</span>(<span class="string">&quot;Sampled energy this batch = {}&quot;</span>, <span class="ident">sampled_e</span>);
         <span class="ident">stoch_enpt2_quadratic</span>.<span class="ident">update</span>(<span class="ident">sampled_e</span>);
-        <span class="macro">println!</span>(<span class="string">&quot;Current estimate of stochastic component: {:.4} +- {:.4}&quot;</span>, <span class="ident">stoch_enpt2_quadratic</span>.<span class="ident">mean</span>, <span class="ident">stoch_enpt2_quadratic</span>.<span class="ident">std_dev</span>);
+        <span class="macro">println!</span>(
+            <span class="string">&quot;Current estimate of stochastic component: {:.4} +- {:.4}&quot;</span>,
+            <span class="ident">stoch_enpt2_quadratic</span>.<span class="ident">mean</span>, <span class="ident">stoch_enpt2_quadratic</span>.<span class="ident">std_dev</span>
+        );
 
         <span class="kw">if</span> <span class="ident">i_batch</span> <span class="op">&gt;</span> <span class="number">9</span> {
             <span class="kw">if</span> <span class="ident">stoch_enpt2_quadratic</span>.<span class="ident">std_dev</span> <span class="op">&lt;</span><span class="op">=</span> <span class="ident">global</span>.<span class="ident">target_uncertainty</span> <span class="op">/</span> <span class="number">2f64</span>.<span class="ident">sqrt</span>() {
@@ -1150,7 +1370,6 @@
                 <span class="kw">break</span>;
             }
         }
-
     }
     <span class="macro">println!</span>(<span class="string">&quot;Time for quadratic term: {:?}&quot;</span>, <span class="ident">start_quadratic</span>.<span class="ident">elapsed</span>());
 
@@ -1176,7 +1395,10 @@
 
     <span class="comment">// let n_e: i32 = global.nup + global.ndn;</span>
     <span class="comment">// let n_cross_term_samples = (n_batches * n_samples_per_batch) / ( (n_e * (n_e + 1)) / 2 );</span>
-    <span class="macro">println!</span>(<span class="string">&quot;Taking up to {} samples for cross-term&quot;</span>, <span class="ident">global</span>.<span class="ident">n_cross_term_samples</span>);
+    <span class="macro">println!</span>(
+        <span class="string">&quot;Taking up to {} samples for cross-term&quot;</span>,
+        <span class="ident">global</span>.<span class="ident">n_cross_term_samples</span>
+    );
     <span class="kw">let</span> <span class="ident">n_min_samples</span> <span class="op">=</span> <span class="number">100</span>;
 
     <span class="kw">let</span> <span class="ident">start_cross_term</span>: <span class="ident">Instant</span> <span class="op">=</span> <span class="ident">Instant::now</span>();
@@ -1186,33 +1408,42 @@
         <span class="kw">let</span> <span class="ident">sampled_dtm_det</span> <span class="op">=</span> <span class="ident">dtm_result</span>.<span class="ident">dets</span>[<span class="ident">sampled_dtm_det_ind</span>];
 
         <span class="comment">// Sample O(N^2) excitations from the sampled det, one for each occupied orb/pair</span>
-        <span class="kw">let</span> <span class="ident">sampled_excites</span> <span class="op">=</span> <span class="ident">excite_gen</span>.<span class="ident">sample_excites_from_all_pairs</span>(<span class="ident">sampled_dtm_det</span>.<span class="ident">config</span>, <span class="kw-2">&amp;</span><span class="ident">ImpSampleDist::HcSquared</span>, <span class="ident">rand</span>);
+        <span class="kw">let</span> <span class="ident">sampled_excites</span> <span class="op">=</span> <span class="ident">excite_gen</span>.<span class="ident">sample_excites_from_all_pairs</span>(
+            <span class="ident">sampled_dtm_det</span>.<span class="ident">config</span>,
+            <span class="kw-2">&amp;</span><span class="ident">ImpSampleDist::HcSquared</span>,
+            <span class="ident">rand</span>,
+        );
 
         <span class="comment">// Check each valid excitation to see whether it excites to a variational det; if so, update energy estimator</span>
         <span class="kw">for</span> (<span class="ident">excite</span>, <span class="ident">excite_prob</span>) <span class="kw">in</span> <span class="ident">sampled_excites</span> {
             <span class="kw">let</span> <span class="ident">excited_det</span> <span class="op">=</span> <span class="ident">sampled_dtm_det</span>.<span class="ident">config</span>.<span class="ident">safe_excite_det</span>(<span class="kw-2">&amp;</span><span class="ident">excite</span>);
             <span class="kw">match</span> <span class="ident">excited_det</span> {
-                <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> {},
-                <span class="prelude-val">Some</span>(<span class="ident">exc_det</span>) <span class="op">=</span><span class="op">&gt;</span> {
+                <span class="prelude-val">None</span> =&gt; {}
+                <span class="prelude-val">Some</span>(<span class="ident">exc_det</span>) =&gt; {
                     <span class="comment">// look for exc_det in variational wf</span>
                     <span class="kw">match</span> <span class="ident">input_wf</span>.<span class="ident">inds</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">exc_det</span>) {
-                        <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> {
+                        <span class="prelude-val">None</span> =&gt; {
                             <span class="comment">// Energy contribution is 0</span>
                             <span class="kw">let</span> <span class="ident">sampled_e</span>: <span class="ident">f64</span> <span class="op">=</span> <span class="number">0.0</span>;
                             <span class="ident">stoch_enpt2_cross_term</span>.<span class="ident">update</span>(<span class="ident">sampled_e</span>);
-                        },
-                        <span class="prelude-val">Some</span>(<span class="ident">ind</span>) <span class="op">=</span><span class="op">&gt;</span> {
+                        }
+                        <span class="prelude-val">Some</span>(<span class="ident">ind</span>) =&gt; {
                             <span class="comment">// Compute matrix element h</span>
                             <span class="comment">// Screen for terms &lt;eps</span>
-                            <span class="kw">let</span> <span class="ident">sampled_e</span>: <span class="ident">f64</span> <span class="op">=</span>
-                                <span class="kw">if</span> <span class="ident">excite</span>.<span class="ident">abs_h</span> <span class="op">*</span> <span class="ident">input_wf</span>.<span class="ident">dets</span>[<span class="kw-2">*</span><span class="ident">ind</span>].<span class="ident">coeff</span>.<span class="ident">abs</span>() <span class="op">&lt;</span> <span class="ident">global</span>.<span class="ident">eps_pt_dtm</span> {
-                                    <span class="comment">// println!(&quot;|H|, |c| = {}, {}&quot;, excite.abs_h, input_wf.dets[*ind].coeff.abs());</span>
-                                    <span class="kw">let</span> <span class="ident">h</span>: <span class="ident">f64</span> <span class="op">=</span> <span class="ident">ham</span>.<span class="ident">ham_off_diag</span>(<span class="kw-2">&amp;</span><span class="ident">sampled_dtm_det</span>.<span class="ident">config</span>, <span class="kw-2">&amp;</span><span class="ident">exc_det</span>, <span class="kw-2">&amp;</span><span class="ident">excite</span>);
-                                    <span class="comment">// println!(&quot;Found nonzero contribution to cross term: {}&quot;, (sampled_dtm_det.coeff / (input_wf.energy - sampled_dtm_det.diag)) * h * input_wf.dets[*ind].coeff / (sampled_dtm_det_prob * excite_prob));</span>
-                                    (<span class="ident">sampled_dtm_det</span>.<span class="ident">coeff</span> <span class="op">/</span> (<span class="ident">input_wf</span>.<span class="ident">energy</span> <span class="op">-</span> <span class="ident">sampled_dtm_det</span>.<span class="ident">diag</span>)) <span class="op">*</span> <span class="ident">h</span> <span class="op">*</span> <span class="ident">input_wf</span>.<span class="ident">dets</span>[<span class="kw-2">*</span><span class="ident">ind</span>].<span class="ident">coeff</span> <span class="op">/</span> (<span class="ident">sampled_dtm_det_prob</span> <span class="op">*</span> <span class="ident">excite_prob</span>)
-                                } <span class="kw">else</span> {
-                                    <span class="number">0.0</span>
-                                };
+                            <span class="kw">let</span> <span class="ident">sampled_e</span>: <span class="ident">f64</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">excite</span>.<span class="ident">abs_h</span> <span class="op">*</span> <span class="ident">input_wf</span>.<span class="ident">dets</span>[<span class="kw-2">*</span><span class="ident">ind</span>].<span class="ident">coeff</span>.<span class="ident">abs</span>()
+                                <span class="op">&lt;</span> <span class="ident">global</span>.<span class="ident">eps_pt_dtm</span>
+                            {
+                                <span class="comment">// println!(&quot;|H|, |c| = {}, {}&quot;, excite.abs_h, input_wf.dets[*ind].coeff.abs());</span>
+                                <span class="kw">let</span> <span class="ident">h</span>: <span class="ident">f64</span> <span class="op">=</span>
+                                    <span class="ident">ham</span>.<span class="ident">ham_off_diag</span>(<span class="kw-2">&amp;</span><span class="ident">sampled_dtm_det</span>.<span class="ident">config</span>, <span class="kw-2">&amp;</span><span class="ident">exc_det</span>, <span class="kw-2">&amp;</span><span class="ident">excite</span>);
+                                <span class="comment">// println!(&quot;Found nonzero contribution to cross term: {}&quot;, (sampled_dtm_det.coeff / (input_wf.energy - sampled_dtm_det.diag)) * h * input_wf.dets[*ind].coeff / (sampled_dtm_det_prob * excite_prob));</span>
+                                (<span class="ident">sampled_dtm_det</span>.<span class="ident">coeff</span> <span class="op">/</span> (<span class="ident">input_wf</span>.<span class="ident">energy</span> <span class="op">-</span> <span class="ident">sampled_dtm_det</span>.<span class="ident">diag</span>))
+                                    <span class="op">*</span> <span class="ident">h</span>
+                                    <span class="op">*</span> <span class="ident">input_wf</span>.<span class="ident">dets</span>[<span class="kw-2">*</span><span class="ident">ind</span>].<span class="ident">coeff</span>
+                                    <span class="op">/</span> (<span class="ident">sampled_dtm_det_prob</span> <span class="op">*</span> <span class="ident">excite_prob</span>)
+                            } <span class="kw">else</span> {
+                                <span class="number">0.0</span>
+                            };
                             <span class="ident">stoch_enpt2_cross_term</span>.<span class="ident">update</span>(<span class="ident">sampled_e</span>);
                         }
                     }
@@ -1229,12 +1460,19 @@
     }
     <span class="macro">println!</span>(<span class="string">&quot;Time for cross term: {:?}&quot;</span>, <span class="ident">start_cross_term</span>.<span class="ident">elapsed</span>());
 
-    <span class="macro">println!</span>(<span class="string">&quot;Stochastic components: Cross term: {:.6} +- {:.6},   Quadratic term: {:.6} +- {:.6}&quot;</span>, <span class="number">2f64</span> <span class="op">*</span> <span class="ident">stoch_enpt2_cross_term</span>.<span class="ident">mean</span>,
-             <span class="number">2f64</span> <span class="op">*</span> <span class="ident">stoch_enpt2_cross_term</span>.<span class="ident">std_dev</span>, <span class="ident">stoch_enpt2_quadratic</span>.<span class="ident">mean</span>, <span class="ident">stoch_enpt2_quadratic</span>.<span class="ident">std_dev</span>);
+    <span class="macro">println!</span>(
+        <span class="string">&quot;Stochastic components: Cross term: {:.6} +- {:.6},   Quadratic term: {:.6} +- {:.6}&quot;</span>,
+        <span class="number">2f64</span> <span class="op">*</span> <span class="ident">stoch_enpt2_cross_term</span>.<span class="ident">mean</span>,
+        <span class="number">2f64</span> <span class="op">*</span> <span class="ident">stoch_enpt2_cross_term</span>.<span class="ident">std_dev</span>,
+        <span class="ident">stoch_enpt2_quadratic</span>.<span class="ident">mean</span>,
+        <span class="ident">stoch_enpt2_quadratic</span>.<span class="ident">std_dev</span>
+    );
 
     (
         <span class="ident">dtm_enpt2</span> <span class="op">+</span> <span class="number">2f64</span> <span class="op">*</span> <span class="ident">stoch_enpt2_cross_term</span>.<span class="ident">mean</span> <span class="op">+</span> <span class="ident">stoch_enpt2_quadratic</span>.<span class="ident">mean</span>,
-        (<span class="number">4f64</span> <span class="op">*</span> <span class="ident">stoch_enpt2_cross_term</span>.<span class="ident">std_dev</span> <span class="op">*</span> <span class="ident">stoch_enpt2_cross_term</span>.<span class="ident">std_dev</span> <span class="op">+</span> <span class="ident">stoch_enpt2_quadratic</span>.<span class="ident">std_dev</span> <span class="op">*</span> <span class="ident">stoch_enpt2_quadratic</span>.<span class="ident">std_dev</span>).<span class="ident">sqrt</span>()
+        (<span class="number">4f64</span> <span class="op">*</span> <span class="ident">stoch_enpt2_cross_term</span>.<span class="ident">std_dev</span> <span class="op">*</span> <span class="ident">stoch_enpt2_cross_term</span>.<span class="ident">std_dev</span>
+            <span class="op">+</span> <span class="ident">stoch_enpt2_quadratic</span>.<span class="ident">std_dev</span> <span class="op">*</span> <span class="ident">stoch_enpt2_quadratic</span>.<span class="ident">std_dev</span>)
+            .<span class="ident">sqrt</span>(),
     )
 }
 
@@ -1479,15 +1717,22 @@
 <span class="comment">//</span>
 <span class="comment">// }</span>
 
-
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">old_semistoch_enpt2</span>(<span class="ident">input_wf</span>: <span class="kw-2">&amp;</span><span class="ident">Wf</span>, <span class="ident">global</span>: <span class="kw-2">&amp;</span><span class="ident">Global</span>, <span class="ident">ham</span>: <span class="kw-2">&amp;</span><span class="ident">Ham</span>, <span class="ident">excite_gen</span>: <span class="kw-2">&amp;</span><span class="ident">ExciteGenerator</span>, <span class="ident">use_optimal_probs</span>: <span class="ident">bool</span>, <span class="ident">rand</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Rand</span>) <span class="op">-</span><span class="op">&gt;</span> (<span class="ident">f64</span>, <span class="ident">f64</span>) {
-    <span class="comment">// Old algorithm (2017) for semistochastic ENPT2</span>
+<span class="doccomment">/// Old algorithm (2017) for semistochastic ENPT2</span>
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">old_semistoch_enpt2</span>(
+    <span class="ident">input_wf</span>: <span class="kw-2">&amp;</span><span class="ident">Wf</span>,
+    <span class="ident">global</span>: <span class="kw-2">&amp;</span><span class="ident">Global</span>,
+    <span class="ident">ham</span>: <span class="kw-2">&amp;</span><span class="ident">Ham</span>,
+    <span class="ident">excite_gen</span>: <span class="kw-2">&amp;</span><span class="ident">ExciteGenerator</span>,
+    <span class="ident">use_optimal_probs</span>: <span class="ident">bool</span>,
+    <span class="ident">rand</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Rand</span>,
+) -&gt; (<span class="ident">f64</span>, <span class="ident">f64</span>) {
     <span class="comment">// If use_optimal_probs, then sample with probability proportional to sum of remaining (Hc)^2;</span>
     <span class="comment">// else, use probability proportional to |c|</span>
 
     <span class="comment">// Compute deterministic approximation to H psi using large eps</span>
     <span class="kw">let</span> <span class="ident">start_dtm_enpt2</span>: <span class="ident">Instant</span> <span class="op">=</span> <span class="ident">Instant::now</span>();
-    <span class="kw">let</span> (<span class="ident">dtm_result</span>, <span class="ident">optimal_probs</span>) <span class="op">=</span> <span class="ident">input_wf</span>.<span class="ident">approx_matmul_external_dtm_only</span>(<span class="ident">ham</span>, <span class="ident">excite_gen</span>, <span class="ident">global</span>.<span class="ident">eps_pt_dtm</span>);
+    <span class="kw">let</span> (<span class="ident">dtm_result</span>, <span class="ident">optimal_probs</span>) <span class="op">=</span>
+        <span class="ident">input_wf</span>.<span class="ident">approx_matmul_external_dtm_only</span>(<span class="ident">ham</span>, <span class="ident">excite_gen</span>, <span class="ident">global</span>.<span class="ident">eps_pt_dtm</span>);
     <span class="macro">println!</span>(<span class="string">&quot;Time for dtm ENPT2: {:?}&quot;</span>, <span class="ident">start_dtm_enpt2</span>.<span class="ident">elapsed</span>());
 
     <span class="comment">// Compute approximate delta E using approx H psi</span>
@@ -1495,7 +1740,10 @@
     <span class="kw">for</span> <span class="ident">det</span> <span class="kw">in</span> <span class="ident">dtm_result</span>.<span class="ident">dets</span> {
         <span class="ident">dtm_enpt2</span> <span class="op">+</span><span class="op">=</span> <span class="ident">det</span>.<span class="ident">coeff</span> <span class="op">*</span> <span class="ident">det</span>.<span class="ident">coeff</span> <span class="op">/</span> (<span class="ident">input_wf</span>.<span class="ident">energy</span> <span class="op">-</span> <span class="ident">det</span>.<span class="ident">diag</span>);
     }
-    <span class="macro">println!</span>(<span class="string">&quot;Deterministic approximation to Delta E using eps = {} ({} dets): {:.6}&quot;</span>, <span class="ident">global</span>.<span class="ident">eps_pt_dtm</span>, <span class="ident">dtm_result</span>.<span class="ident">n</span>, <span class="ident">dtm_enpt2</span>);
+    <span class="macro">println!</span>(
+        <span class="string">&quot;Deterministic approximation to Delta E using eps = {} ({} dets): {:.6}&quot;</span>,
+        <span class="ident">global</span>.<span class="ident">eps_pt_dtm</span>, <span class="ident">dtm_result</span>.<span class="ident">n</span>, <span class="ident">dtm_enpt2</span>
+    );
 
     <span class="comment">// Sample dets from wf with probability |c|</span>
     <span class="comment">// Update estimate of difference between exact and approximate delta E using deterministic application of H</span>
@@ -1515,7 +1763,7 @@
             <span class="ident">var_probs</span>[<span class="ident">i_det</span>] <span class="op">=</span> <span class="ident">det</span>.<span class="ident">coeff</span>.<span class="ident">abs</span>() <span class="kw">as</span> <span class="ident">f64</span>;
         }
     }
-    <span class="kw">let</span> <span class="ident">prob_norm</span>:<span class="ident">f64</span> <span class="op">=</span> <span class="ident">var_probs</span>.<span class="ident">iter</span>().<span class="ident">sum</span>::<span class="op">&lt;</span><span class="ident">f64</span><span class="op">&gt;</span>();
+    <span class="kw">let</span> <span class="ident">prob_norm</span>: <span class="ident">f64</span> <span class="op">=</span> <span class="ident">var_probs</span>.<span class="ident">iter</span>().<span class="ident">sum</span>::<span class="op">&lt;</span><span class="ident">f64</span><span class="op">&gt;</span>();
     <span class="kw">for</span> <span class="ident">i_prob</span> <span class="kw">in</span> <span class="number">0</span>..<span class="ident">input_wf</span>.<span class="ident">n</span> {
         <span class="ident">var_probs</span>[<span class="ident">i_prob</span>] <span class="op">=</span> <span class="ident">var_probs</span>[<span class="ident">i_prob</span>] <span class="op">/</span> <span class="ident">prob_norm</span>;
     }
@@ -1533,7 +1781,6 @@
 
     <span class="kw">let</span> <span class="ident">start_quadratic</span>: <span class="ident">Instant</span> <span class="op">=</span> <span class="ident">Instant::now</span>();
     <span class="kw">for</span> <span class="ident">i_batch</span> <span class="kw">in</span> <span class="number">0</span>..<span class="ident">n_batches_max</span> {
-
         <span class="comment">// Sample a batch of samples, updating the stoch component of the energy for each sample</span>
         <span class="macro">println!</span>(<span class="string">&quot;\n Starting batch {}&quot;</span>, <span class="ident">i_batch</span>);
 
@@ -1550,15 +1797,30 @@
             <span class="comment">// Generate (wastefully) all PT dets connected to the sampled variational det</span>
 
             <span class="comment">// Collect samples using small eps (eps_pt)</span>
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">v_times_sampled_var_det</span> <span class="op">=</span> <span class="ident">sampled_var_det</span>.<span class="ident">approx_matmul_external_dtm_only_compute_diags</span>(<span class="ident">input_wf</span>, <span class="ident">ham</span>, <span class="ident">excite_gen</span>, <span class="ident">eps_pt</span>);
+            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">v_times_sampled_var_det</span> <span class="op">=</span> <span class="ident">sampled_var_det</span>
+                .<span class="ident">approx_matmul_external_dtm_only_compute_diags</span>(<span class="ident">input_wf</span>, <span class="ident">ham</span>, <span class="ident">excite_gen</span>, <span class="ident">eps_pt</span>);
             <span class="kw">for</span> <span class="ident">target_det</span> <span class="kw">in</span> <span class="ident">v_times_sampled_var_det</span>.<span class="ident">dets</span> {
-                <span class="ident">samples_all</span>.<span class="ident">add_sample_diag_already_stored</span>(<span class="ident">sampled_var_det</span>, <span class="ident">target_det</span>, <span class="ident">sampled_prob</span>);
+                <span class="ident">samples_all</span>.<span class="ident">add_sample_diag_already_stored</span>(
+                    <span class="ident">sampled_var_det</span>,
+                    <span class="ident">target_det</span>,
+                    <span class="ident">sampled_prob</span>,
+                );
             }
 
             <span class="comment">// Collect samples using large eps (eps) corresponding to deterministic part</span>
-            <span class="ident">v_times_sampled_var_det</span> <span class="op">=</span> <span class="ident">sampled_var_det</span>.<span class="ident">approx_matmul_external_dtm_only_compute_diags</span>(<span class="ident">input_wf</span>, <span class="ident">ham</span>, <span class="ident">excite_gen</span>, <span class="ident">global</span>.<span class="ident">eps_pt_dtm</span>);
+            <span class="ident">v_times_sampled_var_det</span> <span class="op">=</span> <span class="ident">sampled_var_det</span>
+                .<span class="ident">approx_matmul_external_dtm_only_compute_diags</span>(
+                    <span class="ident">input_wf</span>,
+                    <span class="ident">ham</span>,
+                    <span class="ident">excite_gen</span>,
+                    <span class="ident">global</span>.<span class="ident">eps_pt_dtm</span>,
+                );
             <span class="kw">for</span> <span class="ident">target_det</span> <span class="kw">in</span> <span class="ident">v_times_sampled_var_det</span>.<span class="ident">dets</span> {
-                <span class="ident">samples_large_eps</span>.<span class="ident">add_sample_diag_already_stored</span>(<span class="ident">sampled_var_det</span>, <span class="ident">target_det</span>, <span class="ident">sampled_prob</span>);
+                <span class="ident">samples_large_eps</span>.<span class="ident">add_sample_diag_already_stored</span>(
+                    <span class="ident">sampled_var_det</span>,
+                    <span class="ident">target_det</span>,
+                    <span class="ident">sampled_prob</span>,
+                );
             }
         }
 
@@ -1567,7 +1829,10 @@
 
         <span class="macro">println!</span>(<span class="string">&quot;Sampled energy this batch = {}&quot;</span>, <span class="ident">sampled_e</span>);
         <span class="ident">stoch_enpt2</span>.<span class="ident">update</span>(<span class="ident">sampled_e</span>);
-        <span class="macro">println!</span>(<span class="string">&quot;Current estimate of stochastic component: {:.4} +- {:.4}&quot;</span>, <span class="ident">stoch_enpt2</span>.<span class="ident">mean</span>, <span class="ident">stoch_enpt2</span>.<span class="ident">std_dev</span>);
+        <span class="macro">println!</span>(
+            <span class="string">&quot;Current estimate of stochastic component: {:.4} +- {:.4}&quot;</span>,
+            <span class="ident">stoch_enpt2</span>.<span class="ident">mean</span>, <span class="ident">stoch_enpt2</span>.<span class="ident">std_dev</span>
+        );
 
         <span class="kw">if</span> <span class="ident">i_batch</span> <span class="op">&gt;</span> <span class="number">9</span> {
             <span class="kw">if</span> <span class="ident">stoch_enpt2</span>.<span class="ident">std_dev</span> <span class="op">&lt;</span><span class="op">=</span> <span class="ident">global</span>.<span class="ident">target_uncertainty</span> {
@@ -1575,17 +1840,16 @@
                 <span class="kw">break</span>;
             }
         }
-
     }
     <span class="macro">println!</span>(<span class="string">&quot;Time for sampling: {:?}&quot;</span>, <span class="ident">start_quadratic</span>.<span class="ident">elapsed</span>());
 
-    <span class="macro">println!</span>(<span class="string">&quot;Stochastic component: {:.4} +- {:.4}&quot;</span>, <span class="ident">stoch_enpt2</span>.<span class="ident">mean</span>, <span class="ident">stoch_enpt2</span>.<span class="ident">std_dev</span>);
+    <span class="macro">println!</span>(
+        <span class="string">&quot;Stochastic component: {:.4} +- {:.4}&quot;</span>,
+        <span class="ident">stoch_enpt2</span>.<span class="ident">mean</span>, <span class="ident">stoch_enpt2</span>.<span class="ident">std_dev</span>
+    );
 
-    (<span class="ident">dtm_enpt2</span> <span class="op">+</span> <span class="ident">stoch_enpt2</span>.<span class="ident">mean</span>,
-     <span class="ident">stoch_enpt2</span>.<span class="ident">std_dev</span>)
-
+    (<span class="ident">dtm_enpt2</span> <span class="op">+</span> <span class="ident">stoch_enpt2</span>.<span class="ident">mean</span>, <span class="ident">stoch_enpt2</span>.<span class="ident">std_dev</span>)
 }
-
 
 <span class="comment">// pub fn semistoch_matmul(input_wf: Wf, ham: &amp;Ham, excite_gen: &amp;ExciteGenerator, eps: f64, n_samples: i32) {</span>
 <span class="comment">//     // Sketch of how semistoch_matmul would work in practice</span>
@@ -1612,7 +1876,6 @@
 <span class="comment">//         }</span>
 <span class="comment">//     }</span>
 <span class="comment">// }</span>
-
 
 <span class="comment">// #[cfg(test)]</span>
 <span class="comment">// mod tests {</span>
@@ -1650,5 +1913,8 @@
 <span class="comment">//         println!(&quot;Calling semistoch_matmul!&quot;);</span>
 <span class="comment">//         semistoch_matmul(wf, &amp;HAM, &amp;EXCITE_GEN, eps, n_samples)</span>
 <span class="comment">//     }</span>
-<span class="comment">// }</span></pre></div>
-</section><section id="search" class="content hidden"></section><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="risq" data-search-index-js="../../../search-index.js" data-search-js="../../../search.js"></div><script src="../../../main.js"></script><script src="../../../source-script.js"></script><script src="../../../source-files.js"></script></body></html>
+<span class="comment">// }</span>
+</code></pre></div>
+</section><section id="search" class="content hidden"></section><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="risq" data-search-index-js="../../../search-index.js" data-search-js="../../../search.js"></div>
+    <script src="../../../main.js"></script><script src="../../../source-script.js"></script><script src="../../../source-files.js"></script>
+</body></html>

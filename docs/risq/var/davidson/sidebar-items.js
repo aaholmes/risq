@@ -1,1 +1,1 @@
-initSidebarItems({"fn":[["sparse_optimize",""]]});
+initSidebarItems({"fn":[["sparse_optimize","Generate Ham as a sparse matrix, and optimize using Davidson"]]});

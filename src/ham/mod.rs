@@ -1,4 +1,4 @@
-// Hamiltonian matrix elements
+//! Functions to compute Hamiltonian matrix elements
 
 pub mod read_ints;
 
@@ -9,8 +9,8 @@ use crate::utils::bits::bit_pairs;
 use crate::wf::det::Config;
 use read_ints::Ints;
 
-// Hamiltonian, containing integrals and matrix element computing functions
-// Also contains information about frozen orbitals
+/// Hamiltonian, containing integrals and matrix element computing functions
+/// Also contains information about frozen orbitals
 #[derive(Default)]
 pub struct Ham {
     // diag_computed: bool, // whether a diagonal element has been computed
@@ -21,8 +21,8 @@ pub struct Ham {
 }
 
 impl Ham {
+    /// Get the integral corresponding to pqrs
     fn get_int(&self, p: i32, q: i32, r: i32, s: i32) -> f64 {
-        // Get the integral corresponding to pqrs
         // incorporates symmetries p-q, r-s, pq-rs
         // Insensitive to whether indices are positive or negative (up or dn spin)
         // NB: get_int starts at index 1 (since that's how FCIDUMP is defined), but
@@ -30,24 +30,24 @@ impl Ham {
         self.ints.two_body[combine_4(p, q, r, s)]
     }
 
+    /// Get the one-body energy h_{pq}
     pub fn one_body(&self, p: i32, q: i32) -> f64 {
-        // Get the one-body energy h_{pq}
         self.ints.one_body[combine_2(p + 1, q + 1)]
     }
 
+    /// Get the direct energy corresponding to pq -> rs
     pub fn direct(&self, p: i32, q: i32, r: i32, s: i32) -> f64 {
-        // Get the direct energy corresponding to pq -> rs
         self.get_int(p + 1, r + 1, q + 1, s + 1)
     }
 
+    /// Get the direct plus exchange energy corresponding to pq -> rs
     pub fn direct_plus_exchange(&self, p: i32, q: i32, r: i32, s: i32) -> f64 {
-        // Get the direct plus exchange energy corresponding to pq -> rs
         self.get_int(p + 1, r + 1, q + 1, s + 1) - self.get_int(p + 1, s + 1, q + 1, r + 1)
     }
 
+    /// Get the diagonal element corresponding to this determinant
+    /// Should only be called once
     pub fn ham_diag(&self, det: &Config) -> f64 {
-        // Get the diagonal element corresponding to this determinant
-        // Should only be called once
         // if self.diag_computed {
         //     panic!("Computing diagonal element in O(n_elec^2) time (should only happen once!)");
         // }
@@ -81,9 +81,8 @@ impl Ham {
         diag
     }
 
+    /// Get the single excitation matrix element corresponding to the excitation from det1 to det2
     pub fn ham_sing(&self, det1: &Config, det2: &Config) -> f64 {
-        // Get the single excitation matrix element corresponding to
-        // the excitation from det1 to det2
         let mut out: f64;
         if det1.dn == det2.dn {
             let i: i32 = (det1.up & !det2.up).trailing_zeros() as i32;
@@ -130,9 +129,8 @@ impl Ham {
         out
     }
 
+    /// Get the double excitation matrix element corresponding to the excitation from det1 to det2
     pub fn ham_doub(&self, det1: &Config, det2: &Config) -> f64 {
-        // Get the double excitation matrix element corresponding to
-        // the excitation from det1 to det2
 
         if det1.dn == det2.dn {
             // Same spin, up

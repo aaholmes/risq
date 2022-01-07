@@ -1,4 +1,4 @@
-// Sparse matrix datatype that works with eigenvalues module
+//! Sparse matrix datatype that works with eigenvalues module
 
 extern crate nalgebra;
 extern crate sprs;
@@ -15,8 +15,8 @@ use crate::var::utils::intersection;
 use crate::wf::det::Config;
 use crate::wf::Wf;
 
-// Upper triangular sparse matrix
-// nonzero off-diagonal elements are at (ind1, ind2) where ind1 < ind2
+/// Upper triangular sparse matrix
+/// nonzero off-diagonal elements are at (ind1, ind2) where ind1 < ind2
 #[derive(Default)]
 pub struct SparseMatUpperTri {
     pub(crate) n: usize,
@@ -96,9 +96,9 @@ pub struct SparseMat {
 }
 
 impl SparseMat {
+    /// Convert a dense matrix to a sparse matrix
+    /// (for testing only)
     pub fn from_dense(mtx: DMatrix<f64>) -> Self {
-        // Convert a dense matrix to a sparse matrix
-        // (for testing only)
 
         let n = mtx.ncols();
         println!("n = {}", n);

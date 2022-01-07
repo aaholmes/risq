@@ -1,6 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/stoch/mod.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>mod.rs - source</title><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../light.css"  id="themeStyle"><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled ><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled ><script id="default-settings"></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="icon" type="image/svg+xml" href="../../../favicon.svg">
-<link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png">
-<link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><style type="text/css">#crate-search{background-image:url("../../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu" role="button">&#9776;</div><a href='../../../risq/index.html'><div class='logo-container'><img src='https://wherethewindsblow.com/wp-content/uploads/2020/11/crab_dice_red_white.jpg' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img src="../../../brush.svg" width="18" height="18" alt="Pick another theme!"></button><div id="theme-choices" role="menu"></div></div><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../settings.html" title="settings"><img src="../../../wheel.svg" width="18" height="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">  1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src&#x2F;stoch&#x2F;mod.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>mod.rs - source</title><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../light.css"  id="themeStyle"><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled ><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled ><script id="default-settings" ></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"><style type="text/css">#crate-search{background-image:url("../../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu" role="button">&#9776;</div><a href='../../../risq/index.html'><div class='logo-container rust-logo'><img src='https:&#x2F;&#x2F;wherethewindsblow.com&#x2F;wp-content&#x2F;uploads&#x2F;2020&#x2F;11&#x2F;crab_dice_red_white.jpg' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="18" height="18" alt="Pick another theme!" src="../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../settings.html" title="settings"><img width="18" height="18" alt="Change settings" src="../../../wheel.svg"></a></div></form></nav><section id="main" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">  1</span>
 <span id="2">  2</span>
 <span id="3">  3</span>
 <span id="4">  4</span>
@@ -255,49 +253,111 @@
 <span id="253">253</span>
 <span id="254">254</span>
 <span id="255">255</span>
-</pre><pre class="rust">
-<span class="comment">// Module containing stochastic functions</span>
+<span id="256">256</span>
+<span id="257">257</span>
+<span id="258">258</span>
+<span id="259">259</span>
+<span id="260">260</span>
+<span id="261">261</span>
+<span id="262">262</span>
+<span id="263">263</span>
+<span id="264">264</span>
+<span id="265">265</span>
+<span id="266">266</span>
+<span id="267">267</span>
+<span id="268">268</span>
+<span id="269">269</span>
+<span id="270">270</span>
+<span id="271">271</span>
+<span id="272">272</span>
+<span id="273">273</span>
+<span id="274">274</span>
+<span id="275">275</span>
+<span id="276">276</span>
+<span id="277">277</span>
+<span id="278">278</span>
+<span id="279">279</span>
+<span id="280">280</span>
+<span id="281">281</span>
+<span id="282">282</span>
+<span id="283">283</span>
+<span id="284">284</span>
+<span id="285">285</span>
+<span id="286">286</span>
+<span id="287">287</span>
+<span id="288">288</span>
+<span id="289">289</span>
+<span id="290">290</span>
+<span id="291">291</span>
+<span id="292">292</span>
+<span id="293">293</span>
+<span id="294">294</span>
+<span id="295">295</span>
+<span id="296">296</span>
+<span id="297">297</span>
+<span id="298">298</span>
+<span id="299">299</span>
+<span id="300">300</span>
+<span id="301">301</span>
+<span id="302">302</span>
+<span id="303">303</span>
+<span id="304">304</span>
+<span id="305">305</span>
+<span id="306">306</span>
+<span id="307">307</span>
+<span id="308">308</span>
+<span id="309">309</span>
+<span id="310">310</span>
+<span id="311">311</span>
+<span id="312">312</span>
+<span id="313">313</span>
+<span id="314">314</span>
+<span id="315">315</span>
+<span id="316">316</span>
+<span id="317">317</span>
+<span id="318">318</span>
+<span id="319">319</span>
+</pre><pre class="rust"><code><span class="doccomment">//! General stochastic functions</span>
 
-<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::wf::det</span>::{<span class="ident">Det</span>, <span class="ident">Config</span>};
-<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::excite</span>::{<span class="ident">Orbs</span>, <span class="ident">Excite</span>, <span class="ident">StoredExcite</span>};
-<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::excite::init::ExciteGenerator</span>;
-<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::stoch::utils::sample_cdf</span>;
-<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::ham::Ham</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::excite::init::ExciteGenerator</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::excite</span>::{<span class="ident">Excite</span>, <span class="ident">Orbs</span>, <span class="ident">StoredExcite</span>};
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::ham::Ham</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::stoch::utils::sample_cdf</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::wf::det</span>::{<span class="ident">Config</span>, <span class="ident">Det</span>};
 <span class="kw">use</span> <span class="ident">std::hash</span>::{<span class="ident">Hash</span>, <span class="ident">Hasher</span>};
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod</span> <span class="ident">utils</span>;
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod</span> <span class="ident">alias</span>;
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod</span> <span class="ident">utils</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::rng::Rand</span>;
 <span class="kw">use</span> <span class="ident">alias::Alias</span>;
-<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::rng::Rand</span>;
 
+<span class="doccomment">/// Importance sampling distribution: proportional to either |Hc| or (Hc)^2</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">Copy</span>)]</span>
 <span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">ImpSampleDist</span> {
-    <span class="comment">// Either importance sample proportional to |Hc| or to (Hc)^2</span>
     <span class="ident">AbsHc</span>,
     <span class="ident">HcSquared</span>,
 }
 
+<span class="doccomment">/// For importance sampling the component of the matmul that is screened out by the eps threshold</span>
+
+<span class="doccomment">/// Matmul_sample_remaining performs the whole excitation sampling (exciting pair and target), but</span>
+<span class="doccomment">/// this contains only data structures sampling the exciting det and its exciting electron pair;</span>
+<span class="doccomment">/// sampling the target electron pair uses CDF searching which only requires ExciteGenerator</span>
+
+<span class="doccomment">/// Lifetime &#39;a must last as long as the vector being semistochastically multiplied, since this</span>
+<span class="doccomment">/// struct has pointers to its components</span>
+
+<span class="doccomment">/// For doubles:</span>
+<span class="doccomment">/// Contains two samplers, for sampling with p ~ |Hc| and with p ~ (Hc)^2</span>
+
+<span class="doccomment">/// For singles:</span>
+<span class="doccomment">/// If uniform_singles is true, enables uniform sampling of the singles from small-magnitude</span>
+<span class="doccomment">/// determinants that were not already treated deterministically</span>
+<span class="doccomment">/// Else, singles are sampled alongside doubles using max |H| instead of |H| as their</span>
+<span class="doccomment">/// relative prob</span>
+
+<span class="doccomment">/// Also, contains elements, the list of elements being sampled (e.g. det/orb pairs)</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ScreenedSampler</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
-    <span class="comment">// For importance sampling the component of the matmul that is screened out by the eps threshold</span>
-
-    <span class="comment">// Matmul_sample_remaining performs the whole excitation sampling (exciting pair and target), but</span>
-    <span class="comment">// this contains only data structures sampling the exciting det and its exciting electron pair;</span>
-    <span class="comment">// sampling the target electron pair uses CDF searching which only requires ExciteGenerator</span>
-
-    <span class="comment">// Lifetime &#39;a must last as long as the vector being semistochastically multiplied, since this</span>
-    <span class="comment">// struct has pointers to its components</span>
-
-    <span class="comment">// For doubles:</span>
-    <span class="comment">// Contains two samplers, for sampling with p ~ |Hc| and with p ~ (Hc)^2</span>
-
-    <span class="comment">// For singles:</span>
-    <span class="comment">// If uniform_singles is true, enables uniform sampling of the singles from small-magnitude</span>
-    <span class="comment">// determinants that were not already treated deterministically</span>
-    <span class="comment">// Else, singles are sampled alongside doubles using max |H| instead of |H| as their</span>
-    <span class="comment">// relative prob</span>
-
-    <span class="comment">// Also, contains elements, the list of elements being sampled (e.g. det/orb pairs)</span>
-
     <span class="kw">pub</span> <span class="ident">eps</span>: <span class="ident">f64</span>,
     <span class="comment">// pub uniform_singles: bool,</span>
     <span class="kw">pub</span> <span class="ident">elements</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">DetOrbSample</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span><span class="op">&gt;</span>,
@@ -318,15 +378,15 @@
     <span class="kw">pub</span> <span class="ident">sum_abs_h</span>: <span class="ident">f64</span>,
     <span class="kw">pub</span> <span class="ident">sum_h_squared</span>: <span class="ident">f64</span>,
     <span class="kw">pub</span> <span class="ident">sum_abs_hc</span>: <span class="ident">f64</span>,
-    <span class="kw">pub</span> <span class="ident">sum_hc_squared</span>: <span class="ident">f64</span>
+    <span class="kw">pub</span> <span class="ident">sum_hc_squared</span>: <span class="ident">f64</span>,
 }
 
 <span class="kw">impl</span> <span class="ident">PartialEq</span> <span class="kw">for</span> <span class="ident">DetOrbSample</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">eq</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">other</span>: <span class="kw-2">&amp;</span><span class="self">Self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">det</span>.<span class="ident">config</span>.<span class="ident">up</span> <span class="op">=</span><span class="op">=</span> <span class="ident">other</span>.<span class="ident">det</span>.<span class="ident">config</span>.<span class="ident">up</span>
-            <span class="op">&amp;&amp;</span> <span class="self">self</span>.<span class="ident">det</span>.<span class="ident">config</span>.<span class="ident">dn</span> <span class="op">=</span><span class="op">=</span> <span class="ident">other</span>.<span class="ident">det</span>.<span class="ident">config</span>.<span class="ident">dn</span>
-            <span class="op">&amp;&amp;</span> <span class="self">self</span>.<span class="ident">init</span> <span class="op">=</span><span class="op">=</span> <span class="ident">other</span>.<span class="ident">init</span>
-            <span class="op">&amp;&amp;</span> <span class="self">self</span>.<span class="ident">is_alpha</span> <span class="op">=</span><span class="op">=</span> <span class="ident">other</span>.<span class="ident">is_alpha</span>
+    <span class="kw">fn</span> <span class="ident">eq</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">other</span>: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; <span class="ident">bool</span> {
+        <span class="self">self</span>.<span class="ident">det</span>.<span class="ident">config</span>.<span class="ident">up</span> <span class="op">==</span> <span class="ident">other</span>.<span class="ident">det</span>.<span class="ident">config</span>.<span class="ident">up</span>
+            <span class="op">&amp;&amp;</span> <span class="self">self</span>.<span class="ident">det</span>.<span class="ident">config</span>.<span class="ident">dn</span> <span class="op">==</span> <span class="ident">other</span>.<span class="ident">det</span>.<span class="ident">config</span>.<span class="ident">dn</span>
+            <span class="op">&amp;&amp;</span> <span class="self">self</span>.<span class="ident">init</span> <span class="op">==</span> <span class="ident">other</span>.<span class="ident">init</span>
+            <span class="op">&amp;&amp;</span> <span class="self">self</span>.<span class="ident">is_alpha</span> <span class="op">==</span> <span class="ident">other</span>.<span class="ident">is_alpha</span>
     }
 }
 <span class="kw">impl</span> <span class="ident">Eq</span> <span class="kw">for</span> <span class="ident">DetOrbSample</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span> {}
@@ -340,11 +400,11 @@
     }
 }
 
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">generate_screened_sampler</span>(<span class="ident">eps</span>: <span class="ident">f64</span>, <span class="ident">det_orbs</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">DetOrbSample</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">ScreenedSampler</span> {
+<span class="doccomment">/// Generate a screened sampler object for sampling (det, orbs) pairs using Alias sampling</span>
+<span class="doccomment">/// The input det_orbs will contain the information needed for CDF-searching as a separate step</span>
+<span class="doccomment">/// (sum_abs_hc, sum_hc_squared are the sums of remaining terms to be sampled)</span>
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">generate_screened_sampler</span>(<span class="ident">eps</span>: <span class="ident">f64</span>, <span class="ident">det_orbs</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">DetOrbSample</span><span class="op">&gt;</span>) -&gt; <span class="ident">ScreenedSampler</span> {
     <span class="comment">// pub fn generate_screened_sampler&lt;&#39;a&gt;(eps: f64, det_orbs: &amp;&#39;a Vec&lt;DetOrbSample&gt;) -&gt; ScreenedSampler&lt;&#39;a&gt; {</span>
-    <span class="comment">// Generate a screened sampler object for sampling (det, orbs) pairs using Alias</span>
-    <span class="comment">// The input det_orbs will contain the information needed for CDF-searching as a separate step</span>
-    <span class="comment">// (sum_abs_hc, sum_hc_squared are the sums of remaining terms to be sampled)</span>
 
     <span class="macro">println!</span>(<span class="string">&quot;Generating screened sampler of size {}&quot;</span>, <span class="ident">det_orbs</span>.<span class="ident">len</span>());
 
@@ -353,8 +413,12 @@
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">probs_abs_hc</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">f64</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="ident">det_orbs</span>.<span class="ident">len</span>());
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">probs_hc_squared</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">f64</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="ident">det_orbs</span>.<span class="ident">len</span>());
 
-    <span class="kw">let</span> <span class="ident">sum_hc_all_dets_orbs</span>: <span class="ident">f64</span> <span class="op">=</span> <span class="ident">det_orbs</span>.<span class="ident">iter</span>().<span class="ident">fold</span>(<span class="number">0f64</span>, <span class="op">|</span><span class="ident">sum</span>, <span class="kw-2">&amp;</span><span class="ident">val</span><span class="op">|</span> <span class="ident">sum</span> <span class="op">+</span> <span class="ident">val</span>.<span class="ident">sum_abs_hc</span> <span class="kw">as</span> <span class="ident">f64</span>);
-    <span class="kw">let</span> <span class="ident">sum_hc_squared_all_dets_orbs</span>: <span class="ident">f64</span> <span class="op">=</span> <span class="ident">det_orbs</span>.<span class="ident">iter</span>().<span class="ident">fold</span>(<span class="number">0f64</span>, <span class="op">|</span><span class="ident">sum</span>, <span class="kw-2">&amp;</span><span class="ident">val</span><span class="op">|</span> <span class="ident">sum</span> <span class="op">+</span> <span class="ident">val</span>.<span class="ident">sum_hc_squared</span> <span class="kw">as</span> <span class="ident">f64</span>);
+    <span class="kw">let</span> <span class="ident">sum_hc_all_dets_orbs</span>: <span class="ident">f64</span> <span class="op">=</span> <span class="ident">det_orbs</span>
+        .<span class="ident">iter</span>()
+        .<span class="ident">fold</span>(<span class="number">0f64</span>, <span class="op">|</span><span class="ident">sum</span>, <span class="kw-2">&amp;</span><span class="ident">val</span><span class="op">|</span> <span class="ident">sum</span> <span class="op">+</span> <span class="ident">val</span>.<span class="ident">sum_abs_hc</span> <span class="kw">as</span> <span class="ident">f64</span>);
+    <span class="kw">let</span> <span class="ident">sum_hc_squared_all_dets_orbs</span>: <span class="ident">f64</span> <span class="op">=</span> <span class="ident">det_orbs</span>
+        .<span class="ident">iter</span>()
+        .<span class="ident">fold</span>(<span class="number">0f64</span>, <span class="op">|</span><span class="ident">sum</span>, <span class="kw-2">&amp;</span><span class="ident">val</span><span class="op">|</span> <span class="ident">sum</span> <span class="op">+</span> <span class="ident">val</span>.<span class="ident">sum_hc_squared</span> <span class="kw">as</span> <span class="ident">f64</span>);
 
     <span class="kw">for</span> <span class="ident">val</span> <span class="kw">in</span> <span class="ident">det_orbs</span>.<span class="ident">iter</span>() {
         <span class="kw">if</span> <span class="ident">val</span>.<span class="ident">sum_abs_h</span> <span class="op">!</span><span class="op">=</span> <span class="number">0.0</span> {
@@ -364,7 +428,7 @@
         }
     }
 
-    <span class="ident">ScreenedSampler</span>{
+    <span class="ident">ScreenedSampler</span> {
         <span class="ident">eps</span>: <span class="ident">eps</span>,
         <span class="ident">elements</span>: <span class="ident">det_orbs_nonzero</span>,
         <span class="ident">det_orb_sampler_abs_hc</span>: <span class="ident">Alias::new</span>(<span class="ident">probs_abs_hc</span>),
@@ -374,61 +438,95 @@
     }
 }
 
-
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">matmul_sample_remaining</span>(<span class="ident">screened_sampler</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">ScreenedSampler</span>, <span class="ident">imp_sample_dist</span>: <span class="ident">ImpSampleDist</span>, <span class="ident">excite_gen</span>: <span class="kw-2">&amp;</span><span class="ident">ExciteGenerator</span>, <span class="ident">ham</span>: <span class="kw-2">&amp;</span><span class="ident">Ham</span>, <span class="ident">rand</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Rand</span>) <span class="op">-</span><span class="op">&gt;</span> (<span class="prelude-ty">Option</span><span class="op">&lt;</span>(<span class="ident">Det</span>, <span class="ident">Excite</span>, <span class="ident">Det</span>)<span class="op">&gt;</span>, <span class="ident">f64</span>) {
-    <span class="comment">// Importance-sample the remaining component of a screened matmul using the given epsilon</span>
-    <span class="comment">// Returns tuple containing (option(exciting det, excitation, and sampled determinant (with coeff attached)), and probability of that sample</span>
-    <span class="comment">// O(log M) time</span>
+<span class="doccomment">/// Importance-sample the remaining component of a screened matmul using the given epsilon</span>
+<span class="doccomment">/// Returns tuple containing (option(exciting det, excitation, and sampled determinant (with coeff attached)), and probability of that sample</span>
+<span class="doccomment">/// O(log M) time</span>
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">matmul_sample_remaining</span>(
+    <span class="ident">screened_sampler</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">ScreenedSampler</span>,
+    <span class="ident">imp_sample_dist</span>: <span class="ident">ImpSampleDist</span>,
+    <span class="ident">excite_gen</span>: <span class="kw-2">&amp;</span><span class="ident">ExciteGenerator</span>,
+    <span class="ident">ham</span>: <span class="kw-2">&amp;</span><span class="ident">Ham</span>,
+    <span class="ident">rand</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Rand</span>,
+) -&gt; (<span class="prelude-ty">Option</span><span class="op">&lt;</span>(<span class="ident">Det</span>, <span class="ident">Excite</span>, <span class="ident">Det</span>)<span class="op">&gt;</span>, <span class="ident">f64</span>) {
 
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">det_orb_sample</span>: <span class="ident">DetOrbSample</span> <span class="op">=</span> <span class="ident">DetOrbSample</span> {
         <span class="ident">det</span>: <span class="kw-2">&amp;</span><span class="ident">Det</span> {
             <span class="ident">config</span>: <span class="ident">Config</span> { <span class="ident">up</span>: <span class="number">0</span>, <span class="ident">dn</span>: <span class="number">0</span> },
             <span class="ident">coeff</span>: <span class="number">0.0</span>,
-            <span class="ident">diag</span>: <span class="number">0.0</span>
+            <span class="ident">diag</span>: <span class="number">0.0</span>,
         },
         <span class="ident">init</span>: <span class="ident">Orbs::Single</span>(<span class="number">0</span>),
         <span class="ident">is_alpha</span>: <span class="prelude-val">None</span>,
         <span class="ident">sum_abs_h</span>: <span class="number">0.0</span>,
         <span class="ident">sum_h_squared</span>: <span class="number">0.0</span>,
         <span class="ident">sum_abs_hc</span>: <span class="number">0.0</span>,
-        <span class="ident">sum_hc_squared</span>: <span class="number">0.0</span>
+        <span class="ident">sum_hc_squared</span>: <span class="number">0.0</span>,
     };
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">det_orb_prob</span>: <span class="ident">f64</span> <span class="op">=</span> <span class="number">0.0</span>;
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">sampled_excite</span>: <span class="kw-2">&amp;</span><span class="ident">StoredExcite</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">StoredExcite</span> {
         <span class="ident">target</span>: <span class="ident">Orbs::Single</span>(<span class="number">0</span>),
         <span class="ident">abs_h</span>: <span class="number">0.0</span>,
         <span class="ident">sum_remaining_abs_h</span>: <span class="number">0.0</span>,
-        <span class="ident">sum_remaining_h_squared</span>: <span class="number">0.0</span>
+        <span class="ident">sum_remaining_h_squared</span>: <span class="number">0.0</span>,
     };
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">sampled_excite_prob</span>: <span class="ident">f64</span> <span class="op">=</span> <span class="number">0.0</span>;
 
     <span class="kw">match</span> <span class="ident">imp_sample_dist</span> {
-        <span class="ident">ImpSampleDist::AbsHc</span> <span class="op">=</span><span class="op">&gt;</span> {
+        <span class="ident">ImpSampleDist::AbsHc</span> =&gt; {
             <span class="comment">// First, sample a (determinant, orbs) pair using Alias sampling with prob |Hc|</span>
-            <span class="kw">let</span> <span class="ident">sample</span> <span class="op">=</span> <span class="ident">screened_sampler</span>.<span class="ident">det_orb_sampler_abs_hc</span>.<span class="ident">sample_with_prob</span>(<span class="ident">rand</span>);
+            <span class="kw">let</span> <span class="ident">sample</span> <span class="op">=</span> <span class="ident">screened_sampler</span>
+                .<span class="ident">det_orb_sampler_abs_hc</span>
+                .<span class="ident">sample_with_prob</span>(<span class="ident">rand</span>);
             <span class="ident">det_orb_sample</span> <span class="op">=</span> <span class="ident">screened_sampler</span>.<span class="ident">elements</span>[<span class="ident">sample</span>.<span class="number">0</span>];
             <span class="ident">det_orb_prob</span> <span class="op">=</span> <span class="ident">sample</span>.<span class="number">1</span>;
             <span class="comment">// println!(&quot;Sampled det {}, prob {}&quot;, det_orb_sample, det_orb_prob);</span>
 
             <span class="comment">// Sample excitation from this det/orb pair by binary search the stored cdf with prob |H|</span>
             <span class="kw">match</span> <span class="ident">det_orb_sample</span>.<span class="ident">is_alpha</span> {
-                <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> {
+                <span class="prelude-val">None</span> =&gt; {
                     <span class="comment">// Opposite spin double</span>
-                    <span class="kw">let</span> <span class="ident">sample2</span> <span class="op">=</span> <span class="ident">sample_cdf</span>(<span class="ident">excite_gen</span>.<span class="ident">opp_doub_sorted_list</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">det_orb_sample</span>.<span class="ident">init</span>).<span class="ident">unwrap</span>(), <span class="kw-2">&amp;</span><span class="ident">ImpSampleDist::AbsHc</span>, <span class="prelude-val">Some</span>(<span class="ident">det_orb_sample</span>.<span class="ident">sum_abs_h</span>), <span class="ident">rand</span>).<span class="ident">unwrap</span>();
+                    <span class="kw">let</span> <span class="ident">sample2</span> <span class="op">=</span> <span class="ident">sample_cdf</span>(
+                        <span class="ident">excite_gen</span>
+                            .<span class="ident">opp_doub_sorted_list</span>
+                            .<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">det_orb_sample</span>.<span class="ident">init</span>)
+                            .<span class="ident">unwrap</span>(),
+                        <span class="kw-2">&amp;</span><span class="ident">ImpSampleDist::AbsHc</span>,
+                        <span class="prelude-val">Some</span>(<span class="ident">det_orb_sample</span>.<span class="ident">sum_abs_h</span>),
+                        <span class="ident">rand</span>,
+                    )
+                    .<span class="ident">unwrap</span>();
                     <span class="ident">sampled_excite</span> <span class="op">=</span> <span class="ident">sample2</span>.<span class="number">0</span>;
                     <span class="ident">sampled_excite_prob</span> <span class="op">=</span> <span class="ident">sample2</span>.<span class="number">1</span>;
-                },
-                <span class="prelude-val">Some</span>(<span class="kw">_</span>) <span class="op">=</span><span class="op">&gt;</span> {
+                }
+                <span class="prelude-val">Some</span>(<span class="kw">_</span>) =&gt; {
                     <span class="kw">match</span> <span class="ident">det_orb_sample</span>.<span class="ident">init</span> {
-                        <span class="ident">Orbs::Double</span>(<span class="kw">_</span>) <span class="op">=</span><span class="op">&gt;</span> {
+                        <span class="ident">Orbs::Double</span>(<span class="kw">_</span>) =&gt; {
                             <span class="comment">// Same spin double</span>
-                            <span class="kw">let</span> <span class="ident">sample2</span> <span class="op">=</span> <span class="ident">sample_cdf</span>(<span class="ident">excite_gen</span>.<span class="ident">same_doub_sorted_list</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">det_orb_sample</span>.<span class="ident">init</span>).<span class="ident">unwrap</span>(), <span class="kw-2">&amp;</span><span class="ident">ImpSampleDist::AbsHc</span>, <span class="prelude-val">Some</span>(<span class="ident">det_orb_sample</span>.<span class="ident">sum_abs_h</span>), <span class="ident">rand</span>).<span class="ident">unwrap</span>();
+                            <span class="kw">let</span> <span class="ident">sample2</span> <span class="op">=</span> <span class="ident">sample_cdf</span>(
+                                <span class="ident">excite_gen</span>
+                                    .<span class="ident">same_doub_sorted_list</span>
+                                    .<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">det_orb_sample</span>.<span class="ident">init</span>)
+                                    .<span class="ident">unwrap</span>(),
+                                <span class="kw-2">&amp;</span><span class="ident">ImpSampleDist::AbsHc</span>,
+                                <span class="prelude-val">Some</span>(<span class="ident">det_orb_sample</span>.<span class="ident">sum_abs_h</span>),
+                                <span class="ident">rand</span>,
+                            )
+                            .<span class="ident">unwrap</span>();
                             <span class="ident">sampled_excite</span> <span class="op">=</span> <span class="ident">sample2</span>.<span class="number">0</span>;
                             <span class="ident">sampled_excite_prob</span> <span class="op">=</span> <span class="ident">sample2</span>.<span class="number">1</span>;
-                        },
-                        <span class="ident">Orbs::Single</span>(<span class="kw">_</span>) <span class="op">=</span><span class="op">&gt;</span> {
+                        }
+                        <span class="ident">Orbs::Single</span>(<span class="kw">_</span>) =&gt; {
                             <span class="comment">// Single</span>
-                            <span class="kw">let</span> <span class="ident">sample2</span> <span class="op">=</span> <span class="ident">sample_cdf</span>(<span class="ident">excite_gen</span>.<span class="ident">sing_sorted_list</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">det_orb_sample</span>.<span class="ident">init</span>).<span class="ident">unwrap</span>(), <span class="kw-2">&amp;</span><span class="ident">ImpSampleDist::AbsHc</span>, <span class="prelude-val">Some</span>(<span class="ident">det_orb_sample</span>.<span class="ident">sum_abs_h</span>), <span class="ident">rand</span>).<span class="ident">unwrap</span>();
+                            <span class="kw">let</span> <span class="ident">sample2</span> <span class="op">=</span> <span class="ident">sample_cdf</span>(
+                                <span class="ident">excite_gen</span>
+                                    .<span class="ident">sing_sorted_list</span>
+                                    .<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">det_orb_sample</span>.<span class="ident">init</span>)
+                                    .<span class="ident">unwrap</span>(),
+                                <span class="kw-2">&amp;</span><span class="ident">ImpSampleDist::AbsHc</span>,
+                                <span class="prelude-val">Some</span>(<span class="ident">det_orb_sample</span>.<span class="ident">sum_abs_h</span>),
+                                <span class="ident">rand</span>,
+                            )
+                            .<span class="ident">unwrap</span>();
                             <span class="ident">sampled_excite</span> <span class="op">=</span> <span class="ident">sample2</span>.<span class="number">0</span>;
                             <span class="ident">sampled_excite_prob</span> <span class="op">=</span> <span class="ident">sample2</span>.<span class="number">1</span>;
                         }
@@ -436,33 +534,61 @@
                 }
             }
         }
-        <span class="ident">ImpSampleDist::HcSquared</span> <span class="op">=</span><span class="op">&gt;</span> {
+        <span class="ident">ImpSampleDist::HcSquared</span> =&gt; {
             <span class="comment">// First, sample a (determinant, orbs) pair using Alias sampling with prob (Hc)^2</span>
-            <span class="kw">let</span> <span class="ident">sample</span> <span class="op">=</span> <span class="ident">screened_sampler</span>.<span class="ident">det_orb_sampler_hc_squared</span>.<span class="ident">sample_with_prob</span>(<span class="ident">rand</span>);
+            <span class="kw">let</span> <span class="ident">sample</span> <span class="op">=</span> <span class="ident">screened_sampler</span>
+                .<span class="ident">det_orb_sampler_hc_squared</span>
+                .<span class="ident">sample_with_prob</span>(<span class="ident">rand</span>);
             <span class="ident">det_orb_sample</span> <span class="op">=</span> <span class="ident">screened_sampler</span>.<span class="ident">elements</span>[<span class="ident">sample</span>.<span class="number">0</span>];
             <span class="ident">det_orb_prob</span> <span class="op">=</span> <span class="ident">sample</span>.<span class="number">1</span>;
             <span class="comment">// println!(&quot;Sampled det/orb {}, prob {}&quot;, det_orb_sample, det_orb_prob);</span>
 
-
             <span class="comment">// Sample excitation from this det/orb pair by binary search the stored cdf with prob H^2</span>
             <span class="kw">match</span> <span class="ident">det_orb_sample</span>.<span class="ident">is_alpha</span> {
-                <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> {
+                <span class="prelude-val">None</span> =&gt; {
                     <span class="comment">// Opposite spin double</span>
-                    <span class="kw">let</span> <span class="ident">sample2</span> <span class="op">=</span> <span class="ident">sample_cdf</span>(<span class="ident">excite_gen</span>.<span class="ident">opp_doub_sorted_list</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">det_orb_sample</span>.<span class="ident">init</span>).<span class="ident">unwrap</span>(), <span class="kw-2">&amp;</span><span class="ident">ImpSampleDist::HcSquared</span>, <span class="prelude-val">Some</span>(<span class="ident">det_orb_sample</span>.<span class="ident">sum_h_squared</span>), <span class="ident">rand</span>).<span class="ident">unwrap</span>();
+                    <span class="kw">let</span> <span class="ident">sample2</span> <span class="op">=</span> <span class="ident">sample_cdf</span>(
+                        <span class="ident">excite_gen</span>
+                            .<span class="ident">opp_doub_sorted_list</span>
+                            .<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">det_orb_sample</span>.<span class="ident">init</span>)
+                            .<span class="ident">unwrap</span>(),
+                        <span class="kw-2">&amp;</span><span class="ident">ImpSampleDist::HcSquared</span>,
+                        <span class="prelude-val">Some</span>(<span class="ident">det_orb_sample</span>.<span class="ident">sum_h_squared</span>),
+                        <span class="ident">rand</span>,
+                    )
+                    .<span class="ident">unwrap</span>();
                     <span class="ident">sampled_excite</span> <span class="op">=</span> <span class="ident">sample2</span>.<span class="number">0</span>;
                     <span class="ident">sampled_excite_prob</span> <span class="op">=</span> <span class="ident">sample2</span>.<span class="number">1</span>;
-                },
-                <span class="prelude-val">Some</span>(<span class="kw">_</span>) <span class="op">=</span><span class="op">&gt;</span> {
+                }
+                <span class="prelude-val">Some</span>(<span class="kw">_</span>) =&gt; {
                     <span class="kw">match</span> <span class="ident">det_orb_sample</span>.<span class="ident">init</span> {
-                        <span class="ident">Orbs::Double</span>(<span class="kw">_</span>) <span class="op">=</span><span class="op">&gt;</span> {
+                        <span class="ident">Orbs::Double</span>(<span class="kw">_</span>) =&gt; {
                             <span class="comment">// Same spin double</span>
-                            <span class="kw">let</span> <span class="ident">sample2</span> <span class="op">=</span> <span class="ident">sample_cdf</span>(<span class="ident">excite_gen</span>.<span class="ident">same_doub_sorted_list</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">det_orb_sample</span>.<span class="ident">init</span>).<span class="ident">unwrap</span>(), <span class="kw-2">&amp;</span><span class="ident">ImpSampleDist::HcSquared</span>, <span class="prelude-val">Some</span>(<span class="ident">det_orb_sample</span>.<span class="ident">sum_h_squared</span>), <span class="ident">rand</span>).<span class="ident">unwrap</span>();
+                            <span class="kw">let</span> <span class="ident">sample2</span> <span class="op">=</span> <span class="ident">sample_cdf</span>(
+                                <span class="ident">excite_gen</span>
+                                    .<span class="ident">same_doub_sorted_list</span>
+                                    .<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">det_orb_sample</span>.<span class="ident">init</span>)
+                                    .<span class="ident">unwrap</span>(),
+                                <span class="kw-2">&amp;</span><span class="ident">ImpSampleDist::HcSquared</span>,
+                                <span class="prelude-val">Some</span>(<span class="ident">det_orb_sample</span>.<span class="ident">sum_h_squared</span>),
+                                <span class="ident">rand</span>,
+                            )
+                            .<span class="ident">unwrap</span>();
                             <span class="ident">sampled_excite</span> <span class="op">=</span> <span class="ident">sample2</span>.<span class="number">0</span>;
                             <span class="ident">sampled_excite_prob</span> <span class="op">=</span> <span class="ident">sample2</span>.<span class="number">1</span>;
-                        },
-                        <span class="ident">Orbs::Single</span>(<span class="kw">_</span>) <span class="op">=</span><span class="op">&gt;</span> {
+                        }
+                        <span class="ident">Orbs::Single</span>(<span class="kw">_</span>) =&gt; {
                             <span class="comment">// Single</span>
-                            <span class="kw">let</span> <span class="ident">sample2</span> <span class="op">=</span> <span class="ident">sample_cdf</span>(<span class="ident">excite_gen</span>.<span class="ident">sing_sorted_list</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">det_orb_sample</span>.<span class="ident">init</span>).<span class="ident">unwrap</span>(), <span class="kw-2">&amp;</span><span class="ident">ImpSampleDist::HcSquared</span>, <span class="prelude-val">Some</span>(<span class="ident">det_orb_sample</span>.<span class="ident">sum_h_squared</span>), <span class="ident">rand</span>).<span class="ident">unwrap</span>();
+                            <span class="kw">let</span> <span class="ident">sample2</span> <span class="op">=</span> <span class="ident">sample_cdf</span>(
+                                <span class="ident">excite_gen</span>
+                                    .<span class="ident">sing_sorted_list</span>
+                                    .<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">det_orb_sample</span>.<span class="ident">init</span>)
+                                    .<span class="ident">unwrap</span>(),
+                                <span class="kw-2">&amp;</span><span class="ident">ImpSampleDist::HcSquared</span>,
+                                <span class="prelude-val">Some</span>(<span class="ident">det_orb_sample</span>.<span class="ident">sum_h_squared</span>),
+                                <span class="ident">rand</span>,
+                            )
+                            .<span class="ident">unwrap</span>();
                             <span class="ident">sampled_excite</span> <span class="op">=</span> <span class="ident">sample2</span>.<span class="number">0</span>;
                             <span class="ident">sampled_excite_prob</span> <span class="op">=</span> <span class="ident">sample2</span>.<span class="number">1</span>;
                         }
@@ -477,7 +603,7 @@
         <span class="ident">init</span>: <span class="ident">det_orb_sample</span>.<span class="ident">init</span>,
         <span class="ident">target</span>: <span class="ident">sampled_excite</span>.<span class="ident">target</span>,
         <span class="ident">abs_h</span>: <span class="ident">sampled_excite</span>.<span class="ident">abs_h</span>,
-        <span class="ident">is_alpha</span>: <span class="ident">det_orb_sample</span>.<span class="ident">is_alpha</span>
+        <span class="ident">is_alpha</span>: <span class="ident">det_orb_sample</span>.<span class="ident">is_alpha</span>,
     };
 
     <span class="comment">// Apply the excitation to the sampled det</span>
@@ -487,29 +613,30 @@
     <span class="kw">let</span> <span class="ident">prob_sampled_det</span>: <span class="ident">f64</span> <span class="op">=</span> <span class="ident">det_orb_prob</span> <span class="op">*</span> <span class="ident">sampled_excite_prob</span>;
 
     <span class="kw">match</span> <span class="ident">sampled_det</span> {
-        <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> (<span class="prelude-val">None</span>, <span class="ident">prob_sampled_det</span>), <span class="comment">// Proposed excitation would excite to already-occupied orbs</span>
-        <span class="prelude-val">Some</span>(<span class="ident">d</span>) <span class="op">=</span><span class="op">&gt;</span> {
+        <span class="prelude-val">None</span> =&gt; (<span class="prelude-val">None</span>, <span class="ident">prob_sampled_det</span>), <span class="comment">// Proposed excitation would excite to already-occupied orbs</span>
+        <span class="prelude-val">Some</span>(<span class="ident">d</span>) =&gt; {
             <span class="comment">// Compute new det coefficient</span>
             <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">new_det_coeff</span> <span class="op">=</span> <span class="ident">det_orb_sample</span>.<span class="ident">det</span>.<span class="ident">coeff</span>;
             <span class="kw">match</span> <span class="ident">det_orb_sample</span>.<span class="ident">init</span> {
-                <span class="ident">Orbs::Double</span>(<span class="kw">_</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">new_det_coeff</span> <span class="kw-2">*</span><span class="op">=</span> <span class="ident">ham</span>.<span class="ident">ham_doub</span>(<span class="kw-2">&amp;</span><span class="ident">det_orb_sample</span>.<span class="ident">det</span>.<span class="ident">config</span>, <span class="kw-2">&amp;</span><span class="ident">d</span>),
-                <span class="ident">Orbs::Single</span>(<span class="kw">_</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">new_det_coeff</span> <span class="kw-2">*</span><span class="op">=</span> <span class="ident">ham</span>.<span class="ident">ham_sing</span>(<span class="kw-2">&amp;</span><span class="ident">det_orb_sample</span>.<span class="ident">det</span>.<span class="ident">config</span>, <span class="kw-2">&amp;</span><span class="ident">d</span>),
+                <span class="ident">Orbs::Double</span>(<span class="kw">_</span>) =&gt; <span class="ident">new_det_coeff</span> <span class="kw-2">*</span><span class="op">=</span> <span class="ident">ham</span>.<span class="ident">ham_doub</span>(<span class="kw-2">&amp;</span><span class="ident">det_orb_sample</span>.<span class="ident">det</span>.<span class="ident">config</span>, <span class="kw-2">&amp;</span><span class="ident">d</span>),
+                <span class="ident">Orbs::Single</span>(<span class="kw">_</span>) =&gt; <span class="ident">new_det_coeff</span> <span class="kw-2">*</span><span class="op">=</span> <span class="ident">ham</span>.<span class="ident">ham_sing</span>(<span class="kw-2">&amp;</span><span class="ident">det_orb_sample</span>.<span class="ident">det</span>.<span class="ident">config</span>, <span class="kw-2">&amp;</span><span class="ident">d</span>),
             }
             (
-                <span class="prelude-val">Some</span>(
-                    (
-                        <span class="kw-2">*</span><span class="ident">det_orb_sample</span>.<span class="ident">det</span>,
-                        <span class="ident">excite</span>,
-                        <span class="ident">Det</span> {
-                            <span class="ident">config</span>: <span class="ident">d</span>,
-                            <span class="ident">coeff</span>: <span class="ident">new_det_coeff</span>,
-                            <span class="ident">diag</span>: <span class="number">0.0</span> <span class="comment">// Compute diagonal element later, only if needed (since it would be the most expensive step)</span>
-                        }
-                    )
-                ), <span class="ident">prob_sampled_det</span>
+                <span class="prelude-val">Some</span>((
+                    <span class="kw-2">*</span><span class="ident">det_orb_sample</span>.<span class="ident">det</span>,
+                    <span class="ident">excite</span>,
+                    <span class="ident">Det</span> {
+                        <span class="ident">config</span>: <span class="ident">d</span>,
+                        <span class="ident">coeff</span>: <span class="ident">new_det_coeff</span>,
+                        <span class="ident">diag</span>: <span class="number">0.0</span>, <span class="comment">// Compute diagonal element later, only if needed (since it would be the most expensive step)</span>
+                    },
+                )),
+                <span class="ident">prob_sampled_det</span>,
             )
         }
     }
 }
-</pre></div>
-</section><section id="search" class="content hidden"></section><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="risq" data-search-index-js="../../../search-index.js" data-search-js="../../../search.js"></div><script src="../../../main.js"></script><script src="../../../source-script.js"></script><script src="../../../source-files.js"></script></body></html>
+</code></pre></div>
+</section><section id="search" class="content hidden"></section><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="risq" data-search-index-js="../../../search-index.js" data-search-js="../../../search.js"></div>
+    <script src="../../../main.js"></script><script src="../../../source-script.js"></script><script src="../../../source-files.js"></script>
+</body></html>

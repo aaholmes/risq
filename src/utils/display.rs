@@ -1,4 +1,4 @@
-// Display definitions for custom types
+//! Display definitions for custom types
 
 use crate::excite::Orbs;
 use crate::stoch::DetOrbSample;

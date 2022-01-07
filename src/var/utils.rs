@@ -1,19 +1,19 @@
-// Module for utility functions useful for fast variational Hamiltonian generation
+//! Utility functions useful for fast variational Hamiltonian generation
 
 use crate::utils::bits::ibclr;
 use crate::wf::det::Config;
 
-// Iterate over configs with 1 electron removed:
+/// Iterate over configs with 1 electron removed:
 pub fn remove_1e(config: u128) -> impl Iterator<Item = u128> {
     Remove1::new(config).into_iter()
 }
 
-// Iterate over configs with 2 electrons removed:
+/// Iterate over configs with 2 electrons removed:
 pub fn remove_2e(config: u128) -> impl Iterator<Item = u128> {
     Remove2::new(config).into_iter()
 }
 
-// Iterate over intersection of 2 sorted lists:
+/// Iterate over intersection of 2 sorted lists:
 pub fn intersection<'a>(
     v1: &'a Vec<(Config, usize)>,
     v2: &'a Vec<(Config, usize)>,
@@ -21,8 +21,7 @@ pub fn intersection<'a>(
     Intersection::new(v1, v2).into_iter()
 }
 
-// Backend for remove_1e
-
+/// Backend for remove_1e
 struct Remove1 {
     config: u128,
 }
@@ -64,8 +63,7 @@ impl Iterator for Remove1IntoIterator {
     }
 }
 
-// Backend for remove_2e
-
+/// Backend for remove_2e
 struct Remove2 {
     config: u128,
 }
@@ -121,8 +119,7 @@ impl Iterator for Remove2IntoIterator {
     }
 }
 
-// Backend for intersection
-
+/// Backend for intersection
 struct Intersection<'a> {
     v1: &'a Vec<(Config, usize)>,
     v2: &'a Vec<(Config, usize)>,

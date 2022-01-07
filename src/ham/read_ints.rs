@@ -1,4 +1,4 @@
-// Read integrals from an FCIDUMP file into the Ham data structure
+//! Read integrals from an FCIDUMP file into the Ham data structure
 
 extern crate lexical;
 use lexical::parse;
@@ -15,11 +15,11 @@ pub struct Ints {
     pub(crate) two_body: Vec<f64>, // Two-body integrals
 }
 
+/// Read integrals, put them into self.ints
+/// Ints are stored starting with index 1 (following the FCIDUMP file they're read from)
+/// Also, create core_orbs and valence_orbs lists using the diagonal Fock elements to determine
+/// which norb_core orbitals to freeze
 pub fn read_ints(global: &Global, filename: &str) -> Ham {
-    // Read integrals, put them into self.ints
-    // Ints are stored starting with index 1 (following the FCIDUMP file they're read from)
-    // Also, create core_orbs and valence_orbs lists using the diagonal Fock elements to determine
-    // which norb_core orbitals to freeze
     let mut ham: Ham = Ham::default();
     // ham.diag_computed = false;
     ham.ints.one_body = vec![0.0; combine_2(global.norb + 1, global.norb + 1)];

@@ -1,4 +1,4 @@
-// Contains the random number generator and its seed
+//! Contains the random number generator and its seed
 
 use rand::rngs::StdRng;
 use rand::SeedableRng;
@@ -10,8 +10,8 @@ pub struct Rand {
     pub rng: StdRng, // seeded rng
 }
 
+/// Initialize the random number generator + seed
 pub fn init_rand() -> Rand {
-    // Initialize the random number generator + seed
     Rand {
         // rng: rand::thread_rng(),
         rng: StdRng::seed_from_u64(1312),

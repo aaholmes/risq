@@ -1,11 +1,10 @@
-// Data structure for holding off-diagonal Hamiltonian matrix elements
-// and putting them into the SparseMat data structure for Davidson
+//! Data structure for holding off-diagonal Hamiltonian matrix elements and putting them into the SparseMat data structure for Davidson
 
 use crate::ham::Ham;
 use crate::wf::det::Config;
 use crate::wf::Wf;
 
-// Off-diag elems data structure
+/// Off-diag elems data structure
 #[derive(Default)]
 pub struct OffDiagElemsNoHash {
     n: usize,                        // number of rows
@@ -22,8 +21,8 @@ impl OffDiagElemsNoHash {
         }
     }
 
+    /// Just create empty rows to fill up the dimension to new size n
     pub fn expand_rows(&mut self, n: usize) {
-        // Just create empty rows to fill up the dimension to new size n
         println!("Expanding variational H from size {} to size {}", self.n, n);
         self.nonzero
             .append(&mut vec![Vec::with_capacity(100); n - self.n]);
@@ -32,9 +31,9 @@ impl OffDiagElemsNoHash {
     }
 }
 
+/// Add an off-diagonal element H_{ij} to off_diag_elems
+/// i and j can be of any order
 pub fn add_el(wf: &mut Wf, ham: &Ham, i: usize, j: usize, elem: Option<f64>) {
-    // Add an off-diagonal element H_{ij} to off_diag_elems
-    // i and j can be of any order
 
     match elem {
         None => {
@@ -64,9 +63,9 @@ pub fn add_el(wf: &mut Wf, ham: &Ham, i: usize, j: usize, elem: Option<f64>) {
     }
 }
 
+/// Add an off-diagonal element H_{ij}, as well as its spin-flipped counterpart, to off_diag_elems
+/// i and j can be of any order
 pub fn add_el_and_spin_flipped(wf: &mut Wf, ham: &Ham, i: usize, j: usize) {
-    // Add an off-diagonal element H_{ij}, as well as its spin-flipped counterpart, to off_diag_elems
-    // i and j can be of any order
 
     if i == j {
         return;

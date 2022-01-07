@@ -1,1 +1,1 @@
-initSidebarItems({"fn":[["combine_2",""],["combine_2_usize",""],["combine_4",""],["permute",""],["permute_2",""],["read_lines",""]]});
+initSidebarItems({"fn":[["combine_2","Combine 2 indices in a unique way"],["combine_2_usize","Combine 2 indices in a unique way"],["combine_4","Combine 4 indices in a unique way"],["permute","Permutation factor for two configs that differ by a single excitation"],["permute_2","Permutation factor for two configs that differ by a double excitation Expect Vec to be a 4-index vector"],["read_lines",""]]});

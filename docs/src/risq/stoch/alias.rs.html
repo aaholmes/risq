@@ -1,6 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/stoch/alias.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>alias.rs - source</title><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../light.css"  id="themeStyle"><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled ><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled ><script id="default-settings"></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="icon" type="image/svg+xml" href="../../../favicon.svg">
-<link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png">
-<link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><style type="text/css">#crate-search{background-image:url("../../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu" role="button">&#9776;</div><a href='../../../risq/index.html'><div class='logo-container'><img src='https://wherethewindsblow.com/wp-content/uploads/2020/11/crab_dice_red_white.jpg' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img src="../../../brush.svg" width="18" height="18" alt="Pick another theme!"></button><div id="theme-choices" role="menu"></div></div><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../settings.html" title="settings"><img src="../../../wheel.svg" width="18" height="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">  1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src&#x2F;stoch&#x2F;alias.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>alias.rs - source</title><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../light.css"  id="themeStyle"><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled ><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled ><script id="default-settings" ></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"><style type="text/css">#crate-search{background-image:url("../../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu" role="button">&#9776;</div><a href='../../../risq/index.html'><div class='logo-container rust-logo'><img src='https:&#x2F;&#x2F;wherethewindsblow.com&#x2F;wp-content&#x2F;uploads&#x2F;2020&#x2F;11&#x2F;crab_dice_red_white.jpg' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="18" height="18" alt="Pick another theme!" src="../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../settings.html" title="settings"><img width="18" height="18" alt="Change settings" src="../../../wheel.svg"></a></div></form></nav><section id="main" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">  1</span>
 <span id="2">  2</span>
 <span id="3">  3</span>
 <span id="4">  4</span>
@@ -155,18 +153,26 @@
 <span id="153">153</span>
 <span id="154">154</span>
 <span id="155">155</span>
-</pre><pre class="rust">
-<span class="comment">// Alias sampling module</span>
+<span id="156">156</span>
+<span id="157">157</span>
+<span id="158">158</span>
+<span id="159">159</span>
+<span id="160">160</span>
+<span id="161">161</span>
+<span id="162">162</span>
+<span id="163">163</span>
+</pre><pre class="rust"><code><span class="doccomment">//! Alias sampling</span>
 <span class="comment">// Borrows heavily from vose-alias crate, but with some improvements:</span>
 <span class="comment">// - Use vectors of indices to avoid all hash tables</span>
 <span class="comment">// - Don&#39;t discretize probabilities to multiples of 1%</span>
 
-<span class="kw">use</span> <span class="ident">std::fmt::Debug</span>;
 <span class="kw">use</span> <span class="ident">rand::Rng</span>;
+<span class="kw">use</span> <span class="ident">std::fmt::Debug</span>;
 <span class="comment">// use rand::rngs::ThreadRng;</span>
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::rng::Rand</span>;
 <span class="kw">use</span> <span class="ident">rand::distributions::Uniform</span>;
-<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::rng::Rand</span>;
 
+<span class="doccomment">/// Alias sampling data structure</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Alias</span> {
     <span class="comment">// Probability of sampling each element</span>
@@ -178,8 +184,8 @@
 }
 
 <span class="kw">impl</span> <span class="ident">Alias</span> {
-
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">rel_probs</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">f64</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Alias</span> {
+    <span class="doccomment">/// Generate new Alias struct given a vector of relative probabilities (not necessarily normalized)</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">rel_probs</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">f64</span><span class="op">&gt;</span>) -&gt; <span class="ident">Alias</span> {
         <span class="kw">let</span> <span class="ident">size</span> <span class="op">=</span> <span class="ident">rel_probs</span>.<span class="ident">len</span>();
 
         <span class="comment">// Normalize input probabilities</span>
@@ -255,29 +261,31 @@
             <span class="ident">sample_prob</span>: <span class="ident">norm_prob</span>,
             <span class="ident">alias</span>: <span class="ident">alias</span>,
             <span class="ident">alias_prob</span>: <span class="ident">prob</span>,
-            <span class="ident">uniform</span>: <span class="ident">Uniform::from</span>(<span class="number">0</span>..<span class="ident">size</span>)
+            <span class="ident">uniform</span>: <span class="ident">Uniform::from</span>(<span class="number">0</span>..<span class="ident">size</span>),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">sample</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">rand</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Rand</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">usize</span> {
+    <span class="doccomment">/// Sample an element from the Alias struct in O(1) time</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">sample</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">rand</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Rand</span>) -&gt; <span class="ident">usize</span> {
         <span class="kw">let</span> (<span class="ident">i</span>, <span class="ident">r</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">roll_die_and_flip_coin</span>(<span class="ident">rand</span>);
         <span class="kw">return</span> <span class="self">self</span>.<span class="ident">select_element</span>(<span class="ident">i</span>, <span class="ident">r</span>);
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">sample_with_prob</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">rand</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Rand</span>) <span class="op">-</span><span class="op">&gt;</span> (<span class="ident">usize</span>, <span class="ident">f64</span>) {
+    <span class="doccomment">/// Sample an element and also return its sample probability</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">sample_with_prob</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">rand</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Rand</span>) -&gt; (<span class="ident">usize</span>, <span class="ident">f64</span>) {
         <span class="kw">let</span> (<span class="ident">i</span>, <span class="ident">r</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">roll_die_and_flip_coin</span>(<span class="ident">rand</span>);
         <span class="kw">return</span> <span class="self">self</span>.<span class="ident">select_element_and_prob</span>(<span class="ident">i</span>, <span class="ident">r</span>);
     }
 
-    <span class="doccomment">/// This function &#39;rolls the unweighted die&#39; (selects an element uniformly) and &#39;flips the weighted coin&#39; (selects a uniform real between 0 and 1 for comparing to the probability of using the alias)</span>
-    <span class="kw">fn</span> <span class="ident">roll_die_and_flip_coin</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">rand</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Rand</span>) <span class="op">-</span><span class="op">&gt;</span> (<span class="ident">usize</span>, <span class="ident">f64</span>) {
+    <span class="comment">// This function &#39;rolls the unweighted die&#39; (selects an element uniformly) and &#39;flips the weighted coin&#39; (selects a uniform real between 0 and 1 for comparing to the probability of using the alias)</span>
+    <span class="kw">fn</span> <span class="ident">roll_die_and_flip_coin</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">rand</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Rand</span>) -&gt; (<span class="ident">usize</span>, <span class="ident">f64</span>) {
         <span class="kw">let</span> <span class="ident">i</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="ident">rand</span>.<span class="ident">rng</span>.<span class="ident">sample</span>(<span class="self">self</span>.<span class="ident">uniform</span>);
         <span class="kw">let</span> <span class="ident">r</span>: <span class="ident">f64</span> <span class="op">=</span> <span class="ident">rand</span>.<span class="ident">rng</span>.<span class="ident">gen</span>();
         <span class="kw">return</span> (<span class="ident">i</span>, <span class="ident">r</span>);
     }
 
-    <span class="doccomment">/// This function selects an element from the VoseAlias table given a die (a column) and a coin (the element or its alias). This function has been separated from the `sample` function to allow unit testing, but should never be called by itself.</span>
-    <span class="kw">fn</span> <span class="ident">select_element</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">die</span>: <span class="ident">usize</span>, <span class="ident">coin</span>: <span class="ident">f64</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">usize</span> {
+    <span class="comment">// This function selects an element from the VoseAlias table given a die (a column) and a coin (the element or its alias). This function has been separated from the `sample` function to allow unit testing, but should never be called by itself.</span>
+    <span class="kw">fn</span> <span class="ident">select_element</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">die</span>: <span class="ident">usize</span>, <span class="ident">coin</span>: <span class="ident">f64</span>) -&gt; <span class="ident">usize</span> {
         <span class="comment">// choose randomly an element from the element vector</span>
         <span class="kw">if</span> <span class="ident">coin</span> <span class="op">&lt;</span> <span class="self">self</span>.<span class="ident">alias_prob</span>[<span class="ident">die</span>] {
             <span class="kw">return</span> <span class="ident">die</span>;
@@ -286,8 +294,8 @@
         }
     }
 
-    <span class="doccomment">/// This function selects an element from the VoseAlias table given a die (a column) and a coin (the element or its alias). This function has been separated from the `sample` function to allow unit testing, but should never be called by itself.</span>
-    <span class="kw">fn</span> <span class="ident">select_element_and_prob</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">die</span>: <span class="ident">usize</span>, <span class="ident">coin</span>: <span class="ident">f64</span>) <span class="op">-</span><span class="op">&gt;</span> (<span class="ident">usize</span>, <span class="ident">f64</span>) {
+    <span class="comment">// This function selects an element from the VoseAlias table given a die (a column) and a coin (the element or its alias). This function has been separated from the `sample` function to allow unit testing, but should never be called by itself.</span>
+    <span class="kw">fn</span> <span class="ident">select_element_and_prob</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">die</span>: <span class="ident">usize</span>, <span class="ident">coin</span>: <span class="ident">f64</span>) -&gt; (<span class="ident">usize</span>, <span class="ident">f64</span>) {
         <span class="comment">// choose randomly an element from the element vector</span>
         <span class="kw">if</span> <span class="ident">coin</span> <span class="op">&lt;</span> <span class="self">self</span>.<span class="ident">alias_prob</span>[<span class="ident">die</span>] {
             <span class="kw">return</span> (<span class="ident">die</span>, <span class="self">self</span>.<span class="ident">sample_prob</span>[<span class="ident">die</span>]);
@@ -307,9 +315,16 @@
         }
         <span class="macro">println!</span>(<span class="string">&quot;Target prob, sampled prob, element&quot;</span>);
         <span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> <span class="number">0</span>..<span class="ident">n</span> {
-            <span class="macro">println!</span>(<span class="string">&quot;{:.6},   {:.6},   {}&quot;</span>, <span class="self">self</span>.<span class="ident">sample_prob</span>[<span class="ident">i</span>], (<span class="ident">freq</span>[<span class="ident">i</span>] <span class="kw">as</span> <span class="ident">f64</span>) <span class="op">/</span> (<span class="ident">n_samples</span> <span class="kw">as</span> <span class="ident">f64</span>), <span class="ident">i</span>);
+            <span class="macro">println!</span>(
+                <span class="string">&quot;{:.6},   {:.6},   {}&quot;</span>,
+                <span class="self">self</span>.<span class="ident">sample_prob</span>[<span class="ident">i</span>],
+                (<span class="ident">freq</span>[<span class="ident">i</span>] <span class="kw">as</span> <span class="ident">f64</span>) <span class="op">/</span> (<span class="ident">n_samples</span> <span class="kw">as</span> <span class="ident">f64</span>),
+                <span class="ident">i</span>
+            );
         }
     }
 }
-</pre></div>
-</section><section id="search" class="content hidden"></section><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="risq" data-search-index-js="../../../search-index.js" data-search-js="../../../search.js"></div><script src="../../../main.js"></script><script src="../../../source-script.js"></script><script src="../../../source-files.js"></script></body></html>
+</code></pre></div>
+</section><section id="search" class="content hidden"></section><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="risq" data-search-index-js="../../../search-index.js" data-search-js="../../../search.js"></div>
+    <script src="../../../main.js"></script><script src="../../../source-script.js"></script><script src="../../../source-files.js"></script>
+</body></html>

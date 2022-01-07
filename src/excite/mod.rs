@@ -1,4 +1,4 @@
-//! Generating most important excitations, importance sampling the rest
+//! Data structure that enables generating the most important excitations and importance sampling the rest
 
 pub mod init;
 pub mod iterator;

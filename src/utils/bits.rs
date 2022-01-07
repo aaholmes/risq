@@ -1,18 +1,18 @@
-// Useful bitwise functions:
-// Bits(n) iterates over set bits in n, bit_pairs(n) iterates over pairs of set bits in n,
-// plus functions for computing parity and getting and setting bits
+//! Useful bitwise functions
+//! Bits(n) iterates over set bits in n, bit_pairs(n) iterates over pairs of set bits in n,
+//! plus functions for computing parity and getting and setting bits
 
 use crate::wf::det::Config;
 // use crate::excite::Orbs;
 
-// Iterate over set bits in a u128
-// Syntax: for i in bits(det: u128): loops over the set bits in det
+/// Iterate over set bits in a u128
+/// Syntax: for i in bits(det: u128): loops over the set bits in det
 pub fn bits(det: u128) -> impl Iterator<Item = i32> {
     Bits::new(det).into_iter()
 }
 
-// Iterate over pairs of set bits in a u128
-// Syntax: for (i, j) in bit_pairs(det: u128): loops over the unique pairs of set bits in det
+/// Iterate over pairs of set bits in a u128
+/// Syntax: for (i, j) in bit_pairs(det: u128): loops over the unique pairs of set bits in det
 pub fn bit_pairs(det: u128) -> impl Iterator<Item = (i32, i32)> {
     BitPairs::new(det).into_iter()
 }
@@ -33,7 +33,7 @@ pub fn bit_pairs(det: u128) -> impl Iterator<Item = (i32, i32)> {
 //     OppIter::new(det).into_iter()
 // }
 
-// Iterate over set bits in a Config
+/// Iterate over set bits in a Config
 pub fn det_bits(det: &Config) -> impl Iterator<Item = i32> {
     bits(det.up).chain(bits(det.dn))
 }
@@ -71,8 +71,7 @@ pub fn parity(mut n: u128) -> i32 {
     1 - 2 * ((n & 1) as i32)
 }
 
-// Backend for bits()
-
+/// Backend for bits()
 struct Bits {
     det: u128,
 }
@@ -152,8 +151,7 @@ impl Iterator for BitsIntoIterator {
 //     }
 // }
 
-// Backend for bit_pairs()
-
+/// Backend for bit_pairs()
 struct BitPairs {
     det: u128,
 }

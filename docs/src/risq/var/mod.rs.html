@@ -1,6 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/var/mod.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>mod.rs - source</title><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../light.css"  id="themeStyle"><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled ><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled ><script id="default-settings"></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="icon" type="image/svg+xml" href="../../../favicon.svg">
-<link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png">
-<link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><style type="text/css">#crate-search{background-image:url("../../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu" role="button">&#9776;</div><a href='../../../risq/index.html'><div class='logo-container'><img src='https://wherethewindsblow.com/wp-content/uploads/2020/11/crab_dice_red_white.jpg' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img src="../../../brush.svg" width="18" height="18" alt="Pick another theme!"></button><div id="theme-choices" role="menu"></div></div><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../settings.html" title="settings"><img src="../../../wheel.svg" width="18" height="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1"> 1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src&#x2F;var&#x2F;mod.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>mod.rs - source</title><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../light.css"  id="themeStyle"><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled ><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled ><script id="default-settings" ></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"><style type="text/css">#crate-search{background-image:url("../../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu" role="button">&#9776;</div><a href='../../../risq/index.html'><div class='logo-container rust-logo'><img src='https:&#x2F;&#x2F;wherethewindsblow.com&#x2F;wp-content&#x2F;uploads&#x2F;2020&#x2F;11&#x2F;crab_dice_red_white.jpg' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="18" height="18" alt="Pick another theme!" src="../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../settings.html" title="settings"><img width="18" height="18" alt="Change settings" src="../../../wheel.svg"></a></div></form></nav><section id="main" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1"> 1</span>
 <span id="2"> 2</span>
 <span id="3"> 3</span>
 <span id="4"> 4</span>
@@ -73,39 +71,50 @@
 <span id="71">71</span>
 <span id="72">72</span>
 <span id="73">73</span>
-</pre><pre class="rust">
-<span class="comment">// Variational stage</span>
+<span id="74">74</span>
+<span id="75">75</span>
+<span id="76">76</span>
+<span id="77">77</span>
+<span id="78">78</span>
+<span id="79">79</span>
+<span id="80">80</span>
+<span id="81">81</span>
+<span id="82">82</span>
+<span id="83">83</span>
+<span id="84">84</span>
+</pre><pre class="rust"><code><span class="doccomment">//! Variational stage of Heat-bath Configuration Interaction</span>
 
 <span class="kw">mod</span> <span class="ident">davidson</span>;
+<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">eigenvalues</span>;
 <span class="kw">mod</span> <span class="ident">ham_gen</span>;
+<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">off_diag</span>;
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod</span> <span class="ident">sparse</span>;
 <span class="kw">mod</span> <span class="ident">utils</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">off_diag</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">eigenvalues</span>;
 
-<span class="kw">use</span> <span class="kw">super</span><span class="ident">::ham::Ham</span>;
-<span class="kw">use</span> <span class="kw">super</span><span class="ident">::wf::Wf</span>;
-<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::excite::init::ExciteGenerator</span>;
-<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::var::davidson::sparse_optimize</span>;
-<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::utils::read_input::Global</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::ham::Ham</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::wf::Wf</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::excite::init::ExciteGenerator</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::utils::read_input::Global</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::var::davidson::sparse_optimize</span>;
 <span class="kw">use</span> <span class="ident">std::time::Instant</span>;
 
-
+<span class="doccomment">/// Perform variational selected CI</span>
 <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">variational</span>(<span class="ident">global</span>: <span class="kw-2">&amp;</span><span class="ident">Global</span>, <span class="ident">ham</span>: <span class="kw-2">&amp;</span><span class="ident">Ham</span>, <span class="ident">excite_gen</span>: <span class="kw-2">&amp;</span><span class="ident">ExciteGenerator</span>, <span class="ident">wf</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Wf</span>) {
-
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">iter</span>: <span class="ident">i32</span> <span class="op">=</span> <span class="number">0</span>;
 
-    <span class="macro">println!</span>(<span class="string">&quot;Start of variational stage: Wavefunction has {} det with energy {:.4}&quot;</span>, <span class="ident">wf</span>.<span class="ident">n</span>, <span class="ident">wf</span>.<span class="ident">energy</span>);
+    <span class="macro">println!</span>(
+        <span class="string">&quot;Start of variational stage: Wavefunction has {} det with energy {:.4}&quot;</span>,
+        <span class="ident">wf</span>.<span class="ident">n</span>, <span class="ident">wf</span>.<span class="ident">energy</span>
+    );
 
     <span class="comment">// let eps_energy_converged: f64 = 2.5e-4;</span>
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">last_energy</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">f64</span><span class="op">&gt;</span>;
 
     <span class="kw">while</span> <span class="op">!</span><span class="ident">wf</span>.<span class="ident">converged</span> {
-
         <span class="ident">iter</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
 
         <span class="kw">let</span> <span class="ident">start_find_new_dets</span>: <span class="ident">Instant</span> <span class="op">=</span> <span class="ident">Instant::now</span>();
-        <span class="kw">if</span> (<span class="ident">wf</span>.<span class="ident">eps</span> <span class="op">=</span><span class="op">=</span> <span class="ident">global</span>.<span class="ident">eps_var</span>) <span class="op">&amp;</span> <span class="ident">wf</span>.<span class="ident">find_new_dets</span>(<span class="kw-2">&amp;</span><span class="ident">global</span>, <span class="kw-2">&amp;</span><span class="ident">ham</span>, <span class="kw-2">&amp;</span><span class="ident">excite_gen</span>) {
+        <span class="kw">if</span> (<span class="ident">wf</span>.<span class="ident">eps</span> <span class="op">==</span> <span class="ident">global</span>.<span class="ident">eps_var</span>) <span class="op">&amp;</span> <span class="ident">wf</span>.<span class="ident">find_new_dets</span>(<span class="kw-2">&amp;</span><span class="ident">global</span>, <span class="kw-2">&amp;</span><span class="ident">ham</span>, <span class="kw-2">&amp;</span><span class="ident">excite_gen</span>) {
             <span class="macro">println!</span>(<span class="string">&quot;No new dets added; wf converged&quot;</span>);
             <span class="ident">wf</span>.<span class="ident">converged</span> <span class="op">=</span> <span class="bool-val">true</span>;
             <span class="kw">break</span>;
@@ -119,9 +128,20 @@
 
         <span class="macro">println!</span>(<span class="string">&quot;\nOptimizing coefficients of wf with {} dets&quot;</span>, <span class="ident">wf</span>.<span class="ident">n</span>);
         <span class="kw">let</span> <span class="ident">start_optimize_coeffs</span>: <span class="ident">Instant</span> <span class="op">=</span> <span class="ident">Instant::now</span>();
-        <span class="ident">sparse_optimize</span>(<span class="kw-2">&amp;</span><span class="ident">global</span>, <span class="kw-2">&amp;</span><span class="ident">ham</span>, <span class="kw-2">&amp;</span><span class="ident">excite_gen</span>, <span class="ident">wf</span>, <span class="ident">coeff_eps</span>, <span class="ident">energy_eps</span>, <span class="ident">iter</span> <span class="op">&gt;</span> <span class="number">1</span>);
+        <span class="ident">sparse_optimize</span>(
+            <span class="kw-2">&amp;</span><span class="ident">global</span>,
+            <span class="kw-2">&amp;</span><span class="ident">ham</span>,
+            <span class="kw-2">&amp;</span><span class="ident">excite_gen</span>,
+            <span class="ident">wf</span>,
+            <span class="ident">coeff_eps</span>,
+            <span class="ident">energy_eps</span>,
+            <span class="ident">iter</span> <span class="op">&gt;</span> <span class="number">1</span>,
+        );
         <span class="comment">// dense_optimize(wf, coeff_eps, energy_eps, &amp;ham, &amp;excite_gen);</span>
-        <span class="macro">println!</span>(<span class="string">&quot;Time to optimize wf coefficients: {:?}&quot;</span>, <span class="ident">start_optimize_coeffs</span>.<span class="ident">elapsed</span>());
+        <span class="macro">println!</span>(
+            <span class="string">&quot;Time to optimize wf coefficients: {:?}&quot;</span>,
+            <span class="ident">start_optimize_coeffs</span>.<span class="ident">elapsed</span>()
+        );
 
         <span class="macro">println!</span>(<span class="string">&quot;End of iteration {} (eps = {:.1e}): Wavefunction has {} determinants with energy {:.6}&quot;</span>, <span class="ident">iter</span>, <span class="ident">wf</span>.<span class="ident">eps</span>, <span class="ident">wf</span>.<span class="ident">n</span>, <span class="ident">wf</span>.<span class="ident">energy</span>);
         <span class="kw">if</span> <span class="ident">wf</span>.<span class="ident">n</span> <span class="op">&lt;</span><span class="op">=</span> <span class="number">10</span> {
@@ -132,10 +152,10 @@
 
         <span class="comment">// if iter == 2 { panic!(&quot;Debug!&quot;) }</span>
 
-        <span class="kw">if</span> <span class="ident">wf</span>.<span class="ident">eps</span> <span class="op">=</span><span class="op">=</span> <span class="ident">global</span>.<span class="ident">eps_var</span> {
+        <span class="kw">if</span> <span class="ident">wf</span>.<span class="ident">eps</span> <span class="op">==</span> <span class="ident">global</span>.<span class="ident">eps_var</span> {
             <span class="kw">match</span> <span class="ident">last_energy</span> {
-                <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> {},
-                <span class="prelude-val">Some</span>(<span class="kw">_</span>) <span class="op">=</span><span class="op">&gt;</span> {
+                <span class="prelude-val">None</span> =&gt; {}
+                <span class="prelude-val">Some</span>(<span class="kw">_</span>) =&gt; {
                     <span class="comment">// if (e - wf.energy).abs() &lt; eps_energy_converged {</span>
                     <span class="comment">//     println!(&quot;Variational energy did not change much; wf converged&quot;);</span>
                     <span class="comment">//     wf.converged = true;</span>
@@ -145,7 +165,8 @@
             }
         }
     }
-
 }
-</pre></div>
-</section><section id="search" class="content hidden"></section><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="risq" data-search-index-js="../../../search-index.js" data-search-js="../../../search.js"></div><script src="../../../main.js"></script><script src="../../../source-script.js"></script><script src="../../../source-files.js"></script></body></html>
+</code></pre></div>
+</section><section id="search" class="content hidden"></section><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="risq" data-search-index-js="../../../search-index.js" data-search-js="../../../search.js"></div>
+    <script src="../../../main.js"></script><script src="../../../source-script.js"></script><script src="../../../source-files.js"></script>
+</body></html>

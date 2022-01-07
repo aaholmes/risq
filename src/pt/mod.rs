@@ -1,4 +1,4 @@
-// Module for functions specific to Epstein-Nesbet perturbation theory
+//! Epstein-Nesbet perturbation theory
 
 use crate::excite::init::ExciteGenerator;
 use crate::excite::{Excite, Orbs};
@@ -15,8 +15,8 @@ use itertools::enumerate;
 use std::collections::HashMap;
 // use rand::Rng;
 
+/// Perform the perturbative stage (Epstein-Nesbet perturbation theory, that is)
 pub fn perturbative(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, wf: &Wf) {
-    // Perform the perturbative stage (Epstein-Nesbet perturbation theory, that is)
 
     // Initialize random number genrator
     let mut rand: Rand = init_rand();
@@ -45,12 +45,12 @@ pub fn perturbative(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, wf
     println!("Total energy: {:.6} +- {:.6}", wf.energy + e_pt2, std_dev);
 }
 
+/// Sampled contributions to the ENPT2 correction
+/// Samples stored in a hashmap:
+/// Key: perturbative det (Config)
+/// Value: (perturbative det's diag, HashMap (key: variational det's config, value: (H_ai c_i, p_ai, w_ai)))
 #[derive(Default)]
 pub struct PtSamples {
-    // Sampled contributions to the ENPT2 correction
-    // Samples stored in a hashmap:
-    // Key: perturbative det (Config)
-    // Value: (perturbative det's diag, HashMap (key: variational det's config, value: (H_ai c_i, p_ai, w_ai)))
     pub n: i32,
     pub samples: HashMap<Config, (f64, HashMap<Config, (f64, f64, i32)>)>,
 }

@@ -1,1 +1,1 @@
-initSidebarItems({"fn":[["read_ints",""]],"struct":[["Ints",""]]});
+initSidebarItems({"fn":[["read_ints","Read integrals, put them into self.ints Ints are stored starting with index 1 (following the FCIDUMP file they’re read from) Also, create core_orbs and valence_orbs lists using the diagonal Fock elements to determine which norb_core orbitals to freeze"]],"struct":[["Ints",""]]});

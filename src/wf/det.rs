@@ -1,6 +1,6 @@
-// Determinant data structure:
-// Includes functions to generate an excited det, and compute its diagonal element
-// quickly from the initial det's diagonal element
+//! Determinant data structure
+//! Includes functions to generate an excited det, and compute its diagonal element
+//! quickly from the initial det's diagonal element
 
 use crate::excite::init::ExciteGenerator;
 use crate::excite::{Excite, Orbs, StoredExcite};

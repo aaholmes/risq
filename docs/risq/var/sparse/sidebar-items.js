@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["SparseMat",""],["SparseMatDoubles",""],["SparseMatUpperTri",""]]});
+initSidebarItems({"struct":[["SparseMat",""],["SparseMatDoubles",""],["SparseMatUpperTri","Upper triangular sparse matrix nonzero off-diagonal elements are at (ind1, ind2) where ind1 < ind2"]]});

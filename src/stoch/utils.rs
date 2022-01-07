@@ -1,3 +1,5 @@
+//! Misc sampling utilities
+
 extern crate rand;
 use rand::prelude::*;
 
@@ -7,20 +9,19 @@ use crate::stoch::ImpSampleDist;
 use std::collections::HashMap;
 // use std::intrinsics::offset;
 
+/// Sample a CDF (in decreasing order) by sampling a uniform random number up to max_cdf and binary searching the CDF
+/// cdf is a vector of StoredExcites, and we access their stored cumulative sums depending on imp_sample_dist
+/// max_cdf is chosen such that CDF(elem) = max_cdf.unwrap() for the first elem that is a valid sample
+/// (max_cdf = None samples the whole distribution)
+/// Returns the sampled excite and the probability of the sample
+/// O(log M)
 pub fn sample_cdf<'a>(
     cdf: &'a Vec<StoredExcite>,
     imp_sample_dist: &ImpSampleDist,
     max_cdf: Option<f64>,
     rand: &mut Rand,
 ) -> Option<(&'a StoredExcite, f64)> {
-    // Sample a CDF (in decreasing order) by sampling a uniform random number up to max_cdf
-    // and binary searching the CDF
-    // cdf is a vector of StoredExcites, and we access their stored cumulative sums depending on imp_sample_dist
-    // max_cdf is chosen such that CDF(elem) = max_cdf.unwrap() for the first elem that is a valid sample
-    // (max_cdf = None samples the whole distribution)
-    // Returns the sampled excite and the probability of the sample
-    // O(log M)
-
+    
     let n = cdf.len();
     // println!("CDF has size: {}", n);
 

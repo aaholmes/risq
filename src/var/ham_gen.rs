@@ -1,4 +1,4 @@
-// Variational Hamiltonian generation algorithms
+//! Variational Hamiltonian generation algorithms
 
 use crate::excite::init::ExciteGenerator;
 use crate::ham::Ham;

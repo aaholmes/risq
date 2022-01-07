@@ -1,4 +1,4 @@
-// Read input file into Global variable data structure
+//! Read input file into Global variable data structure
 
 extern crate serde;
 extern crate serde_json;
@@ -30,6 +30,7 @@ pub struct Global {
     pub n_cross_term_samples: i32, // 0 for old semistochastic method; >0 for new
 }
 
+/// Read input from in.json, put it into Global struct
 pub fn read_input<P: AsRef<Path>>(path: P) -> Result<Global> {
     let file = File::open(path).unwrap();
     let reader = BufReader::new(file);

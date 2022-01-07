@@ -1,6 +1,6 @@
-// Wavefunction data structure:
-// Includes both the variational wf and the variational H
-// Includes functions for initializing, printing, and adding new determinants
+//! Variational wavefunction data structure
+//! Includes both the variational wf and the variational H
+//! Includes functions for initializing, printing, and adding new determinants
 
 pub mod det;
 mod eps;
@@ -23,6 +23,7 @@ use rolling_stats::Stats;
 use std::cmp::Reverse;
 use std::time::Instant;
 
+/// Variational wavefunction data structure
 #[derive(Default)]
 pub struct Wf {
     pub n_states: i32, // number of states - same as in input file, but want it attached to the wf
@@ -38,8 +39,8 @@ pub struct Wf {
 }
 
 impl Wf {
+    /// Just adds a new det to the wf
     pub fn push(&mut self, d: Det) {
-        // Just adds a new det to the wf
         if !self.inds.contains_key(&d.config) {
             self.inds.insert(d.config, self.n);
             self.n += 1;
@@ -47,6 +48,9 @@ impl Wf {
         }
     }
 
+    /// Add det with its coefficient
+    /// If det already exists in wf, add its coefficient to that det
+    /// Also, computes diagonal element if necessary (that's what exciting_det, ham and excite are needed for)
     pub fn add_det_with_coeff(
         &mut self,
         exciting_det: &Det,
@@ -55,9 +59,6 @@ impl Wf {
         new_det: Config,
         coeff: f64,
     ) {
-        // Add det with its coefficient
-        // If det already exists in wf, add its coefficient to that det
-        // Also, computes diagonal element if necessary (that's what exciting_det, ham and excite are needed for)
         let ind = self.inds.get(&new_det);
         match ind {
             Some(k) => self.dets[*k].coeff += coeff,
@@ -1469,15 +1470,16 @@ impl Wf {
         out
     }
 
+    /// Get new dets
+    /// Iterate over all dets; for each, propose all excitations; for each, check if new;
+    /// if new, add to wf
+    /// Returns true if no new dets (i.e., returns whether already converged)
     pub fn find_new_dets(
         &mut self,
         global: &Global,
         ham: &Ham,
         excite_gen: &ExciteGenerator,
     ) -> bool {
-        // Get new dets: iterate over all dets; for each, propose all excitations; for each, check if new;
-        // if new, add to wf
-        // Returns true if no new dets (i.e., returns whether already converged)
 
         self.eps = self.eps_iter.next().unwrap();
 
@@ -1491,6 +1493,9 @@ impl Wf {
         new_dets.n == 0
     }
 
+    /// Iterate over excitations using heat-bath cutoff eps
+    /// Used internally by both approx_matmul and get_new_dets
+    /// If matmul, then return H*psi; else, return a wf composed of new dets
     fn iterate_excites(
         &mut self,
         global: &Global,
@@ -1499,9 +1504,6 @@ impl Wf {
         eps: f64,
         matmul: bool,
     ) -> Wf {
-        // Iterate over excitations using heat-bath cutoff eps
-        // Used internally by both approx_matmul and get_new_dets
-        // If matmul, then return H*psi; else, return a wf composed of new dets
         println!("Getting new dets with epsilon = {:.1e}", eps);
         let mut local_eps: f64;
         let mut excite: Excite;
@@ -1686,9 +1688,9 @@ impl Wf {
         self.n_stored_h
     }
 
+    /// Create new sparse Hamiltonian, set the diagonal elements to the ones already stored in wf
+    /// Don't update self.n_stored_h yet, because we haven't computed the off-diagonal elements yet
     pub fn new_sparse_ham(&mut self) {
-        // Create new sparse Hamiltonian, set the diagonal elements to the ones already stored in wf
-        // Don't update self.n_stored_h yet, because we haven't computed the off-diagonal elements yet
         self.sparse_ham = SparseMatUpperTri {
             n: self.n,
             diag: vec![0.0; self.n],
@@ -1700,10 +1702,10 @@ impl Wf {
         }
     }
 
+    /// Just create empty rows to fill up the dimension to new size wf.n
+    /// Also, fill up all of the new diagonal elements
+    /// Don't update self.n_stored_h yet, because we haven't computed the off-diagonal elements yet
     pub fn expand_sparse_ham_rows(&mut self) {
-        // Just create empty rows to fill up the dimension to new size wf.n
-        // Also, fill up all of the new diagonal elements
-        // Don't update self.n_stored_h yet, because we haven't computed the off-diagonal elements yet
         println!(
             "Expanding variational H from size {} to size {}",
             self.sparse_ham.n, self.n
@@ -1725,7 +1727,7 @@ impl Wf {
     }
 }
 
-// Initialize variational wf to the HF det (only needs to be called once)
+/// Initialize variational wf to the HF det (only needs to be called once)
 pub fn init_var_wf(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator) -> Wf {
     let mut wf: Wf = Wf::default();
     wf.n_states = global.n_states;

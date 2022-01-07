@@ -1,4 +1,4 @@
-// Module containing stochastic functions
+//! General stochastic functions
 
 use crate::excite::init::ExciteGenerator;
 use crate::excite::{Excite, Orbs, StoredExcite};
@@ -12,33 +12,33 @@ pub(crate) mod utils;
 use crate::rng::Rand;
 use alias::Alias;
 
+/// Importance sampling distribution: proportional to either |Hc| or (Hc)^2
 #[derive(Clone, Copy)]
 pub enum ImpSampleDist {
-    // Either importance sample proportional to |Hc| or to (Hc)^2
     AbsHc,
     HcSquared,
 }
 
+/// For importance sampling the component of the matmul that is screened out by the eps threshold
+
+/// Matmul_sample_remaining performs the whole excitation sampling (exciting pair and target), but
+/// this contains only data structures sampling the exciting det and its exciting electron pair;
+/// sampling the target electron pair uses CDF searching which only requires ExciteGenerator
+
+/// Lifetime 'a must last as long as the vector being semistochastically multiplied, since this
+/// struct has pointers to its components
+
+/// For doubles:
+/// Contains two samplers, for sampling with p ~ |Hc| and with p ~ (Hc)^2
+
+/// For singles:
+/// If uniform_singles is true, enables uniform sampling of the singles from small-magnitude
+/// determinants that were not already treated deterministically
+/// Else, singles are sampled alongside doubles using max |H| instead of |H| as their
+/// relative prob
+
+/// Also, contains elements, the list of elements being sampled (e.g. det/orb pairs)
 pub struct ScreenedSampler<'a> {
-    // For importance sampling the component of the matmul that is screened out by the eps threshold
-
-    // Matmul_sample_remaining performs the whole excitation sampling (exciting pair and target), but
-    // this contains only data structures sampling the exciting det and its exciting electron pair;
-    // sampling the target electron pair uses CDF searching which only requires ExciteGenerator
-
-    // Lifetime 'a must last as long as the vector being semistochastically multiplied, since this
-    // struct has pointers to its components
-
-    // For doubles:
-    // Contains two samplers, for sampling with p ~ |Hc| and with p ~ (Hc)^2
-
-    // For singles:
-    // If uniform_singles is true, enables uniform sampling of the singles from small-magnitude
-    // determinants that were not already treated deterministically
-    // Else, singles are sampled alongside doubles using max |H| instead of |H| as their
-    // relative prob
-
-    // Also, contains elements, the list of elements being sampled (e.g. det/orb pairs)
     pub eps: f64,
     // pub uniform_singles: bool,
     pub elements: Vec<DetOrbSample<'a>>,
@@ -81,11 +81,11 @@ impl Hash for DetOrbSample<'_> {
     }
 }
 
+/// Generate a screened sampler object for sampling (det, orbs) pairs using Alias sampling
+/// The input det_orbs will contain the information needed for CDF-searching as a separate step
+/// (sum_abs_hc, sum_hc_squared are the sums of remaining terms to be sampled)
 pub fn generate_screened_sampler(eps: f64, det_orbs: Vec<DetOrbSample>) -> ScreenedSampler {
     // pub fn generate_screened_sampler<'a>(eps: f64, det_orbs: &'a Vec<DetOrbSample>) -> ScreenedSampler<'a> {
-    // Generate a screened sampler object for sampling (det, orbs) pairs using Alias
-    // The input det_orbs will contain the information needed for CDF-searching as a separate step
-    // (sum_abs_hc, sum_hc_squared are the sums of remaining terms to be sampled)
 
     println!("Generating screened sampler of size {}", det_orbs.len());
 
@@ -119,6 +119,9 @@ pub fn generate_screened_sampler(eps: f64, det_orbs: Vec<DetOrbSample>) -> Scree
     }
 }
 
+/// Importance-sample the remaining component of a screened matmul using the given epsilon
+/// Returns tuple containing (option(exciting det, excitation, and sampled determinant (with coeff attached)), and probability of that sample
+/// O(log M) time
 pub fn matmul_sample_remaining(
     screened_sampler: &mut ScreenedSampler,
     imp_sample_dist: ImpSampleDist,
@@ -126,9 +129,6 @@ pub fn matmul_sample_remaining(
     ham: &Ham,
     rand: &mut Rand,
 ) -> (Option<(Det, Excite, Det)>, f64) {
-    // Importance-sample the remaining component of a screened matmul using the given epsilon
-    // Returns tuple containing (option(exciting det, excitation, and sampled determinant (with coeff attached)), and probability of that sample
-    // O(log M) time
 
     let mut det_orb_sample: DetOrbSample = DetOrbSample {
         det: &Det {

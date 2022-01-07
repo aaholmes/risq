@@ -1,1 +1,1 @@
-initSidebarItems({"fn":[["fast_stoch_enpt2",""],["faster_semistoch_enpt2",""],["importance_sampled_semistoch_enpt2",""],["old_semistoch_enpt2",""]]});
+initSidebarItems({"fn":[["fast_stoch_enpt2",""],["faster_semistoch_enpt2",""],["importance_sampled_semistoch_enpt2","Importance sampled semistochastic ENPT2"],["old_semistoch_enpt2","Old algorithm (2017) for semistochastic ENPT2"]]});

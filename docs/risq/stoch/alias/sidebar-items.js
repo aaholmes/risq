@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["Alias",""]]});
+initSidebarItems({"struct":[["Alias","Alias sampling data structure"]]});

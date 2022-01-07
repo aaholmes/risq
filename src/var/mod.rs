@@ -1,4 +1,4 @@
-// Variational stage
+//! Variational stage of Heat-bath Configuration Interaction
 
 mod davidson;
 pub mod eigenvalues;
@@ -14,6 +14,7 @@ use crate::utils::read_input::Global;
 use crate::var::davidson::sparse_optimize;
 use std::time::Instant;
 
+/// Perform variational selected CI
 pub fn variational(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, wf: &mut Wf) {
     let mut iter: i32 = 0;
 

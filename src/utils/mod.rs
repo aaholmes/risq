@@ -1,3 +1,5 @@
+//! Misc useful utiliities
+
 pub mod bits;
 pub mod display;
 pub mod ints;

@@ -1,1 +1,1 @@
-initSidebarItems({"fn":[["init_excite_generator",""]],"struct":[["ExciteGenerator",""]]});
+initSidebarItems({"fn":[["init_excite_generator","Initialize by sorting double excitation element for all pairs"]],"struct":[["ExciteGenerator","Heat-bath excitation generator Contains sorted lists of excitations, for efficient deterministic and importance sampled treatment Also contains alias samplers of stored excitations, for fully stochastic importance sampling"]]});

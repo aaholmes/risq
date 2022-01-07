@@ -1,4 +1,4 @@
-// Alias sampling module
+//! Alias sampling
 // Borrows heavily from vose-alias crate, but with some improvements:
 // - Use vectors of indices to avoid all hash tables
 // - Don't discretize probabilities to multiples of 1%
@@ -9,6 +9,7 @@ use std::fmt::Debug;
 use crate::rng::Rand;
 use rand::distributions::Uniform;
 
+/// Alias sampling data structure
 #[derive(Debug, Clone)]
 pub struct Alias {
     // Probability of sampling each element
@@ -20,6 +21,7 @@ pub struct Alias {
 }
 
 impl Alias {
+    /// Generate new Alias struct given a vector of relative probabilities (not necessarily normalized)
     pub fn new(rel_probs: Vec<f64>) -> Alias {
         let size = rel_probs.len();
 
@@ -100,24 +102,26 @@ impl Alias {
         }
     }
 
+    /// Sample an element from the Alias struct in O(1) time
     pub fn sample(&mut self, rand: &mut Rand) -> usize {
         let (i, r) = self.roll_die_and_flip_coin(rand);
         return self.select_element(i, r);
     }
 
+    /// Sample an element and also return its sample probability
     pub fn sample_with_prob(&mut self, rand: &mut Rand) -> (usize, f64) {
         let (i, r) = self.roll_die_and_flip_coin(rand);
         return self.select_element_and_prob(i, r);
     }
 
-    /// This function 'rolls the unweighted die' (selects an element uniformly) and 'flips the weighted coin' (selects a uniform real between 0 and 1 for comparing to the probability of using the alias)
+    // This function 'rolls the unweighted die' (selects an element uniformly) and 'flips the weighted coin' (selects a uniform real between 0 and 1 for comparing to the probability of using the alias)
     fn roll_die_and_flip_coin(&mut self, rand: &mut Rand) -> (usize, f64) {
         let i: usize = rand.rng.sample(self.uniform);
         let r: f64 = rand.rng.gen();
         return (i, r);
     }
 
-    /// This function selects an element from the VoseAlias table given a die (a column) and a coin (the element or its alias). This function has been separated from the `sample` function to allow unit testing, but should never be called by itself.
+    // This function selects an element from the VoseAlias table given a die (a column) and a coin (the element or its alias). This function has been separated from the `sample` function to allow unit testing, but should never be called by itself.
     fn select_element(&self, die: usize, coin: f64) -> usize {
         // choose randomly an element from the element vector
         if coin < self.alias_prob[die] {
@@ -127,7 +131,7 @@ impl Alias {
         }
     }
 
-    /// This function selects an element from the VoseAlias table given a die (a column) and a coin (the element or its alias). This function has been separated from the `sample` function to allow unit testing, but should never be called by itself.
+    // This function selects an element from the VoseAlias table given a die (a column) and a coin (the element or its alias). This function has been separated from the `sample` function to allow unit testing, but should never be called by itself.
     fn select_element_and_prob(&self, die: usize, coin: f64) -> (usize, f64) {
         // choose randomly an element from the element vector
         if coin < self.alias_prob[die] {

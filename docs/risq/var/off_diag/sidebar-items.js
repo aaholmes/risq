@@ -1,1 +1,1 @@
-initSidebarItems({"fn":[["add_el",""],["add_el_and_spin_flipped",""]],"struct":[["OffDiagElemsNoHash",""]]});
+initSidebarItems({"fn":[["add_el","Add an off-diagonal element H_{ij} to off_diag_elems i and j can be of any order"],["add_el_and_spin_flipped","Add an off-diagonal element H_{ij}, as well as its spin-flipped counterpart, to off_diag_elems i and j can be of any order"]],"struct":[["OffDiagElemsNoHash","Off-diag elems data structure"]]});

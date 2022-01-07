@@ -1,4 +1,4 @@
-// Semistochastic methods mod; for now, just includes semistochastic ENPT2
+//! Semistochastic methods - for now, just includes Epstein-Nesbet perturbation theory
 
 use crate::excite::init::ExciteGenerator;
 use crate::ham::Ham;
@@ -11,6 +11,7 @@ use crate::wf::Wf;
 use rolling_stats::Stats;
 use std::time::Instant;
 
+/// Importance sampled semistochastic ENPT2
 pub fn importance_sampled_semistoch_enpt2(
     input_wf: &Wf,
     global: &Global,
@@ -18,7 +19,6 @@ pub fn importance_sampled_semistoch_enpt2(
     excite_gen: &ExciteGenerator,
     rand: &mut Rand,
 ) -> (f64, f64) {
-    // Importance sampled semistochastic ENPT2
 
     // Basically just the original SHCI except the sum on "a" is importance sampled
     // i.e., instead of computing the sum deterministically, sample according to some
@@ -759,6 +759,7 @@ pub fn faster_semistoch_enpt2(
 //
 // }
 
+/// Old algorithm (2017) for semistochastic ENPT2
 pub fn old_semistoch_enpt2(
     input_wf: &Wf,
     global: &Global,
@@ -767,7 +768,6 @@ pub fn old_semistoch_enpt2(
     use_optimal_probs: bool,
     rand: &mut Rand,
 ) -> (f64, f64) {
-    // Old algorithm (2017) for semistochastic ENPT2
     // If use_optimal_probs, then sample with probability proportional to sum of remaining (Hc)^2;
     // else, use probability proportional to |c|
 
