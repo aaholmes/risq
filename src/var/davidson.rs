@@ -31,7 +31,7 @@ pub fn sparse_optimize(
 
     // Davidson
     let start_dav: Instant = Instant::now();
-    let mut dav: Result<Davidson, DavidsonError>;
+    let dav: Result<Davidson, DavidsonError>;
     let init: Option<DMatrix<f64>> = {
         if init_last_iter {
             // Use inital guess

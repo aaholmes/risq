@@ -1,11 +1,12 @@
 //! Epstein-Nesbet perturbation theory
 
 use crate::excite::init::ExciteGenerator;
-use crate::excite::{Excite, Orbs};
+use crate::excite::Excite;
 use crate::ham::Ham;
 use crate::rng::{init_rand, Rand};
 use crate::semistoch::{
-    fast_stoch_enpt2, faster_semistoch_enpt2, importance_sampled_semistoch_enpt2,
+    // fast_stoch_enpt2, faster_semistoch_enpt2,
+    importance_sampled_semistoch_enpt2,
     old_semistoch_enpt2,
 };
 use crate::utils::read_input::Global;
@@ -24,8 +25,8 @@ pub fn perturbative(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, wf
     // println!("Debug: {}", r);
     // panic!("DEBUG");
 
-    let mut e_pt2: f64;
-    let mut std_dev: f64;
+    let e_pt2: f64;
+    let std_dev: f64;
     if global.n_cross_term_samples == 0 {
         // Old SHCI (2017 paper)
         println!("\nCalling semistoch ENPT2 the old way with p ~ |c|");
@@ -56,17 +57,17 @@ pub struct PtSamples {
 }
 
 impl PtSamples {
-    pub fn print(&self) {
-        for (pt_key, pt_val) in self.samples.iter() {
-            println!("Perturbative det: {} with diag elem: {}", pt_key, pt_val.0);
-            for (var_key, var_val) in pt_val.1.iter() {
-                println!(
-                    "   Variational det: {}, H_ai c_i: {}, p_ai: {}, w_ai: {}",
-                    var_key, var_val.0, var_val.1, var_val.2
-                )
-            }
-        }
-    }
+    // pub fn print(&self) {
+    //     for (pt_key, pt_val) in self.samples.iter() {
+    //         println!("Perturbative det: {} with diag elem: {}", pt_key, pt_val.0);
+    //         for (var_key, var_val) in pt_val.1.iter() {
+    //             println!(
+    //                 "   Variational det: {}, H_ai c_i: {}, p_ai: {}, w_ai: {}",
+    //                 var_key, var_val.0, var_val.1, var_val.2
+    //             )
+    //         }
+    //     }
+    // }
 
     pub fn clear(&mut self) {
         // Clear data structure to start collecting a new batch of samples

@@ -4,7 +4,7 @@ use crate::excite::init::ExciteGenerator;
 use crate::excite::{Excite, Orbs, StoredExcite};
 use crate::ham::Ham;
 use crate::stoch::utils::sample_cdf;
-use crate::wf::det::{Config, Det};
+use crate::wf::det::Det;
 use std::hash::{Hash, Hasher};
 
 pub(crate) mod alias;
@@ -130,27 +130,10 @@ pub fn matmul_sample_remaining(
     rand: &mut Rand,
 ) -> (Option<(Det, Excite, Det)>, f64) {
 
-    let mut det_orb_sample: DetOrbSample = DetOrbSample {
-        det: &Det {
-            config: Config { up: 0, dn: 0 },
-            coeff: 0.0,
-            diag: 0.0,
-        },
-        init: Orbs::Single(0),
-        is_alpha: None,
-        sum_abs_h: 0.0,
-        sum_h_squared: 0.0,
-        sum_abs_hc: 0.0,
-        sum_hc_squared: 0.0,
-    };
-    let mut det_orb_prob: f64 = 0.0;
-    let mut sampled_excite: &StoredExcite = &StoredExcite {
-        target: Orbs::Single(0),
-        abs_h: 0.0,
-        sum_remaining_abs_h: 0.0,
-        sum_remaining_h_squared: 0.0,
-    };
-    let mut sampled_excite_prob: f64 = 0.0;
+    let det_orb_sample: DetOrbSample;
+    let det_orb_prob: f64;
+    let sampled_excite: &StoredExcite;
+    let sampled_excite_prob: f64;
 
     match imp_sample_dist {
         ImpSampleDist::AbsHc => {
@@ -222,7 +205,7 @@ pub fn matmul_sample_remaining(
                 .sample_with_prob(rand);
             det_orb_sample = screened_sampler.elements[sample.0];
             det_orb_prob = sample.1;
-            // println!("Sampled det/orb {}, prob {}", det_orb_sample, det_orb_prob);
+            println!("Sampled det/orb {}, prob {}", det_orb_sample, det_orb_prob);
 
             // Sample excitation from this det/orb pair by binary search the stored cdf with prob H^2
             match det_orb_sample.is_alpha {

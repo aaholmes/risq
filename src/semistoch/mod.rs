@@ -188,335 +188,335 @@ pub fn importance_sampled_semistoch_enpt2(
     (dtm_enpt2 + stoch_enpt2.mean, stoch_enpt2.std_dev)
 }
 
-pub fn fast_stoch_enpt2(
-    input_wf: &Wf,
-    global: &Global,
-    ham: &Ham,
-    excite_gen: &ExciteGenerator,
-    rand: &mut Rand,
-) -> (f64, f64) {
-    // Stochastic Epstein-Nesbet PT2
-    // In earlier SHCI paper, used the following strategy:
-    // 1. Compute ENPT2 deterministically using large eps
-    // 2. Sample some variational determinants, compute difference between large-eps and small-eps
-    //    ENPT2 expressions for them
-    // Here, we take a different (smarter?) approach that introduces importance sampling:
-    // 1. Importance-sample the large set of H*psi terms that had been screened out in the variational
-    //    stage
-    // Main advantage: uses importance sampling, can take larger batch sizes since we don't have to
-    // compute all connections.
-
-    // Compute deterministic component (even though not used), and create sampler object for sampling remaining component
-    let start_dtm_enpt2: Instant = Instant::now();
-    let (dtm_result, mut screened_sampler) =
-        input_wf.approx_matmul_external_semistoch_singles(ham, excite_gen, global.eps_var);
-    println!("Time for sampling setup: {:?}", start_dtm_enpt2.elapsed());
-
-    // Compute dtm approx to observable using dtm_result
-    // Simple ENPT2
-    let mut dtm_enpt2: f64 = 0.0;
-    for det in &dtm_result.dets {
-        dtm_enpt2 += (det.coeff * det.coeff) / (input_wf.energy - det.diag);
-    }
-    println!(
-        "Deterministic approximation to Delta E using eps = {} ({} dets): {:.6}",
-        global.eps_pt_dtm, dtm_result.n, dtm_enpt2
-    );
-
-    // Stochastic component
-    let stoch_enpt2_cross_term: Stats<f64> = Stats::new(); // samples overlap with deterministic part
-    let mut stoch_enpt2_quadratic: Stats<f64> = Stats::new(); // unbiased contribution from samples with themselves
-    let mut samples: PtSamples = Default::default(); // data structure to contain sampled contributions to PT
-
-    let start_quadratic: Instant = Instant::now();
-    let n_batches_max = 10000;
-    for i_batch in 0..n_batches_max {
-        // Sample a batch of samples, updating the stoch component of the energy for each sample
-        println!("\n Starting batch {}", i_batch);
-        samples.clear();
-        for _i_sample in 0..global.n_samples_per_batch {
-            // Sample with probability proportional to (Hc)^2
-            let (sampled_det_info, sampled_prob) = matmul_sample_remaining(
-                &mut screened_sampler,
-                ImpSampleDist::HcSquared,
-                excite_gen,
-                ham,
-                rand,
-            );
-
-            match sampled_det_info {
-                None => {
-                    // println!("Sampled excitation not valid! Sample prob = {}", sampled_prob);
-                }
-                Some((exciting_det, excite, target_det)) => {
-                    // println!("Sampled excitation: Sampled det = {}, Sample prob = {}, (H_ai c_i)^2 / p = {}", target_det, sampled_prob, excite.abs_h * excite.abs_h * exciting_det.coeff * exciting_det.coeff / sampled_prob);
-                    if excite.abs_h * excite.abs_h * exciting_det.coeff * exciting_det.coeff
-                        / sampled_prob
-                        > 0.54777
-                    {
-                        println!("Oversampled term!");
-                        println!("Exciting det: {}", exciting_det);
-                        // println!("Excite: {}", excite);
-                        println!("Target det: {}", target_det);
-                    }
-                    // Collect this sample for the quadratic contribution
-                    // This is analogous to the SHCI contribution, but only applies to the (<eps)
-                    // terms. The sampling probability (Hc)^2 was chosen because the largest terms
-                    // in this component are (Hc)^2 / (E_0 - E_a).
-                    samples.add_sample_compute_diag(
-                        exciting_det,
-                        &excite,
-                        target_det,
-                        sampled_prob,
-                        ham,
-                    );
-                }
-            }
-        }
-
-        // Collect the samples, evaluate their contributions a la the original SHCI paper
-        // println!("Collected samples:");
-        // samples.print();
-        let sampled_e: f64 = samples.pt_estimator(input_wf.energy, samples.n);
-        println!("Sampled energy this batch = {}", sampled_e);
-        stoch_enpt2_quadratic.update(sampled_e);
-        println!(
-            "Current estimate of stochastic component: {:.4} +- {:.4}",
-            stoch_enpt2_quadratic.mean, stoch_enpt2_quadratic.std_dev
-        );
-
-        if i_batch > 9 {
-            if stoch_enpt2_quadratic.std_dev <= global.target_uncertainty / 2f64.sqrt() {
-                println!("Target uncertainty reached!");
-                break;
-            }
-        }
-    }
-    println!("Time for sampling: {:?}", start_quadratic.elapsed());
-
-    println!(
-        "Stochastic components: Cross term: {:.6} +- {:.6},   Quadratic term: {:.6} +- {:.6}",
-        2f64 * stoch_enpt2_cross_term.mean,
-        2f64 * stoch_enpt2_cross_term.std_dev,
-        stoch_enpt2_quadratic.mean,
-        stoch_enpt2_quadratic.std_dev
-    );
-
-    (
-        dtm_enpt2 + 2f64 * stoch_enpt2_cross_term.mean + stoch_enpt2_quadratic.mean,
-        (4f64 * stoch_enpt2_cross_term.std_dev * stoch_enpt2_cross_term.std_dev
-            + stoch_enpt2_quadratic.std_dev * stoch_enpt2_quadratic.std_dev)
-            .sqrt(),
-    )
-}
-
-pub fn faster_semistoch_enpt2(
-    input_wf: &Wf,
-    global: &Global,
-    ham: &Ham,
-    excite_gen: &ExciteGenerator,
-    rand: &mut Rand,
-) -> (f64, f64) {
-    // Semistochastic Epstein-Nesbet PT2
-    // In earlier SHCI paper, used the following strategy:
-    // 1. Compute ENPT2 deterministically using large eps
-    // 2. Sample some variational determinants, compute difference between large-eps and small-eps
-    //    ENPT2 expressions for them
-    // Here, we take a different (smarter?) approach that introduces importance sampling:
-    // 1. Compute ENPT2 deterministically using large eps, store the approximate H*psi used
-    // 2. Importance-sample a large set of H*psi terms that had been screened out in step 1.
-    // 3. Use these along with the stored approximate H*psi from step 1 to compute the contribution
-    //    linear in the samples
-    // 4. Use the samples and the original SHCI paper's unbiased expression to compute the term
-    //    quadratic in the samples.
-    // Main advantage: uses importance sampling, can take larger batch sizes since we don't have to
-    // compute all connections, and makes use of stored approximate H*psi directly (rather than sampling it).
-
-    // Compute deterministic component, and create sampler object for sampling remaining component
-    let start_dtm_enpt2: Instant = Instant::now();
-    // let (dtm_result, mut screened_sampler) = input_wf.approx_matmul_external_dtm_singles(global, ham, excite_gen, global.eps_pt_dtm);
-    let (dtm_result, mut screened_sampler) =
-        input_wf.approx_matmul_external_semistoch_singles(ham, excite_gen, global.eps_pt_dtm);
-    // println!("Testing screened sampler!");
-    // let n_samples = 1000000;
-    // screened_sampler.det_orb_sampler_abs_hc.test(n_samples);
-    println!("Time for dtm ENPT2: {:?}", start_dtm_enpt2.elapsed());
-
-    // Compute dtm approx to observable using dtm_result
-    // Simple ENPT2
-    let mut dtm_enpt2: f64 = 0.0;
-    for det in &dtm_result.dets {
-        dtm_enpt2 += (det.coeff * det.coeff) / (input_wf.energy - det.diag);
-    }
-    println!(
-        "Deterministic approximation to Delta E using eps = {} ({} dets): {:.6}",
-        global.eps_pt_dtm, dtm_result.n, dtm_enpt2
-    );
-
-    // Stochastic component
-    let mut stoch_enpt2_cross_term: Stats<f64> = Stats::new(); // samples overlap with deterministic part
-    let mut stoch_enpt2_quadratic: Stats<f64> = Stats::new(); // unbiased contribution from samples with themselves
-    let mut samples: PtSamples = Default::default(); // data structure to contain sampled contributions to PT
-
-    let start_quadratic: Instant = Instant::now();
-    let n_batches_max = 1000;
-    for i_batch in 0..n_batches_max {
-        // Sample a batch of samples, updating the stoch component of the energy for each sample
-        println!("\n Starting batch {}", i_batch);
-        samples.clear();
-        for _i_sample in 0..global.n_samples_per_batch {
-            // Sample with probability proportional to (Hc)^2
-            let (sampled_det_info, sampled_prob) = matmul_sample_remaining(
-                &mut screened_sampler,
-                ImpSampleDist::HcSquared,
-                excite_gen,
-                ham,
-                rand,
-            );
-
-            match sampled_det_info {
-                None => {
-                    // println!("Sampled excitation not valid! Sample prob = {}", sampled_prob);
-                }
-                Some((exciting_det, excite, target_det)) => {
-                    // println!("Sampled excitation: Sampled det = {}, Sample prob = {}, (H_ai c_i)^2 / p = {}", target_det, sampled_prob, excite.abs_h * excite.abs_h * exciting_det.coeff * exciting_det.coeff / sampled_prob);
-                    // Collect this sample for the quadratic contribution
-                    // This is analogous to the SHCI contribution, but only applies to the (<eps)
-                    // terms. The sampling probability (Hc)^2 was chosen because the largest terms
-                    // in this component are (Hc)^2 / (E_0 - E_a).
-                    samples.add_sample_compute_diag(
-                        exciting_det,
-                        &excite,
-                        target_det,
-                        sampled_prob,
-                        ham,
-                    );
-                }
-            }
-        }
-
-        // Collect the samples, evaluate their contributions a la the original SHCI paper
-        // println!("Collected samples:");
-        // samples.print();
-        let sampled_e: f64 = samples.pt_estimator(input_wf.energy, samples.n);
-        println!("Sampled energy this batch = {}", sampled_e);
-        stoch_enpt2_quadratic.update(sampled_e);
-        println!(
-            "Current estimate of stochastic component: {:.4} +- {:.4}",
-            stoch_enpt2_quadratic.mean, stoch_enpt2_quadratic.std_dev
-        );
-
-        if i_batch > 9 {
-            if stoch_enpt2_quadratic.std_dev <= global.target_uncertainty / 2f64.sqrt() {
-                println!("Target uncertainty reached!");
-                break;
-            }
-        }
-    }
-    println!("Time for quadratic term: {:?}", start_quadratic.elapsed());
-
-    // Cross term
-    // Setup sampler of dtm_result with probability | det.coeff / (input_wf.energy - det.diag) |
-    // For this term: Sample the dtm_result with probability |coeff / (E_0 - E_a)|
-    // Then, sample an H to apply to it
-    // Finally, the sampled value will be proportional to |c| of the variational wf
-    // (but only if |Hc| < eps; otherwise, it's 0)
-    // This is a weird approach, but the sampled values will all be 0 or bounded by
-    // a multiple of eps
-
-    let mut probs_dtm_result: Vec<f64> = vec![];
-    for det in &dtm_result.dets {
-        probs_dtm_result.push((det.coeff / (input_wf.energy - det.diag)).abs());
-    }
-    let mut dtm_result_sampler: Alias = Alias::new(probs_dtm_result);
-
-    // Here, we use the following sampling approach:
-    // 1. Sample a det in dtm_result using dtm_result_sampler
-    // 2. Iterate over all pairs of occupied orbitals in sampled_det. For each, importance sample an excitation. This gives us O(N^2) samples
-    // 3. Check each one to see whether it excites to a variational det; if so, update energy estimator
-
-    // let n_e: i32 = global.nup + global.ndn;
-    // let n_cross_term_samples = (n_batches * n_samples_per_batch) / ( (n_e * (n_e + 1)) / 2 );
-    println!(
-        "Taking up to {} samples for cross-term",
-        global.n_cross_term_samples
-    );
-    let n_min_samples = 100;
-
-    let start_cross_term: Instant = Instant::now();
-    for i_sample in 0..global.n_cross_term_samples {
-        // Sample a det in dtm_result
-        let (sampled_dtm_det_ind, sampled_dtm_det_prob) = dtm_result_sampler.sample_with_prob(rand);
-        let sampled_dtm_det = dtm_result.dets[sampled_dtm_det_ind];
-
-        // Sample O(N^2) excitations from the sampled det, one for each occupied orb/pair
-        let sampled_excites = excite_gen.sample_excites_from_all_pairs(
-            sampled_dtm_det.config,
-            &ImpSampleDist::HcSquared,
-            rand,
-        );
-
-        // Check each valid excitation to see whether it excites to a variational det; if so, update energy estimator
-        for (excite, excite_prob) in sampled_excites {
-            let excited_det = sampled_dtm_det.config.safe_excite_det(&excite);
-            match excited_det {
-                None => {}
-                Some(exc_det) => {
-                    // look for exc_det in variational wf
-                    match input_wf.inds.get(&exc_det) {
-                        None => {
-                            // Energy contribution is 0
-                            let sampled_e: f64 = 0.0;
-                            stoch_enpt2_cross_term.update(sampled_e);
-                        }
-                        Some(ind) => {
-                            // Compute matrix element h
-                            // Screen for terms <eps
-                            let sampled_e: f64 = if excite.abs_h * input_wf.dets[*ind].coeff.abs()
-                                < global.eps_pt_dtm
-                            {
-                                // println!("|H|, |c| = {}, {}", excite.abs_h, input_wf.dets[*ind].coeff.abs());
-                                let h: f64 =
-                                    ham.ham_off_diag(&sampled_dtm_det.config, &exc_det, &excite);
-                                // println!("Found nonzero contribution to cross term: {}", (sampled_dtm_det.coeff / (input_wf.energy - sampled_dtm_det.diag)) * h * input_wf.dets[*ind].coeff / (sampled_dtm_det_prob * excite_prob));
-                                (sampled_dtm_det.coeff / (input_wf.energy - sampled_dtm_det.diag))
-                                    * h
-                                    * input_wf.dets[*ind].coeff
-                                    / (sampled_dtm_det_prob * excite_prob)
-                            } else {
-                                0.0
-                            };
-                            stoch_enpt2_cross_term.update(sampled_e);
-                        }
-                    }
-                }
-            }
-        }
-
-        if i_sample > n_min_samples {
-            if 2.0 * stoch_enpt2_cross_term.std_dev <= global.target_uncertainty / 2f64.sqrt() {
-                println!("Target uncertainty reached after {} samples!", i_sample + 1);
-                break;
-            }
-        }
-    }
-    println!("Time for cross term: {:?}", start_cross_term.elapsed());
-
-    println!(
-        "Stochastic components: Cross term: {:.6} +- {:.6},   Quadratic term: {:.6} +- {:.6}",
-        2f64 * stoch_enpt2_cross_term.mean,
-        2f64 * stoch_enpt2_cross_term.std_dev,
-        stoch_enpt2_quadratic.mean,
-        stoch_enpt2_quadratic.std_dev
-    );
-
-    (
-        dtm_enpt2 + 2f64 * stoch_enpt2_cross_term.mean + stoch_enpt2_quadratic.mean,
-        (4f64 * stoch_enpt2_cross_term.std_dev * stoch_enpt2_cross_term.std_dev
-            + stoch_enpt2_quadratic.std_dev * stoch_enpt2_quadratic.std_dev)
-            .sqrt(),
-    )
-}
+// pub fn fast_stoch_enpt2(
+//     input_wf: &Wf,
+//     global: &Global,
+//     ham: &Ham,
+//     excite_gen: &ExciteGenerator,
+//     rand: &mut Rand,
+// ) -> (f64, f64) {
+//     // Stochastic Epstein-Nesbet PT2
+//     // In earlier SHCI paper, used the following strategy:
+//     // 1. Compute ENPT2 deterministically using large eps
+//     // 2. Sample some variational determinants, compute difference between large-eps and small-eps
+//     //    ENPT2 expressions for them
+//     // Here, we take a different (smarter?) approach that introduces importance sampling:
+//     // 1. Importance-sample the large set of H*psi terms that had been screened out in the variational
+//     //    stage
+//     // Main advantage: uses importance sampling, can take larger batch sizes since we don't have to
+//     // compute all connections.
+//
+//     // Compute deterministic component (even though not used), and create sampler object for sampling remaining component
+//     let start_dtm_enpt2: Instant = Instant::now();
+//     let (dtm_result, mut screened_sampler) =
+//         input_wf.approx_matmul_external_semistoch_singles(ham, excite_gen, global.eps_var);
+//     println!("Time for sampling setup: {:?}", start_dtm_enpt2.elapsed());
+//
+//     // Compute dtm approx to observable using dtm_result
+//     // Simple ENPT2
+//     let mut dtm_enpt2: f64 = 0.0;
+//     for det in &dtm_result.dets {
+//         dtm_enpt2 += (det.coeff * det.coeff) / (input_wf.energy - det.diag);
+//     }
+//     println!(
+//         "Deterministic approximation to Delta E using eps = {} ({} dets): {:.6}",
+//         global.eps_pt_dtm, dtm_result.n, dtm_enpt2
+//     );
+//
+//     // Stochastic component
+//     let stoch_enpt2_cross_term: Stats<f64> = Stats::new(); // samples overlap with deterministic part
+//     let mut stoch_enpt2_quadratic: Stats<f64> = Stats::new(); // unbiased contribution from samples with themselves
+//     let mut samples: PtSamples = Default::default(); // data structure to contain sampled contributions to PT
+//
+//     let start_quadratic: Instant = Instant::now();
+//     let n_batches_max = 10000;
+//     for i_batch in 0..n_batches_max {
+//         // Sample a batch of samples, updating the stoch component of the energy for each sample
+//         println!("\n Starting batch {}", i_batch);
+//         samples.clear();
+//         for _i_sample in 0..global.n_samples_per_batch {
+//             // Sample with probability proportional to (Hc)^2
+//             let (sampled_det_info, sampled_prob) = matmul_sample_remaining(
+//                 &mut screened_sampler,
+//                 ImpSampleDist::HcSquared,
+//                 excite_gen,
+//                 ham,
+//                 rand,
+//             );
+//
+//             match sampled_det_info {
+//                 None => {
+//                     // println!("Sampled excitation not valid! Sample prob = {}", sampled_prob);
+//                 }
+//                 Some((exciting_det, excite, target_det)) => {
+//                     // println!("Sampled excitation: Sampled det = {}, Sample prob = {}, (H_ai c_i)^2 / p = {}", target_det, sampled_prob, excite.abs_h * excite.abs_h * exciting_det.coeff * exciting_det.coeff / sampled_prob);
+//                     if excite.abs_h * excite.abs_h * exciting_det.coeff * exciting_det.coeff
+//                         / sampled_prob
+//                         > 0.54777
+//                     {
+//                         println!("Oversampled term!");
+//                         println!("Exciting det: {}", exciting_det);
+//                         // println!("Excite: {}", excite);
+//                         println!("Target det: {}", target_det);
+//                     }
+//                     // Collect this sample for the quadratic contribution
+//                     // This is analogous to the SHCI contribution, but only applies to the (<eps)
+//                     // terms. The sampling probability (Hc)^2 was chosen because the largest terms
+//                     // in this component are (Hc)^2 / (E_0 - E_a).
+//                     samples.add_sample_compute_diag(
+//                         exciting_det,
+//                         &excite,
+//                         target_det,
+//                         sampled_prob,
+//                         ham,
+//                     );
+//                 }
+//             }
+//         }
+//
+//         // Collect the samples, evaluate their contributions a la the original SHCI paper
+//         // println!("Collected samples:");
+//         // samples.print();
+//         let sampled_e: f64 = samples.pt_estimator(input_wf.energy, samples.n);
+//         println!("Sampled energy this batch = {}", sampled_e);
+//         stoch_enpt2_quadratic.update(sampled_e);
+//         println!(
+//             "Current estimate of stochastic component: {:.4} +- {:.4}",
+//             stoch_enpt2_quadratic.mean, stoch_enpt2_quadratic.std_dev
+//         );
+//
+//         if i_batch > 9 {
+//             if stoch_enpt2_quadratic.std_dev <= global.target_uncertainty / 2f64.sqrt() {
+//                 println!("Target uncertainty reached!");
+//                 break;
+//             }
+//         }
+//     }
+//     println!("Time for sampling: {:?}", start_quadratic.elapsed());
+//
+//     println!(
+//         "Stochastic components: Cross term: {:.6} +- {:.6},   Quadratic term: {:.6} +- {:.6}",
+//         2f64 * stoch_enpt2_cross_term.mean,
+//         2f64 * stoch_enpt2_cross_term.std_dev,
+//         stoch_enpt2_quadratic.mean,
+//         stoch_enpt2_quadratic.std_dev
+//     );
+//
+//     (
+//         dtm_enpt2 + 2f64 * stoch_enpt2_cross_term.mean + stoch_enpt2_quadratic.mean,
+//         (4f64 * stoch_enpt2_cross_term.std_dev * stoch_enpt2_cross_term.std_dev
+//             + stoch_enpt2_quadratic.std_dev * stoch_enpt2_quadratic.std_dev)
+//             .sqrt(),
+//     )
+// }
+//
+// pub fn faster_semistoch_enpt2(
+//     input_wf: &Wf,
+//     global: &Global,
+//     ham: &Ham,
+//     excite_gen: &ExciteGenerator,
+//     rand: &mut Rand,
+// ) -> (f64, f64) {
+//     // Semistochastic Epstein-Nesbet PT2
+//     // In earlier SHCI paper, used the following strategy:
+//     // 1. Compute ENPT2 deterministically using large eps
+//     // 2. Sample some variational determinants, compute difference between large-eps and small-eps
+//     //    ENPT2 expressions for them
+//     // Here, we take a different (smarter?) approach that introduces importance sampling:
+//     // 1. Compute ENPT2 deterministically using large eps, store the approximate H*psi used
+//     // 2. Importance-sample a large set of H*psi terms that had been screened out in step 1.
+//     // 3. Use these along with the stored approximate H*psi from step 1 to compute the contribution
+//     //    linear in the samples
+//     // 4. Use the samples and the original SHCI paper's unbiased expression to compute the term
+//     //    quadratic in the samples.
+//     // Main advantage: uses importance sampling, can take larger batch sizes since we don't have to
+//     // compute all connections, and makes use of stored approximate H*psi directly (rather than sampling it).
+//
+//     // Compute deterministic component, and create sampler object for sampling remaining component
+//     let start_dtm_enpt2: Instant = Instant::now();
+//     // let (dtm_result, mut screened_sampler) = input_wf.approx_matmul_external_dtm_singles(global, ham, excite_gen, global.eps_pt_dtm);
+//     let (dtm_result, mut screened_sampler) =
+//         input_wf.approx_matmul_external_semistoch_singles(ham, excite_gen, global.eps_pt_dtm);
+//     // println!("Testing screened sampler!");
+//     // let n_samples = 1000000;
+//     // screened_sampler.det_orb_sampler_abs_hc.test(n_samples);
+//     println!("Time for dtm ENPT2: {:?}", start_dtm_enpt2.elapsed());
+//
+//     // Compute dtm approx to observable using dtm_result
+//     // Simple ENPT2
+//     let mut dtm_enpt2: f64 = 0.0;
+//     for det in &dtm_result.dets {
+//         dtm_enpt2 += (det.coeff * det.coeff) / (input_wf.energy - det.diag);
+//     }
+//     println!(
+//         "Deterministic approximation to Delta E using eps = {} ({} dets): {:.6}",
+//         global.eps_pt_dtm, dtm_result.n, dtm_enpt2
+//     );
+//
+//     // Stochastic component
+//     let mut stoch_enpt2_cross_term: Stats<f64> = Stats::new(); // samples overlap with deterministic part
+//     let mut stoch_enpt2_quadratic: Stats<f64> = Stats::new(); // unbiased contribution from samples with themselves
+//     let mut samples: PtSamples = Default::default(); // data structure to contain sampled contributions to PT
+//
+//     let start_quadratic: Instant = Instant::now();
+//     let n_batches_max = 1000;
+//     for i_batch in 0..n_batches_max {
+//         // Sample a batch of samples, updating the stoch component of the energy for each sample
+//         println!("\n Starting batch {}", i_batch);
+//         samples.clear();
+//         for _i_sample in 0..global.n_samples_per_batch {
+//             // Sample with probability proportional to (Hc)^2
+//             let (sampled_det_info, sampled_prob) = matmul_sample_remaining(
+//                 &mut screened_sampler,
+//                 ImpSampleDist::HcSquared,
+//                 excite_gen,
+//                 ham,
+//                 rand,
+//             );
+//
+//             match sampled_det_info {
+//                 None => {
+//                     // println!("Sampled excitation not valid! Sample prob = {}", sampled_prob);
+//                 }
+//                 Some((exciting_det, excite, target_det)) => {
+//                     // println!("Sampled excitation: Sampled det = {}, Sample prob = {}, (H_ai c_i)^2 / p = {}", target_det, sampled_prob, excite.abs_h * excite.abs_h * exciting_det.coeff * exciting_det.coeff / sampled_prob);
+//                     // Collect this sample for the quadratic contribution
+//                     // This is analogous to the SHCI contribution, but only applies to the (<eps)
+//                     // terms. The sampling probability (Hc)^2 was chosen because the largest terms
+//                     // in this component are (Hc)^2 / (E_0 - E_a).
+//                     samples.add_sample_compute_diag(
+//                         exciting_det,
+//                         &excite,
+//                         target_det,
+//                         sampled_prob,
+//                         ham,
+//                     );
+//                 }
+//             }
+//         }
+//
+//         // Collect the samples, evaluate their contributions a la the original SHCI paper
+//         // println!("Collected samples:");
+//         // samples.print();
+//         let sampled_e: f64 = samples.pt_estimator(input_wf.energy, samples.n);
+//         println!("Sampled energy this batch = {}", sampled_e);
+//         stoch_enpt2_quadratic.update(sampled_e);
+//         println!(
+//             "Current estimate of stochastic component: {:.4} +- {:.4}",
+//             stoch_enpt2_quadratic.mean, stoch_enpt2_quadratic.std_dev
+//         );
+//
+//         if i_batch > 9 {
+//             if stoch_enpt2_quadratic.std_dev <= global.target_uncertainty / 2f64.sqrt() {
+//                 println!("Target uncertainty reached!");
+//                 break;
+//             }
+//         }
+//     }
+//     println!("Time for quadratic term: {:?}", start_quadratic.elapsed());
+//
+//     // Cross term
+//     // Setup sampler of dtm_result with probability | det.coeff / (input_wf.energy - det.diag) |
+//     // For this term: Sample the dtm_result with probability |coeff / (E_0 - E_a)|
+//     // Then, sample an H to apply to it
+//     // Finally, the sampled value will be proportional to |c| of the variational wf
+//     // (but only if |Hc| < eps; otherwise, it's 0)
+//     // This is a weird approach, but the sampled values will all be 0 or bounded by
+//     // a multiple of eps
+//
+//     let mut probs_dtm_result: Vec<f64> = vec![];
+//     for det in &dtm_result.dets {
+//         probs_dtm_result.push((det.coeff / (input_wf.energy - det.diag)).abs());
+//     }
+//     let mut dtm_result_sampler: Alias = Alias::new(probs_dtm_result);
+//
+//     // Here, we use the following sampling approach:
+//     // 1. Sample a det in dtm_result using dtm_result_sampler
+//     // 2. Iterate over all pairs of occupied orbitals in sampled_det. For each, importance sample an excitation. This gives us O(N^2) samples
+//     // 3. Check each one to see whether it excites to a variational det; if so, update energy estimator
+//
+//     // let n_e: i32 = global.nup + global.ndn;
+//     // let n_cross_term_samples = (n_batches * n_samples_per_batch) / ( (n_e * (n_e + 1)) / 2 );
+//     println!(
+//         "Taking up to {} samples for cross-term",
+//         global.n_cross_term_samples
+//     );
+//     let n_min_samples = 100;
+//
+//     let start_cross_term: Instant = Instant::now();
+//     for i_sample in 0..global.n_cross_term_samples {
+//         // Sample a det in dtm_result
+//         let (sampled_dtm_det_ind, sampled_dtm_det_prob) = dtm_result_sampler.sample_with_prob(rand);
+//         let sampled_dtm_det = dtm_result.dets[sampled_dtm_det_ind];
+//
+//         // Sample O(N^2) excitations from the sampled det, one for each occupied orb/pair
+//         let sampled_excites = excite_gen.sample_excites_from_all_pairs(
+//             sampled_dtm_det.config,
+//             &ImpSampleDist::HcSquared,
+//             rand,
+//         );
+//
+//         // Check each valid excitation to see whether it excites to a variational det; if so, update energy estimator
+//         for (excite, excite_prob) in sampled_excites {
+//             let excited_det = sampled_dtm_det.config.safe_excite_det(&excite);
+//             match excited_det {
+//                 None => {}
+//                 Some(exc_det) => {
+//                     // look for exc_det in variational wf
+//                     match input_wf.inds.get(&exc_det) {
+//                         None => {
+//                             // Energy contribution is 0
+//                             let sampled_e: f64 = 0.0;
+//                             stoch_enpt2_cross_term.update(sampled_e);
+//                         }
+//                         Some(ind) => {
+//                             // Compute matrix element h
+//                             // Screen for terms <eps
+//                             let sampled_e: f64 = if excite.abs_h * input_wf.dets[*ind].coeff.abs()
+//                                 < global.eps_pt_dtm
+//                             {
+//                                 // println!("|H|, |c| = {}, {}", excite.abs_h, input_wf.dets[*ind].coeff.abs());
+//                                 let h: f64 =
+//                                     ham.ham_off_diag(&sampled_dtm_det.config, &exc_det, &excite);
+//                                 // println!("Found nonzero contribution to cross term: {}", (sampled_dtm_det.coeff / (input_wf.energy - sampled_dtm_det.diag)) * h * input_wf.dets[*ind].coeff / (sampled_dtm_det_prob * excite_prob));
+//                                 (sampled_dtm_det.coeff / (input_wf.energy - sampled_dtm_det.diag))
+//                                     * h
+//                                     * input_wf.dets[*ind].coeff
+//                                     / (sampled_dtm_det_prob * excite_prob)
+//                             } else {
+//                                 0.0
+//                             };
+//                             stoch_enpt2_cross_term.update(sampled_e);
+//                         }
+//                     }
+//                 }
+//             }
+//         }
+//
+//         if i_sample > n_min_samples {
+//             if 2.0 * stoch_enpt2_cross_term.std_dev <= global.target_uncertainty / 2f64.sqrt() {
+//                 println!("Target uncertainty reached after {} samples!", i_sample + 1);
+//                 break;
+//             }
+//         }
+//     }
+//     println!("Time for cross term: {:?}", start_cross_term.elapsed());
+//
+//     println!(
+//         "Stochastic components: Cross term: {:.6} +- {:.6},   Quadratic term: {:.6} +- {:.6}",
+//         2f64 * stoch_enpt2_cross_term.mean,
+//         2f64 * stoch_enpt2_cross_term.std_dev,
+//         stoch_enpt2_quadratic.mean,
+//         stoch_enpt2_quadratic.std_dev
+//     );
+//
+//     (
+//         dtm_enpt2 + 2f64 * stoch_enpt2_cross_term.mean + stoch_enpt2_quadratic.mean,
+//         (4f64 * stoch_enpt2_cross_term.std_dev * stoch_enpt2_cross_term.std_dev
+//             + stoch_enpt2_quadratic.std_dev * stoch_enpt2_quadratic.std_dev)
+//             .sqrt(),
+//     )
+// }
 
 // pub fn fast_semistoch_enpt2(input_wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerator, eps: f64, n_batches: i32, n_samples_per_batch: i32) -> (f64, f64) {
 //     // Semistochastic Epstein-Nesbet PT2

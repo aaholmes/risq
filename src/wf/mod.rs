@@ -1476,14 +1476,13 @@ impl Wf {
     /// Returns true if no new dets (i.e., returns whether already converged)
     pub fn find_new_dets(
         &mut self,
-        global: &Global,
         ham: &Ham,
         excite_gen: &ExciteGenerator,
     ) -> bool {
 
         self.eps = self.eps_iter.next().unwrap();
 
-        let new_dets: Wf = self.iterate_excites(global, ham, excite_gen, self.eps, false);
+        let new_dets: Wf = self.iterate_excites(ham, excite_gen, self.eps, false);
 
         // Add all new dets to the wf
         for det in new_dets.dets {
@@ -1498,7 +1497,6 @@ impl Wf {
     /// If matmul, then return H*psi; else, return a wf composed of new dets
     fn iterate_excites(
         &mut self,
-        global: &Global,
         ham: &Ham,
         excite_gen: &ExciteGenerator,
         eps: f64,

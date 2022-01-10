@@ -6,7 +6,6 @@ use rand::prelude::*;
 use crate::excite::StoredExcite;
 use crate::rng::Rand;
 use crate::stoch::ImpSampleDist;
-use std::collections::HashMap;
 // use std::intrinsics::offset;
 
 /// Sample a CDF (in decreasing order) by sampling a uniform random number up to max_cdf and binary searching the CDF
@@ -31,7 +30,7 @@ pub fn sample_cdf<'a>(
         return Some((&cdf[0], 1.0));
     }
 
-    let mut max: f64;
+    let max: f64;
     match max_cdf {
         None => match imp_sample_dist {
             ImpSampleDist::AbsHc => {
@@ -54,7 +53,6 @@ pub fn sample_cdf<'a>(
         return None;
     }
 
-    // TODO: Move this rng def out of this fn
     let mut target: f64 = rand.rng.gen();
     // println!("rng, max: {}, {}", target, max);
     target *= max;
@@ -75,8 +73,8 @@ pub fn sample_cdf<'a>(
     // println!("Target (sampled value) = {}", target);
 
     // Binary-search for target
-    let mut ind: usize;
-    let mut sample_prob: f64;
+    let ind: usize;
+    let sample_prob: f64;
     match imp_sample_dist {
         ImpSampleDist::AbsHc => {
             // println!("target: {}", target);
@@ -98,6 +96,7 @@ pub fn sample_cdf<'a>(
     Some((&cdf[ind], sample_prob))
 }
 
+#[test]
 pub fn test_cdf(
     cdf: &Vec<StoredExcite>,
     imp_sample_dist: &ImpSampleDist,

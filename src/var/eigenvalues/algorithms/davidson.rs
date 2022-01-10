@@ -23,7 +23,7 @@ use crate::excite::init::ExciteGenerator;
 use crate::ham::Ham;
 use crate::var::eigenvalues::matrix_operations::MatrixOperations;
 use crate::var::eigenvalues::modified_gram_schmidt::MGS;
-use crate::var::eigenvalues::utils::{sort_eigenpairs, sort_vector};
+use crate::var::eigenvalues::utils::sort_eigenpairs;
 use crate::wf::Wf;
 use nalgebra::linalg::SymmetricEigen;
 use nalgebra::{DMatrix, DVector, Dynamic};
@@ -59,7 +59,7 @@ impl Config {
         tolerance: f64,
         energy_tolerance: f64,
     ) -> Self {
-        let mut max_search_space = if nvalues + 10 < dim {
+        let max_search_space = if nvalues + 10 < dim {
             nvalues + 10
         } else {
             dim
@@ -116,7 +116,7 @@ impl Davidson {
         wf: &Wf,
     ) -> Result<Self, DavidsonError> {
         // Initial configuration
-        let mut init_dim;
+        let init_dim;
         match init {
             None => init_dim = 2,    // If no input wf, start from a subspace of size 2
             Some(_) => init_dim = 1, // Else, just start from the input wf
@@ -373,7 +373,7 @@ where
                 self.compute_dpr_correction(residues, eigenvalues, update_dim)
             }
             DavidsonCorrection::GJD => {
-                self.compute_gjd_correction(residues, eigenvalues, ritz_vectors)
+                self.compute_gjd_correction(/*residues, eigenvalues, ritz_vectors*/)
             }
             DavidsonCorrection::HPR(eps) => self.compute_hpr_correction(
                 residues,
@@ -435,7 +435,7 @@ where
             if k == update_dim {
                 break;
             }
-            let mut tmp = DVector::<f64>::repeat(self.target.nrows(), *lambda) - &d;
+            let tmp = DVector::<f64>::repeat(self.target.nrows(), *lambda) - &d;
             let rs = residues.column(k).component_div(&tmp);
             // rs is (D - E) ^ {-1} * residual
             println!("DPR Correctioin: {:?}", rs);
@@ -463,9 +463,9 @@ where
     /// Use the Generalized Jacobi Davidson (GJD) to compute the correction
     fn compute_gjd_correction(
         &self,
-        residues: &DMatrix<f64>,
-        eigenvalues: &DVector<f64>,
-        ritz_vectors: &DMatrix<f64>,
+        // residues: &DMatrix<f64>,
+        // eigenvalues: &DVector<f64>,
+        // ritz_vectors: &DMatrix<f64>,
     ) -> DMatrix<f64> {
         // Commenting out because this clones the entire matrix, but we don't use this routine anyway
         // let dimx = self.target.nrows();
@@ -499,13 +499,13 @@ fn update_subspace(basis: &mut DMatrix<f64>, vectors: DMatrix<f64>, range: (usiz
     slice.copy_from(&vectors.columns(0, end - start));
 }
 
-fn sort_diagonal(rs: &mut Vec<f64>, conf: &Config) {
-    match conf.spectrum_target {
-        SpectrumTarget::Lowest => sort_vector(rs, true),
-        SpectrumTarget::Highest => sort_vector(rs, false),
-        _ => panic!("Not implemented error!"),
-    }
-}
+// fn sort_diagonal(rs: &mut Vec<f64>, conf: &Config) {
+//     match conf.spectrum_target {
+//         SpectrumTarget::Lowest => sort_vector(rs, true),
+//         SpectrumTarget::Highest => sort_vector(rs, false),
+//         _ => panic!("Not implemented error!"),
+//     }
+// }
 
 /// Check if a vector is sorted in ascending order
 // fn is_sorted(xs: &DVector<f64>) -> bool {

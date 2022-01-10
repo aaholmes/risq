@@ -30,7 +30,7 @@ pub fn variational(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, wf:
         iter += 1;
 
         let start_find_new_dets: Instant = Instant::now();
-        if (wf.eps == global.eps_var) & wf.find_new_dets(&global, &ham, &excite_gen) {
+        if (wf.eps == global.eps_var) & wf.find_new_dets(&ham, &excite_gen) {
             println!("No new dets added; wf converged");
             wf.converged = true;
             break;
