@@ -16,7 +16,7 @@ use crate::stoch::ImpSampleDist;
 /// Returns the sampled excite and the probability of the sample
 /// O(log M)
 pub fn sample_cdf<'a>(
-    cdf: &'a Vec<StoredExcite>,
+    cdf: &'a [StoredExcite],
     imp_sample_dist: &ImpSampleDist,
     max_cdf: Option<f64>,
     rand: &mut Rand,

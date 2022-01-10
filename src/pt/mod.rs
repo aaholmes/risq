@@ -17,7 +17,7 @@ use std::collections::HashMap;
 // use rand::Rng;
 
 /// Perform the perturbative stage (Epstein-Nesbet perturbation theory, that is)
-pub fn perturbative(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, wf: &Wf) {
+pub fn perturbative(global: &GLOBAL, ham: &HAM, excite_gen: &EXCITE_GEN, wf: &Wf) {
 
     // Initialize random number genrator
     let mut rand: Rand = init_rand();

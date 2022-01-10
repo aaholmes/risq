@@ -94,7 +94,7 @@ pub fn generate_screened_sampler(eps: f64, det_orbs: Vec<DetOrbSample>) -> Scree
     let mut probs_abs_hc: Vec<f64> = Vec::with_capacity(det_orbs.len());
     let mut probs_hc_squared: Vec<f64> = Vec::with_capacity(det_orbs.len());
 
-    let sum_hc_all_dets_orbs: f64 = det_orbs
+    let sum_abs_hc_all_dets_orbs: f64 = det_orbs
         .iter()
         .fold(0f64, |sum, &val| sum + val.sum_abs_hc as f64);
     let sum_hc_squared_all_dets_orbs: f64 = det_orbs
@@ -104,18 +104,18 @@ pub fn generate_screened_sampler(eps: f64, det_orbs: Vec<DetOrbSample>) -> Scree
     for val in det_orbs.iter() {
         if val.sum_abs_h != 0.0 {
             det_orbs_nonzero.push(*val);
-            probs_abs_hc.push(val.sum_abs_hc / sum_hc_all_dets_orbs);
+            probs_abs_hc.push(val.sum_abs_hc / sum_abs_hc_all_dets_orbs);
             probs_hc_squared.push(val.sum_hc_squared / sum_hc_squared_all_dets_orbs);
         }
     }
 
     ScreenedSampler {
-        eps: eps,
+        eps,
         elements: det_orbs_nonzero,
         det_orb_sampler_abs_hc: Alias::new(probs_abs_hc),
         det_orb_sampler_hc_squared: Alias::new(probs_hc_squared),
-        sum_abs_hc_all_dets_orbs: sum_hc_all_dets_orbs,
-        sum_hc_squared_all_dets_orbs: sum_hc_squared_all_dets_orbs,
+        sum_abs_hc_all_dets_orbs,
+        sum_hc_squared_all_dets_orbs,
     }
 }
 

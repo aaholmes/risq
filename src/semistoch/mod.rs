@@ -171,11 +171,9 @@ pub fn importance_sampled_semistoch_enpt2(
             stoch_enpt2.mean, stoch_enpt2.std_dev
         );
 
-        if i_batch > 9 {
-            if stoch_enpt2.std_dev <= global.target_uncertainty {
-                println!("Target uncertainty reached!");
-                break;
-            }
+        if i_batch > 9 && stoch_enpt2.std_dev <= global.target_uncertainty {
+            println!("Target uncertainty reached!");
+            break;
         }
     }
     println!("Time for sampling: {:?}", start_quadratic.elapsed());
@@ -806,8 +804,8 @@ pub fn old_semistoch_enpt2(
         }
     }
     let prob_norm: f64 = var_probs.iter().sum::<f64>();
-    for i_prob in 0..input_wf.n {
-        var_probs[i_prob] = var_probs[i_prob] / prob_norm;
+    for var_prob in var_probs.iter_mut() {
+        *var_prob /= prob_norm;
     }
     println!("Setting up wf sampler");
     println!("Normalization: {}", var_probs.iter().sum::<f64>());
@@ -876,11 +874,9 @@ pub fn old_semistoch_enpt2(
             stoch_enpt2.mean, stoch_enpt2.std_dev
         );
 
-        if i_batch > 9 {
-            if stoch_enpt2.std_dev <= global.target_uncertainty {
-                println!("Target uncertainty reached!");
-                break;
-            }
+        if i_batch > 9 && stoch_enpt2.std_dev <= global.target_uncertainty {
+            println!("Target uncertainty reached!");
+            break;
         }
     }
     println!("Time for sampling: {:?}", start_quadratic.elapsed());
