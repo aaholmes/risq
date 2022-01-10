@@ -1,4 +1,4 @@
-//! Misc useful utiliities
+//! Misc useful utilities
 
 pub mod bits;
 pub mod display;
