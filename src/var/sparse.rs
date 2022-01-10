@@ -29,16 +29,12 @@ impl SparseMatUpperTri {
     pub fn sort_remove_duplicates(&mut self) {
         let mut n_upper_t = 0;
         for (i, v) in self.off_diag.iter_mut().enumerate() {
-            // println!("Before sort and dedup: Row {} has {} elements:", i, self.nnz[i]);
-            // println!("{:?}", v.iter().scan(0, |_, (ind, val)| Some(ind)));
             // Sort by index
             v[self.nnz[i]..].sort_by_key(|k| k.0);
             // Call dedup on everything because I can't figure out how to do dedup on a slice
             // (but should be fast enough anyway)
             v.dedup_by_key(|k| k.0);
             self.nnz[i] = v.len();
-            // println!("Row {} has {} elements:", i, self.nnz[i]);
-            // println!("{:?}", v.iter().scan(0, |_, (ind, val)| Some(ind)));
             n_upper_t += self.nnz[i];
         }
         println!("Variational Hamiltonian has {} nonzero off-diagonal elements in upper triangle, {} total", n_upper_t, 2 * n_upper_t);

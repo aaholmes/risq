@@ -1,6 +1,7 @@
 //! Misc sampling utilities
 
 extern crate rand;
+
 use rand::prelude::*;
 
 use crate::excite::StoredExcite;
@@ -96,47 +97,49 @@ pub fn sample_cdf<'a>(
     Some((&cdf[ind], sample_prob))
 }
 
-#[test]
-pub fn test_cdf(
-    cdf: &Vec<StoredExcite>,
-    imp_sample_dist: &ImpSampleDist,
-    max_cdf: Option<f64>,
-    rand: &mut Rand,
-    n_samples: i32,
-) {
-    // Test the sample_cdf routine by taking n_samples samples and showing frequency of samples vs probability for full distribution
-    println!("Calling test_cdf");
-    let n: usize = cdf.len();
-    let mut expected: Vec<f64> = vec![];
-    match imp_sample_dist {
-        ImpSampleDist::AbsHc => {
-            for i in 1..n {
-                expected.push(cdf[i - 1].sum_remaining_abs_h - cdf[i].sum_remaining_abs_h);
-            }
-            expected.push(cdf[n - 1].sum_remaining_abs_h);
-        }
-        ImpSampleDist::HcSquared => {
-            for i in 1..n {
-                expected.push(cdf[i - 1].sum_remaining_h_squared - cdf[i].sum_remaining_h_squared);
-            }
-            expected.push(cdf[n - 1].sum_remaining_h_squared);
-        }
-    }
-    let mut freq: HashMap<StoredExcite, i32> = HashMap::default();
-    for i in cdf {
-        freq.insert(*i, 0);
-    }
-    for _i_sample in 0..n_samples {
-        let sample = sample_cdf(cdf, imp_sample_dist, max_cdf, rand).unwrap();
-        *freq.get_mut(&sample.0).unwrap() += 1;
-    }
-    println!("Target prob, sampled prob");
-    for (i, exc) in cdf.iter().enumerate() {
-        println!(
-            "{:.6},   {:.6},   {:.6}",
-            expected[i],
-            (freq[exc] as f64) / (n_samples as f64),
-            (freq[exc] as f64) / (n_samples as f64) / expected[i]
-        );
-    }
-}
+// #[cfg(test)]
+// use std::collections::HashMap;
+// #[test]
+// pub fn test_cdf(
+//     cdf: &Vec<StoredExcite>,
+//     imp_sample_dist: &ImpSampleDist,
+//     max_cdf: Option<f64>,
+//     rand: &mut Rand,
+//     n_samples: i32,
+// ) {
+//     // Test the sample_cdf routine by taking n_samples samples and showing frequency of samples vs probability for full distribution
+//     println!("Calling test_cdf");
+//     let n: usize = cdf.len();
+//     let mut expected: Vec<f64> = vec![];
+//     match imp_sample_dist {
+//         ImpSampleDist::AbsHc => {
+//             for i in 1..n {
+//                 expected.push(cdf[i - 1].sum_remaining_abs_h - cdf[i].sum_remaining_abs_h);
+//             }
+//             expected.push(cdf[n - 1].sum_remaining_abs_h);
+//         }
+//         ImpSampleDist::HcSquared => {
+//             for i in 1..n {
+//                 expected.push(cdf[i - 1].sum_remaining_h_squared - cdf[i].sum_remaining_h_squared);
+//             }
+//             expected.push(cdf[n - 1].sum_remaining_h_squared);
+//         }
+//     }
+//     let mut freq: HashMap<StoredExcite, i32> = HashMap::default();
+//     for i in cdf {
+//         freq.insert(*i, 0);
+//     }
+//     for _i_sample in 0..n_samples {
+//         let sample = sample_cdf(cdf, imp_sample_dist, max_cdf, rand).unwrap();
+//         *freq.get_mut(&sample.0).unwrap() += 1;
+//     }
+//     println!("Target prob, sampled prob");
+//     for (i, exc) in cdf.iter().enumerate() {
+//         println!(
+//             "{:.6},   {:.6},   {:.6}",
+//             expected[i],
+//             (freq[exc] as f64) / (n_samples as f64),
+//             (freq[exc] as f64) / (n_samples as f64) / expected[i]
+//         );
+//     }
+// }

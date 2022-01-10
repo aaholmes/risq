@@ -41,8 +41,8 @@ pub struct Wf {
 impl Wf {
     /// Just adds a new det to the wf
     pub fn push(&mut self, d: Det) {
-        if !self.inds.contains_key(&d.config) {
-            self.inds.insert(d.config, self.n);
+        if let std::collections::hash_map::Entry::Vacant(e) = self.inds.entry(d.config) {
+            e.insert(self.n);
             self.n += 1;
             self.dets.push(d);
         }
@@ -124,22 +124,19 @@ impl Wf {
                                 is_alpha: None,
                             };
                             new_det = det.config.safe_excite_det(&excite);
-                            match new_det {
-                                Some(d) => {
-                                    if !self.inds.contains_key(&d) {
-                                        // Valid excite: add to H*psi
-                                        // Compute matrix element and add to H*psi
-                                        // TODO: Do this in a cache efficient way
-                                        out_wf.add_det_with_coeff(
-                                            det,
-                                            ham,
-                                            &excite,
-                                            d,
-                                            ham.ham_doub(&det.config, &d) * det.coeff,
-                                        );
-                                    }
+                            if let Some(d) = new_det {
+                                if !self.inds.contains_key(&d) {
+                                    // Valid excite: add to H*psi
+                                    // Compute matrix element and add to H*psi
+                                    // TODO: Do this in a cache efficient way
+                                    out_wf.add_det_with_coeff(
+                                        det,
+                                        ham,
+                                        &excite,
+                                        d,
+                                        ham.ham_doub(&det.config, &d) * det.coeff,
+                                    );
                                 }
-                                None => {}
                             }
                         }
                     }
@@ -167,22 +164,19 @@ impl Wf {
                                 is_alpha: Some(*is_alpha),
                             };
                             new_det = det.config.safe_excite_det(&excite);
-                            match new_det {
-                                Some(d) => {
-                                    if !self.inds.contains_key(&d) {
-                                        // Valid excite: add to H*psi
-                                        // Compute matrix element and add to H*psi
-                                        // TODO: Do this in a cache efficient way
-                                        out_wf.add_det_with_coeff(
-                                            det,
-                                            ham,
-                                            &excite,
-                                            d,
-                                            ham.ham_doub(&det.config, &d) * det.coeff,
-                                        );
-                                    }
+                            if let Some(d) = new_det {
+                                if !self.inds.contains_key(&d) {
+                                    // Valid excite: add to H*psi
+                                    // Compute matrix element and add to H*psi
+                                    // TODO: Do this in a cache efficient way
+                                    out_wf.add_det_with_coeff(
+                                        det,
+                                        ham,
+                                        &excite,
+                                        d,
+                                        ham.ham_doub(&det.config, &d) * det.coeff,
+                                    );
                                 }
-                                None => {}
                             }
                         }
                     }
@@ -208,25 +202,22 @@ impl Wf {
                                 is_alpha: Some(*is_alpha),
                             };
                             new_det = det.config.safe_excite_det(&excite);
-                            match new_det {
-                                Some(d) => {
-                                    if !self.inds.contains_key(&d) {
-                                        // Valid excite: add to H*psi
-                                        // Compute matrix element and add to H*psi
-                                        let sing: f64 = ham.ham_sing(&det.config, &d);
-                                        if sing.abs() >= local_eps {
-                                            // TODO: Do this in a cache efficient way
-                                            out_wf.add_det_with_coeff(
-                                                det,
-                                                ham,
-                                                &excite,
-                                                d,
-                                                sing * det.coeff,
-                                            );
-                                        }
+                            if let Some(d) = new_det {
+                                if !self.inds.contains_key(&d) {
+                                    // Valid excite: add to H*psi
+                                    // Compute matrix element and add to H*psi
+                                    let sing: f64 = ham.ham_sing(&det.config, &d);
+                                    if sing.abs() >= local_eps {
+                                        // TODO: Do this in a cache efficient way
+                                        out_wf.add_det_with_coeff(
+                                            det,
+                                            ham,
+                                            &excite,
+                                            d,
+                                            sing * det.coeff,
+                                        );
                                     }
                                 }
-                                None => {}
                             }
                         }
                     }
@@ -300,22 +291,19 @@ impl Wf {
                                 is_alpha: None,
                             };
                             new_det = det.config.safe_excite_det(&excite);
-                            match new_det {
-                                Some(d) => {
-                                    if !self.inds.contains_key(&d) {
-                                        // Valid excite: add to H*psi
-                                        // Compute matrix element and add to H*psi
-                                        // TODO: Do this in a cache efficient way
-                                        out_wf.add_det_with_coeff(
-                                            det,
-                                            ham,
-                                            &excite,
-                                            d,
-                                            ham.ham_doub(&det.config, &d) * det.coeff,
-                                        );
-                                    }
+                            if let Some(d) = new_det {
+                                if !self.inds.contains_key(&d) {
+                                    // Valid excite: add to H*psi
+                                    // Compute matrix element and add to H*psi
+                                    // TODO: Do this in a cache efficient way
+                                    out_wf.add_det_with_coeff(
+                                        det,
+                                        ham,
+                                        &excite,
+                                        d,
+                                        ham.ham_doub(&det.config, &d) * det.coeff,
+                                    );
                                 }
-                                None => {}
                             }
                         }
                     }
@@ -354,22 +342,19 @@ impl Wf {
                                 is_alpha: Some(*is_alpha),
                             };
                             new_det = det.config.safe_excite_det(&excite);
-                            match new_det {
-                                Some(d) => {
-                                    if !self.inds.contains_key(&d) {
-                                        // Valid excite: add to H*psi
-                                        // Compute matrix element and add to H*psi
-                                        // TODO: Do this in a cache efficient way
-                                        out_wf.add_det_with_coeff(
-                                            det,
-                                            ham,
-                                            &excite,
-                                            d,
-                                            ham.ham_doub(&det.config, &d) * det.coeff,
-                                        );
-                                    }
+                            if let Some(d) = new_det {
+                                if !self.inds.contains_key(&d) {
+                                    // Valid excite: add to H*psi
+                                    // Compute matrix element and add to H*psi
+                                    // TODO: Do this in a cache efficient way
+                                    out_wf.add_det_with_coeff(
+                                        det,
+                                        ham,
+                                        &excite,
+                                        d,
+                                        ham.ham_doub(&det.config, &d) * det.coeff,
+                                    );
                                 }
-                                None => {}
                             }
                         }
                     }
@@ -406,22 +391,19 @@ impl Wf {
                                 is_alpha: Some(*is_alpha),
                             };
                             new_det = det.config.safe_excite_det(&excite);
-                            match new_det {
-                                Some(d) => {
-                                    if !self.inds.contains_key(&d) {
-                                        // Valid excite: add to H*psi
-                                        // Compute matrix element and add to H*psi
-                                        // TODO: Do this in a cache efficient way
-                                        out_wf.add_det_with_coeff(
-                                            det,
-                                            ham,
-                                            &excite,
-                                            d,
-                                            ham.ham_sing(&det.config, &d) * det.coeff,
-                                        );
-                                    }
+                            if let Some(d) = new_det {
+                                if !self.inds.contains_key(&d) {
+                                    // Valid excite: add to H*psi
+                                    // Compute matrix element and add to H*psi
+                                    // TODO: Do this in a cache efficient way
+                                    out_wf.add_det_with_coeff(
+                                        det,
+                                        ham,
+                                        &excite,
+                                        d,
+                                        ham.ham_sing(&det.config, &d) * det.coeff,
+                                    );
                                 }
-                                None => {}
                             }
                         }
                     }
@@ -632,57 +614,54 @@ impl Wf {
                                 };
                                 // First check whether this is a valid excite
                                 new_det = det.config.safe_excite_det(&excite);
-                                match new_det {
-                                    Some(d) => {
-                                        // Make sure excite is to a perturbative det (not a variational one)
-                                        if !self.inds.contains_key(&d) {
-                                            // Valid excite: add to H*psi
-                                            // Compute matrix element and compare its magnitude to eps
-                                            let sing: f64 = ham.ham_sing(&det.config, &d);
-                                            // If this excite were sampled, the oversampling would be by a factor of |excite.abs_h / sing| (or that value squared)
-                                            singles_oversampled_abs_hc
-                                                .update(excite.abs_h / sing.abs());
-                                            singles_oversampled_hc_squared
-                                                .update(excite.abs_h * excite.abs_h / sing / sing);
+                                if let Some(d) = new_det {
+                                    // Make sure excite is to a perturbative det (not a variational one)
+                                    if !self.inds.contains_key(&d) {
+                                        // Valid excite: add to H*psi
+                                        // Compute matrix element and compare its magnitude to eps
+                                        let sing: f64 = ham.ham_sing(&det.config, &d);
+                                        // If this excite were sampled, the oversampling would be by a factor of |excite.abs_h / sing| (or that value squared)
+                                        singles_oversampled_abs_hc
+                                            .update(excite.abs_h / sing.abs());
+                                        singles_oversampled_hc_squared
+                                            .update(excite.abs_h * excite.abs_h / sing / sing);
 
-                                            // Figure out what's going on with crazy ratios here
-                                            // if excite.abs_h / sing.abs() >  1770584291294.0 {
-                                            //     println!("Vast overestimation! exciting det = {}, {} -> {}: max|H| = {}, |H| = {}, max|H|/|H| = {}", det.config, excite.init, excite.target, excite.abs_h, sing.abs(), excite.abs_h / sing.abs());
-                                            // }
-                                            if sing.abs() >= local_eps {
-                                                // *exact* |H| >= eps; add to output wf
-                                                // TODO: Do this in a cache efficient way
-                                                out_wf.add_det_with_coeff(
-                                                    det,
-                                                    ham,
-                                                    &excite,
-                                                    d,
-                                                    sing * det.coeff,
-                                                );
-                                            } else {
-                                                // *exact* |H| < eps; store remaining excites in sampler so this valid excite and subsequent ones can be sampled
-                                                if !stored_sampler {
-                                                    // println!("Setup single det_orb sampler when exact |H| < eps, orb = {}", i);
-                                                    det_orbs.push(DetOrbSample {
-                                                        det: det,
-                                                        init: Orbs::Single(i),
-                                                        is_alpha: Some(*is_alpha),
-                                                        sum_abs_h: stored_excite
-                                                            .sum_remaining_abs_h,
-                                                        sum_h_squared: stored_excite
-                                                            .sum_remaining_h_squared,
-                                                        sum_abs_hc: det.coeff.abs()
-                                                            * stored_excite.sum_remaining_abs_h,
-                                                        sum_hc_squared: det.coeff
-                                                            * det.coeff
-                                                            * stored_excite.sum_remaining_h_squared,
-                                                    });
-                                                    stored_sampler = true;
-                                                }
+                                        // Figure out what's going on with crazy ratios here
+                                        // if excite.abs_h / sing.abs() >  1770584291294.0 {
+                                        //     println!("Vast overestimation! exciting det = {}, {} -> {}: max|H| = {}, |H| = {}, max|H|/|H| = {}", det.config, excite.init, excite.target, excite.abs_h, sing.abs(), excite.abs_h / sing.abs());
+                                        // }
+                                        if sing.abs() >= local_eps {
+                                            // *exact* |H| >= eps; add to output wf
+                                            // TODO: Do this in a cache efficient way
+                                            out_wf.add_det_with_coeff(
+                                                det,
+                                                ham,
+                                                &excite,
+                                                d,
+                                                sing * det.coeff,
+                                            );
+                                        } else {
+                                            // *exact* |H| < eps; store remaining excites in sampler so this valid excite and subsequent ones can be sampled
+                                            if !stored_sampler {
+                                                // println!("Setup single det_orb sampler when exact |H| < eps, orb = {}", i);
+                                                det_orbs.push(DetOrbSample {
+                                                    det: det,
+                                                    init: Orbs::Single(i),
+                                                    is_alpha: Some(*is_alpha),
+                                                    sum_abs_h: stored_excite
+                                                        .sum_remaining_abs_h,
+                                                    sum_h_squared: stored_excite
+                                                        .sum_remaining_h_squared,
+                                                    sum_abs_hc: det.coeff.abs()
+                                                        * stored_excite.sum_remaining_abs_h,
+                                                    sum_hc_squared: det.coeff
+                                                        * det.coeff
+                                                        * stored_excite.sum_remaining_h_squared,
+                                                });
+                                                stored_sampler = true;
                                             }
                                         }
                                     }
-                                    None => {}
                                 }
                             } else if stored_sampler {
                                 // max |H| < eps: no more deterministic pieces allowed, and stochastic sampler
@@ -962,11 +941,9 @@ impl Wf {
         for (ind, det) in self.dets.iter().enumerate() {
             if ind < n_dets_dtm_sings {
                 heap.push(Reverse(DetByCoeff { det }));
-            } else {
-                if det.coeff.abs() > heap.peek().unwrap().0.det.coeff.abs() {
-                    heap.pop();
-                    heap.push(Reverse(DetByCoeff { det }));
-                }
+            } else if det.coeff.abs() > heap.peek().unwrap().0.det.coeff.abs() {
+                heap.pop();
+                heap.push(Reverse(DetByCoeff { det }));
             }
         }
 
@@ -992,22 +969,19 @@ impl Wf {
                         };
                         // First check whether this is a valid excite
                         new_det = det.config.safe_excite_det(&excite);
-                        match new_det {
-                            Some(d) => {
-                                // Make sure excite is to a perturbative det (not a variational one)
-                                if !self.inds.contains_key(&d) {
-                                    // Valid excite: add to H*psi
-                                    // Compute matrix element
-                                    out_wf.add_det_with_coeff(
-                                        det,
-                                        ham,
-                                        &excite,
-                                        d,
-                                        ham.ham_sing(&det.config, &d) * det.coeff,
-                                    );
-                                }
+                        if let Some(d) = new_det {
+                            // Make sure excite is to a perturbative det (not a variational one)
+                            if !self.inds.contains_key(&d) {
+                                // Valid excite: add to H*psi
+                                // Compute matrix element
+                                out_wf.add_det_with_coeff(
+                                    det,
+                                    ham,
+                                    &excite,
+                                    d,
+                                    ham.ham_sing(&det.config, &d) * det.coeff,
+                                );
                             }
-                            None => {}
                         }
                     }
                 }
@@ -1092,30 +1066,18 @@ impl Wf {
                             is_alpha: None,
                         };
                         new_det = det.config.safe_excite_det(&excite);
-                        match new_det {
-                            Some(d) => {
-                                if !self.inds.contains_key(&d) {
-                                    // Valid excite: add to H*psi
-                                    // Compute matrix element and add to H*psi
-                                    // TODO: Do this in a cache efficient way
-                                    out_wf.add_det_with_coeff(
-                                        det,
-                                        ham,
-                                        &excite,
-                                        d,
-                                        ham.ham_doub(&det.config, &d) * det.coeff,
-                                    );
-                                }
-                                // if stored_excite.abs_h < 1e-4 {
-                                //     sum_abs_h_external += stored_excite.abs_h;
-                                //     sum_h_sq_external += stored_excite.abs_h * stored_excite.abs_h;
-                                // }
-                            }
-                            None => {
-                                // if stored_excite.abs_h < 1e-4 {
-                                //     sum_abs_h_discarded += stored_excite.abs_h;
-                                //     sum_h_sq_discarded += stored_excite.abs_h * stored_excite.abs_h;
-                                // }
+                        if let Some(d) = new_det {
+                            if !self.inds.contains_key(&d) {
+                                // Valid excite: add to H*psi
+                                // Compute matrix element and add to H*psi
+                                // TODO: Do this in a cache efficient way
+                                out_wf.add_det_with_coeff(
+                                    det,
+                                    ham,
+                                    &excite,
+                                    d,
+                                    ham.ham_doub(&det.config, &d) * det.coeff,
+                                );
                             }
                         }
                     }
@@ -1153,30 +1115,18 @@ impl Wf {
                             is_alpha: Some(*is_alpha),
                         };
                         new_det = det.config.safe_excite_det(&excite);
-                        match new_det {
-                            Some(d) => {
-                                if !self.inds.contains_key(&d) {
-                                    // Valid excite: add to H*psi
-                                    // Compute matrix element and add to H*psi
-                                    // TODO: Do this in a cache efficient way
-                                    out_wf.add_det_with_coeff(
-                                        det,
-                                        ham,
-                                        &excite,
-                                        d,
-                                        ham.ham_doub(&det.config, &d) * det.coeff,
-                                    );
-                                }
-                                // if stored_excite.abs_h < 1e-4 {
-                                //     sum_abs_h_external += stored_excite.abs_h;
-                                //     sum_h_sq_external += stored_excite.abs_h * stored_excite.abs_h;
-                                // }
-                            }
-                            None => {
-                                // if stored_excite.abs_h < 1e-4 {
-                                //     sum_abs_h_discarded += stored_excite.abs_h;
-                                //     sum_h_sq_discarded += stored_excite.abs_h * stored_excite.abs_h;
-                                // }
+                        if let Some(d) = new_det {
+                            if !self.inds.contains_key(&d) {
+                                // Valid excite: add to H*psi
+                                // Compute matrix element and add to H*psi
+                                // TODO: Do this in a cache efficient way
+                                out_wf.add_det_with_coeff(
+                                    det,
+                                    ham,
+                                    &excite,
+                                    d,
+                                    ham.ham_doub(&det.config, &d) * det.coeff,
+                                );
                             }
                         }
                     }
@@ -1256,20 +1206,12 @@ impl Wf {
                                 is_alpha: None,
                             };
                             new_det = det.config.safe_excite_det(&excite);
-                            match new_det {
-                                Some(d) => {
-                                    // Valid excite: add to H*psi
-                                    match self.inds.get(&d) {
-                                        // Compute matrix element and add to H*psi
-                                        // TODO: Do this in a cache efficient way
-                                        Some(ind) => {
-                                            out[*ind] +=
-                                                ham.ham_doub(&det.config, &d) * input_coeffs[i_det]
-                                        }
-                                        _ => {}
-                                    }
+                            if let Some(d) = new_det {
+                                // Valid excite: add to H*psi
+                                if let Some(ind) = self.inds.get(&d) {
+                                    out[*ind] +=
+                                        ham.ham_doub(&det.config, &d) * input_coeffs[i_det]
                                 }
-                                None => {}
                             }
                         }
                     }
@@ -1295,21 +1237,12 @@ impl Wf {
                                 is_alpha: Some(*is_alpha),
                             };
                             new_det = det.config.safe_excite_det(&excite);
-                            match new_det {
-                                Some(d) => {
-                                    // Valid excite: add to H*psi
-                                    // Valid excite: add to H*psi
-                                    match self.inds.get(&d) {
-                                        // Compute matrix element and add to H*psi
-                                        // TODO: Do this in a cache efficient way
-                                        Some(ind) => {
-                                            out[*ind] +=
-                                                ham.ham_doub(&det.config, &d) * input_coeffs[i_det]
-                                        }
-                                        _ => {}
-                                    }
+                            if let Some(d) = new_det {
+                                // Valid excite: add to H*psi
+                                if let Some(ind) = self.inds.get(&d) {
+                                    out[*ind] +=
+                                        ham.ham_doub(&det.config, &d) * input_coeffs[i_det]
                                 }
-                                None => {}
                             }
                         }
                     }
@@ -1333,20 +1266,12 @@ impl Wf {
                                 is_alpha: Some(*is_alpha),
                             };
                             new_det = det.config.safe_excite_det(&excite);
-                            match new_det {
-                                Some(d) => {
-                                    // Valid excite: add to H*psi
-                                    match self.inds.get(&d) {
-                                        // Compute matrix element and add to H*psi
-                                        // TODO: Do this in a cache efficient way
-                                        Some(ind) => {
-                                            out[*ind] +=
-                                                ham.ham_sing(&det.config, &d) * input_coeffs[i_det]
-                                        }
-                                        _ => {}
-                                    }
+                            if let Some(d) = new_det {
+                                // Valid excite: add to H*psi
+                                if let Some(ind) = self.inds.get(&d) {
+                                    out[*ind] +=
+                                        ham.ham_sing(&det.config, &d) * input_coeffs[i_det]
                                 }
-                                None => {}
                             }
                         }
                     }
@@ -1407,20 +1332,12 @@ impl Wf {
                                 is_alpha: None,
                             };
                             new_det = det.config.safe_excite_det(&excite);
-                            match new_det {
-                                Some(d) => {
-                                    // Valid excite: add to H*psi
-                                    match self.inds.get(&d) {
-                                        // Compute matrix element and add to H*psi
-                                        // TODO: Do this in a cache efficient way
-                                        Some(ind) => {
-                                            out[*ind] +=
-                                                ham.ham_doub(&det.config, &d) * input_coeffs[i_det]
-                                        }
-                                        _ => {}
-                                    }
+                            if let Some(d) = new_det {
+                                // Valid excite: add to H*psi
+                                if let Some(ind) = self.inds.get(&d) {
+                                    out[*ind] +=
+                                        ham.ham_doub(&det.config, &d) * input_coeffs[i_det]
                                 }
-                                None => {}
                             }
                         }
                     }
@@ -1446,20 +1363,12 @@ impl Wf {
                                 is_alpha: Some(*is_alpha),
                             };
                             new_det = det.config.safe_excite_det(&excite);
-                            match new_det {
-                                Some(d) => {
-                                    // Valid excite: add to H*psi
-                                    match self.inds.get(&d) {
-                                        // Compute matrix element and add to H*psi
-                                        // TODO: Do this in a cache efficient way
-                                        Some(ind) => {
-                                            out[*ind] +=
-                                                ham.ham_doub(&det.config, &d) * input_coeffs[i_det]
-                                        }
-                                        _ => {}
-                                    }
+                            if let Some(d) = new_det {
+                                // Valid excite: add to H*psi
+                                if let Some(ind) = self.inds.get(&d) {
+                                    out[*ind] +=
+                                        ham.ham_doub(&det.config, &d) * input_coeffs[i_det]
                                 }
-                                None => {}
                             }
                         }
                     }
