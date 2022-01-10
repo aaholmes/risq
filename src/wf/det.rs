@@ -3,7 +3,7 @@
 //! quickly from the initial det's diagonal element
 
 use crate::excite::init::ExciteGenerator;
-use crate::excite::{Excite, Orbs, StoredExcite};
+use crate::excite::{Excite, Orbs};
 use crate::ham::Ham;
 use crate::utils::bits::{bit_pairs, bits, btest, ibclr, ibset};
 use crate::wf::Wf;
@@ -53,39 +53,6 @@ impl Config {
                     }
                     !btest(self.dn, s)
                 }
-                Some(is_alpha) => {
-                    if is_alpha {
-                        if btest(self.up, r) {
-                            return false;
-                        }
-                        !btest(self.up, s)
-                    } else {
-                        if btest(self.dn, r) {
-                            return false;
-                        }
-                        !btest(self.dn, s)
-                    }
-                }
-            },
-            Orbs::Single(r) => {
-                if excite.is_alpha.unwrap() {
-                    !btest(self.up, r)
-                } else {
-                    !btest(self.dn, r)
-                }
-            }
-        }
-    }
-
-    pub fn is_valid_stored(&self, excite: &StoredExcite, is_alpha: Option<bool>) -> bool {
-        match excite.target {
-            Orbs::Double((r, s)) => match is_alpha {
-                None => {
-                    if btest(self.up, r) {
-                        return false;
-                    }
-                    !btest(self.dn, s)
-                }
                 Some(is_a) => {
                     if is_a {
                         if btest(self.up, r) {
@@ -101,7 +68,7 @@ impl Config {
                 }
             },
             Orbs::Single(r) => {
-                if is_alpha.unwrap() {
+                if excite.is_alpha.unwrap() {
                     !btest(self.up, r)
                 } else {
                     !btest(self.dn, r)
@@ -181,10 +148,7 @@ impl Det {
         // Compute new diagonal element given the old one
 
         // O(1) One-body part: E += h(r) + h(s) - h(p) - h(q)
-        let mut new_diag: f64 =
-            self.diag + ham.one_body(target.0, target.0) + ham.one_body(target.1, target.1)
-                - ham.one_body(init.0, init.0)
-                - ham.one_body(init.1, init.1);
+        let mut new_diag = self.one_body(ham, init, target);
 
         // O(1) Two-body direct part: E += direct(r,s) - direct(p,q)
         new_diag += ham.direct(target.0, target.1, target.0, target.1)
@@ -211,6 +175,13 @@ impl Det {
         new_diag
     }
 
+
+    fn one_body(&self, ham: &Ham, init: (i32, i32), target: (i32, i32)) -> f64 {
+        self.diag + ham.one_body(target.0, target.0) + ham.one_body(target.1, target.1)
+            - ham.one_body(init.0, init.0)
+            - ham.one_body(init.1, init.1)
+    }
+
     pub(crate) fn new_diag_same(
         &self,
         ham: &Ham,
@@ -221,10 +192,7 @@ impl Det {
         // Compute new diagonal element given the old one
 
         // O(1) One-body part: E += h(r) + h(s) - h(p) - h(q)
-        let mut new_diag: f64 =
-            self.diag + ham.one_body(target.0, target.0) + ham.one_body(target.1, target.1)
-                - ham.one_body(init.0, init.0)
-                - ham.one_body(init.1, init.1);
+        let mut new_diag: f64 = self.one_body(ham, init, target);
 
         // O(1) Two-body direct_and_exchange part: E += direct_and_exchange(r,s) - direct_and_exchange(p,q)
         new_diag += ham.direct_plus_exchange(target.0, target.1, target.0, target.1)
@@ -236,36 +204,39 @@ impl Det {
                 if i == init.0 || i == init.1 {
                     continue;
                 }
-                new_diag += ham.direct_plus_exchange(i, target.0, i, target.0)
-                    + ham.direct_plus_exchange(i, target.1, i, target.1)
-                    - ham.direct_plus_exchange(i, init.0, i, init.0)
-                    - ham.direct_plus_exchange(i, init.1, i, init.1);
+                new_diag += Self::direct_plus_exchange_this_occ_orb(ham, init, target, i);
             }
             for i in bits(self.config.dn) {
-                new_diag += ham.direct(i, target.0, i, target.0)
-                    + ham.direct(i, target.1, i, target.1)
-                    - ham.direct(i, init.0, i, init.0)
-                    - ham.direct(i, init.1, i, init.1);
+                new_diag += Self::direct_this_occ_orb(ham, init, target, i);
             }
         } else {
             for i in bits(self.config.dn) {
                 if i == init.0 || i == init.1 {
                     continue;
                 }
-                new_diag += ham.direct_plus_exchange(i, target.0, i, target.0)
-                    + ham.direct_plus_exchange(i, target.1, i, target.1)
-                    - ham.direct_plus_exchange(i, init.0, i, init.0)
-                    - ham.direct_plus_exchange(i, init.1, i, init.1);
+                new_diag += Self::direct_plus_exchange_this_occ_orb(ham, init, target, i);
             }
             for i in bits(self.config.up) {
-                new_diag += ham.direct(i, target.0, i, target.0)
-                    + ham.direct(i, target.1, i, target.1)
-                    - ham.direct(i, init.0, i, init.0)
-                    - ham.direct(i, init.1, i, init.1);
+                new_diag += Self::direct_this_occ_orb(ham, init, target, i);
             }
         }
 
         new_diag
+    }
+
+    fn direct_this_occ_orb(ham: &Ham, init: (i32, i32), target: (i32, i32), i: i32) -> f64 {
+        ham.direct(i, target.0, i, target.0)
+            + ham.direct(i, target.1, i, target.1)
+            - ham.direct(i, init.0, i, init.0)
+            - ham.direct(i, init.1, i, init.1)
+    }
+
+
+    fn direct_plus_exchange_this_occ_orb(ham: &Ham, init: (i32, i32), target: (i32, i32), i: i32) -> f64 {
+        ham.direct_plus_exchange(i, target.0, i, target.0)
+            + ham.direct_plus_exchange(i, target.1, i, target.1)
+            - ham.direct_plus_exchange(i, init.0, i, init.0)
+            - ham.direct_plus_exchange(i, init.1, i, init.1)
     }
 
     pub(crate) fn new_diag_sing(&self, ham: &Ham, init: i32, target: i32, is_alpha: bool) -> f64 {
@@ -345,23 +316,7 @@ impl Det {
                             is_alpha: None,
                         };
                         new_det = self.config.safe_excite_det(&excite);
-                        match new_det {
-                            Some(d) => {
-                                if !var_wf.inds.contains_key(&d) {
-                                    // Valid excite: add to H*psi
-                                    // Compute matrix element and add to H*psi
-                                    // TODO: Do this in a cache efficient way
-                                    out_wf.add_det_with_coeff(
-                                        self,
-                                        ham,
-                                        &excite,
-                                        d,
-                                        ham.ham_doub(&self.config, &d) * self.coeff,
-                                    );
-                                }
-                            }
-                            None => {}
-                        }
+                        self.add_det_if_valid_excite(var_wf, ham, &mut excite, &mut new_det, &mut out_wf)
                     }
                 }
             }
@@ -387,23 +342,7 @@ impl Det {
                             is_alpha: Some(*is_alpha),
                         };
                         new_det = self.config.safe_excite_det(&excite);
-                        match new_det {
-                            Some(d) => {
-                                if !var_wf.inds.contains_key(&d) {
-                                    // Valid excite: add to H*psi
-                                    // Compute matrix element and add to H*psi
-                                    // TODO: Do this in a cache efficient way
-                                    out_wf.add_det_with_coeff(
-                                        self,
-                                        ham,
-                                        &excite,
-                                        d,
-                                        ham.ham_doub(&self.config, &d) * self.coeff,
-                                    );
-                                }
-                            }
-                            None => {}
-                        }
+                        self.add_det_if_valid_excite(var_wf, ham, &mut excite, &mut new_det, &mut out_wf)
                     }
                 }
             }
@@ -451,5 +390,25 @@ impl Det {
             }
         }
         out_wf
+    }
+
+    fn add_det_if_valid_excite(&self, var_wf: &Wf, ham: &Ham, excite: &mut Excite, new_det: &Option<Config>, out_wf: &mut Wf) {
+        match new_det {
+            Some(d) => {
+                if !var_wf.inds.contains_key(&d) {
+                    // Valid excite: add to H*psi
+                    // Compute matrix element and add to H*psi
+                    // TODO: Do this in a cache efficient way
+                    out_wf.add_det_with_coeff(
+                        self,
+                        ham,
+                        &excite,
+                        *d,
+                        ham.ham_doub(&self.config, &d) * self.coeff,
+                    );
+                }
+            }
+            None => {}
+        }
     }
 }

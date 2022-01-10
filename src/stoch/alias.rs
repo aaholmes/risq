@@ -96,7 +96,7 @@ impl Alias {
 
         Alias {
             sample_prob: norm_prob,
-            alias: alias,
+            alias,
             alias_prob: prob,
             uniform: Uniform::from(0..size),
         }
@@ -124,21 +124,21 @@ impl Alias {
     // This function selects an element from the VoseAlias table given a die (a column) and a coin (the element or its alias). This function has been separated from the `sample` function to allow unit testing, but should never be called by itself.
     fn select_element(&self, die: usize, coin: f64) -> usize {
         // choose randomly an element from the element vector
-        if coin < self.alias_prob[die] {
-            return die;
+        return if coin < self.alias_prob[die] {
+            die
         } else {
-            return self.alias[die];
+            self.alias[die]
         }
     }
 
     // This function selects an element from the VoseAlias table given a die (a column) and a coin (the element or its alias). This function has been separated from the `sample` function to allow unit testing, but should never be called by itself.
     fn select_element_and_prob(&self, die: usize, coin: f64) -> (usize, f64) {
         // choose randomly an element from the element vector
-        if coin < self.alias_prob[die] {
-            return (die, self.sample_prob[die]);
+        return if coin < self.alias_prob[die] {
+            (die, self.sample_prob[die])
         } else {
             let alias = self.alias[die];
-            return (alias, self.sample_prob[alias]);
+            (alias, self.sample_prob[alias])
         }
     }
 

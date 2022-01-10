@@ -87,11 +87,7 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
             v.sort_by(|a, b| b.abs_h.partial_cmp(&a.abs_h).unwrap_or(Equal));
 
             // Finally, compute sum_remaining_abs_h for all of these
-            for i in (0..v.len() - 1).rev() {
-                v[i].sum_remaining_abs_h = v[i + 1].sum_remaining_abs_h + v[i].abs_h;
-                v[i].sum_remaining_h_squared =
-                    v[i + 1].sum_remaining_h_squared + v[i].abs_h * v[i].abs_h;
-            }
+            compute_sum_remaining(&mut v);
 
             excite_gen
                 .opp_doub_sorted_list
@@ -135,11 +131,7 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
             v.sort_by(|a, b| b.abs_h.partial_cmp(&a.abs_h).unwrap_or(Equal));
 
             // Finally, compute sum_remaining_abs_h for all of these
-            for i in (0..v.len() - 1).rev() {
-                v[i].sum_remaining_abs_h = v[i + 1].sum_remaining_abs_h + v[i].abs_h;
-                v[i].sum_remaining_h_squared =
-                    v[i + 1].sum_remaining_h_squared + v[i].abs_h * v[i].abs_h;
-            }
+            compute_sum_remaining(&mut v);
 
             excite_gen
                 .same_doub_sorted_list
@@ -222,11 +214,7 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
         v_sing.sort_by(|a, b| b.abs_h.partial_cmp(&a.abs_h).unwrap_or(Equal));
 
         // Finally, compute sum_remaining_abs_h for all of these
-        for i in (0..v_sing.len() - 1).rev() {
-            v_sing[i].sum_remaining_abs_h = v_sing[i + 1].sum_remaining_abs_h + v_sing[i].abs_h;
-            v_sing[i].sum_remaining_h_squared =
-                v_sing[i + 1].sum_remaining_h_squared + v_sing[i].abs_h * v_sing[i].abs_h;
-        }
+        compute_sum_remaining(&mut v);
 
         excite_gen.sing_sorted_list.insert(Orbs::Single(*p), v_sing);
     }
@@ -250,6 +238,14 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
     );
 
     excite_gen
+}
+
+fn compute_sum_remaining(v: &mut Vec<StoredExcite>) {
+    for i in (0..v.len() - 1).rev() {
+        v[i].sum_remaining_abs_h = v[i + 1].sum_remaining_abs_h + v[i].abs_h;
+        v[i].sum_remaining_h_squared =
+            v[i + 1].sum_remaining_h_squared + v[i].abs_h * v[i].abs_h;
+    }
 }
 
 // Sample excitations with probability |H| (for the cross term in ENPT2)
