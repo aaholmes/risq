@@ -6,7 +6,7 @@ The [Hermitian Lanczos](https://en.wikipedia.org/wiki/Lanczos_algorithm) is an a
 eigenvalues of an hermitian matrix using a [Krylov subspace](https://en.wikipedia.org/wiki/Krylov_subspace)
 
 */
-use super::SpectrumTarget;
+// use super::SpectrumTarget;
 // use crate::var::eigenvalues::matrix_operations::MatrixOperations;
 // use crate::var::eigenvalues::utils::sort_eigenpairs;
 // use nalgebra::linalg::SymmetricEigen;

@@ -5,6 +5,7 @@ use crate::wf::det::Config;
 use crate::wf::Wf;
 
 /// Off-diag elems data structure
+#[cfg(test)]
 #[derive(Default)]
 pub struct OffDiagElemsNoHash {
     n: usize,                        // number of rows
@@ -12,6 +13,7 @@ pub struct OffDiagElemsNoHash {
     nnz: Vec<usize>, // number of nonzero elements (only update when generating SparseMat, only used to determine what has been added onto the end)
 }
 
+#[cfg(test)]
 impl OffDiagElemsNoHash {
     pub fn new(n: usize) -> Self {
         Self {

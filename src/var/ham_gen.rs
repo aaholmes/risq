@@ -123,6 +123,7 @@ where
 //     }
 // }
 
+#[cfg(test)]
 pub fn gen_doubles(
     wf: &Wf,
     excite_gen: &ExciteGenerator,
@@ -519,7 +520,7 @@ pub fn gen_sparse_ham_fast(global: &Global, wf: &mut Wf, ham: &Ham, excite_gen: 
     println!("Time for same-spin: {:?}", start_same.elapsed());
 
     // Sort and remove duplicates
-    &wf.sparse_ham.sort_remove_duplicates();
+    wf.sparse_ham.sort_remove_duplicates();
 
     // Update wf.n_stored_h
     wf.update_n_stored_h(wf.n);

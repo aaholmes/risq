@@ -94,6 +94,7 @@ pub struct SparseMat {
 impl SparseMat {
     /// Convert a dense matrix to a sparse matrix
     /// (for testing only)
+    #[cfg(test)]
     pub fn from_dense(mtx: DMatrix<f64>) -> Self {
         let n = mtx.ncols();
         println!("n = {}", n);
@@ -113,12 +114,10 @@ impl SparseMat {
         for i in 0..n {
             indptr.push(nnz);
             for j in 0..n {
-                if i != j {
-                    if mtx[(i, j)] != 0.0 {
-                        indices.push(j);
-                        data.push(mtx[(i, j)]);
-                        nnz += 1;
-                    }
+                if i != j && mtx[(i, j)] != 0.0 {
+                    indices.push(j);
+                    data.push(mtx[(i, j)]);
+                    nnz += 1;
                 }
             }
         }

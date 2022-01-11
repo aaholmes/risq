@@ -200,7 +200,7 @@ impl Davidson {
                 let correction = corrector.compute_correction(
                     &residues,
                     &eig.eigenvalues,
-                    &ritz_vectors,
+                    // &ritz_vectors,
                     conf.update_dim,
                     ham,
                     excite_gen,
@@ -362,7 +362,7 @@ where
         &self,
         residues: &DMatrix<f64>,
         eigenvalues: &DVector<f64>,
-        ritz_vectors: &DMatrix<f64>,
+        // ritz_vectors: &DMatrix<f64>,
         update_dim: usize,
         ham: &Ham,
         excite_gen: &ExciteGenerator,

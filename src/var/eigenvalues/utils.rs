@@ -11,6 +11,7 @@ use na::Dynamic;
 use na::{DMatrix, DVector};
 
 /// Generate a random highly diagonal symmetric matrix
+#[cfg(test)]
 pub fn generate_diagonal_dominant(dim: usize, sparsity: f64) -> DMatrix<f64> {
     let xs = 1..=dim;
     let it = xs.map(|x: usize| x as f64);
@@ -23,12 +24,14 @@ pub fn generate_diagonal_dominant(dim: usize, sparsity: f64) -> DMatrix<f64> {
 }
 
 /// Random symmetric matrix
+#[cfg(test)]
 pub fn generate_random_symmetric(dim: usize, magnitude: f64) -> DMatrix<f64> {
     let arr = DMatrix::<f64>::new_random(dim, dim) * magnitude;
     &arr * arr.transpose()
 }
 
 /// Random Sparse matrix
+#[cfg(test)]
 pub fn generate_random_sparse_symmetric(dim: usize, lim: usize, sparsity: f64) -> DMatrix<f64> {
     let arr = generate_diagonal_dominant(dim, sparsity);
     let lambda = |i, j| {
@@ -124,6 +127,6 @@ mod test {
 
     fn test_symmetric(matrix: na::DMatrix<f64>) {
         let rs = &matrix - &matrix.transpose();
-        assert!(rs.sum() < f64::EPSILON);
+        assert!(rs.sum() < 1e-9);
     }
 }
