@@ -1159,7 +1159,7 @@ impl Wf {
 
     pub fn approx_matmul_variational(
         &self,
-        input_coeffs: &Vec<f64>,
+        input_coeffs: &[f64],
         ham: &Ham,
         excite_gen: &ExciteGenerator,
         eps: f64,
@@ -1438,15 +1438,13 @@ impl Wf {
                                     todo!()
                                 } else {
                                     // If not already in input or output, compute diagonal element and add to output
-                                    if !self.inds.contains_key(&d) {
-                                        if !out.inds.contains_key(&d) {
-                                            if let Orbs::Double(rs) = excite.target {
-                                                out.push(Det {
-                                                    config: d,
-                                                    coeff: 0.0,
-                                                    diag: det.new_diag_opp(ham, (i, j), rs),
-                                                });
-                                            }
+                                    if !self.inds.contains_key(&d) && !out.inds.contains_key(&d) {
+                                        if let Orbs::Double(rs) = excite.target {
+                                            out.push(Det {
+                                                config: d,
+                                                coeff: 0.0,
+                                                diag: det.new_diag_opp(ham, (i, j), rs),
+                                            });
                                         }
                                     }
                                 }
@@ -1482,22 +1480,18 @@ impl Wf {
                                     // out.add_det_with_coeff(det, ham, excite, d,
                                     //                       ham.ham_doub(&det.config, &d) * det.coeff);
                                     todo!()
-                                } else {
-                                    if !self.inds.contains_key(&d) {
-                                        if !out.inds.contains_key(&d) {
-                                            if let Orbs::Double(rs) = excite.target {
-                                                out.push(Det {
-                                                    config: d,
-                                                    coeff: 0.0,
-                                                    diag: det.new_diag_same(
-                                                        ham,
-                                                        (i, j),
-                                                        rs,
-                                                        *is_alpha,
-                                                    ),
-                                                });
-                                            }
-                                        }
+                                } else if !self.inds.contains_key(&d) && !out.inds.contains_key(&d) {
+                                    if let Orbs::Double(rs) = excite.target {
+                                        out.push(Det {
+                                            config: d,
+                                            coeff: 0.0,
+                                            diag: det.new_diag_same(
+                                                ham,
+                                                (i, j),
+                                                rs,
+                                                *is_alpha,
+                                            ),
+                                        });
                                     }
                                 }
                             }
@@ -1618,11 +1612,10 @@ pub fn init_var_wf(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator) -> 
     wf.converged = false;
     wf.n = 1;
     wf.update_n_stored_h(0); // No stored H yet
-    let one: u128 = 1;
     let mut hf = Det {
         config: Config {
-            up: ((one << global.nup) - 1),
-            dn: ((one << global.ndn) - 1),
+            up: ((1u128 << global.nup) - 1),
+            dn: ((1u128 << global.ndn) - 1),
         },
         coeff: 1.0,
         diag: 0.0,
