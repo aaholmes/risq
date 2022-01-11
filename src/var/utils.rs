@@ -15,8 +15,8 @@ pub fn remove_2e(config: u128) -> impl Iterator<Item = u128> {
 
 /// Iterate over intersection of 2 sorted lists:
 pub fn intersection<'a>(
-    v1: &'a Vec<(Config, usize)>,
-    v2: &'a Vec<(Config, usize)>,
+    v1: &'a [(Config, usize)],
+    v2: &'a [(Config, usize)],
 ) -> impl Iterator<Item = (usize, usize)> + 'a {
     Intersection::new(v1, v2).into_iter()
 }
@@ -121,12 +121,12 @@ impl Iterator for Remove2IntoIterator {
 
 /// Backend for intersection
 struct Intersection<'a> {
-    v1: &'a Vec<(Config, usize)>,
-    v2: &'a Vec<(Config, usize)>,
+    v1: &'a [(Config, usize)],
+    v2: &'a [(Config, usize)],
 }
 
 impl Intersection<'_> {
-    fn new<'a>(v1: &'a Vec<(Config, usize)>, v2: &'a Vec<(Config, usize)>) -> Intersection<'a> {
+    fn new<'a>(v1: &'a [(Config, usize)], v2: &'a [(Config, usize)]) -> Intersection<'a> {
         Intersection { v1, v2 }
     }
 }
@@ -164,8 +164,8 @@ impl<'a> IntoIterator for Intersection<'a> {
 
 struct IntersectionIntoIterator<'a> {
     linear: bool, // if true, use N+M algorithm; else, use N log M algorithm
-    v1: &'a Vec<(Config, usize)>,
-    v2: &'a Vec<(Config, usize)>,
+    v1: &'a [(Config, usize)],
+    v2: &'a [(Config, usize)],
     n1: usize,
     n2: usize,
     ind1: usize,

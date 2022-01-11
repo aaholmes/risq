@@ -172,8 +172,8 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
                 v_same.push(ham.direct_plus_exchange(*p, q, *r, q));
                 v_opp.push(ham.direct(*p, q, *r, q));
             }
-            v_same.sort_by(|a, b| a.partial_cmp(&b).unwrap_or(Equal));
-            v_opp.sort_by(|a, b| a.partial_cmp(&b).unwrap_or(Equal));
+            v_same.sort_by(|a, b| a.partial_cmp(b).unwrap_or(Equal));
+            v_opp.sort_by(|a, b| a.partial_cmp(b).unwrap_or(Equal));
             max1 = ham.one_body(*p, *r)
                 + v_same[..(global.nup - 1) as usize].iter().sum::<f64>()
                 + v_opp[..global.ndn as usize].iter().sum::<f64>();
@@ -226,7 +226,7 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
     }
 
     // Finally, get the global max_sing by taking max_p over the above
-    excite_gen.max_sing = max_sing_list.iter().cloned().fold(0. / 0., f64::max);
+    excite_gen.max_sing = max_sing_list.iter().cloned().fold(0., f64::max);
 
     println!(
         "Largest magnitude opposite-spin double excitation in H: {:.4}",
@@ -295,9 +295,7 @@ impl ExciteGenerator {
                 }
             }
         }
-        match sample {
-            None => None,
-            Some(s) => Some((
+        sample.map(|s| (
                 Excite {
                     init,
                     target: s.0.target,
@@ -305,8 +303,7 @@ impl ExciteGenerator {
                     is_alpha,
                 },
                 s.1,
-            )),
-        }
+            ))
     }
 
     pub fn sample_excites_from_all_pairs(
