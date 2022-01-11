@@ -1612,7 +1612,7 @@ impl Wf {
 }
 
 /// Initialize variational wf to the HF det (only needs to be called once)
-pub fn init_var_wf(global: &GLOBAL, ham: &HAM, excite_gen: &EXCITE_GEN) -> Wf {
+pub fn init_var_wf(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator) -> Wf {
     let mut wf: Wf = Wf::default();
     wf.n_states = global.n_states;
     wf.converged = false;

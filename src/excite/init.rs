@@ -214,7 +214,7 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
         v_sing.sort_by(|a, b| b.abs_h.partial_cmp(&a.abs_h).unwrap_or(Equal));
 
         // Finally, compute sum_remaining_abs_h for all of these
-        compute_sum_remaining(&mut v);
+        compute_sum_remaining(&mut v_sing);
 
         excite_gen.sing_sorted_list.insert(Orbs::Single(*p), v_sing);
     }
