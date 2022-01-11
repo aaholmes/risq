@@ -21,7 +21,6 @@ pub fn sparse_optimize(
     energy_eps: f64,
     init_last_iter: bool,
 ) {
-
     let start_gen_sparse_ham: Instant = Instant::now();
     gen_sparse_ham_fast(global, wf, ham, excite_gen);
     println!(

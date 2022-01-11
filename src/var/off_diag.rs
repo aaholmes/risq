@@ -15,7 +15,7 @@ pub struct OffDiagElemsNoHash {
 impl OffDiagElemsNoHash {
     pub fn new(n: usize) -> Self {
         Self {
-            n: n,
+            n,
             nonzero: vec![Vec::with_capacity(100); n],
             nnz: vec![0; n + 1], // 0th element is always 0; nnz[i + 1] corresponds to row i
         }
@@ -34,7 +34,6 @@ impl OffDiagElemsNoHash {
 /// Add an off-diagonal element H_{ij} to off_diag_elems
 /// i and j can be of any order
 pub fn add_el(wf: &mut Wf, ham: &Ham, i: usize, j: usize, elem: Option<f64>) {
-
     match elem {
         None => {
             if i == j {
@@ -42,31 +41,26 @@ pub fn add_el(wf: &mut Wf, ham: &Ham, i: usize, j: usize, elem: Option<f64>) {
             }
             let elem = ham.ham_off_diag_no_excite(&wf.dets[i].config, &wf.dets[j].config);
             if elem != 0.0 {
-                if i < j {
-                    wf.sparse_ham.off_diag[i].push((j, elem));
-                    // if j >= wf.n_stored_h() { wf.sparse_ham.off_diag[i].push((j, elem)); }
-                } else {
-                    wf.sparse_ham.off_diag[j].push((i, elem));
-                    // if i >= wf.n_stored_h() { wf.sparse_ham.off_diag[j].push((i, elem)); }
-                }
+                add_off_diag_elem(wf, i, j, elem);
             }
         }
-        Some(elem) => {
-            if i < j {
-                wf.sparse_ham.off_diag[i].push((j, elem));
-                // if j >= wf.n_stored_h() { wf.sparse_ham.off_diag[i].push((j, elem)); }
-            } else {
-                wf.sparse_ham.off_diag[j].push((i, elem));
-                // if i >= wf.n_stored_h() { wf.sparse_ham.off_diag[j].push((i, elem)); }
-            }
-        }
+        Some(elem) => add_off_diag_elem(wf, i, j, elem),
+    }
+}
+
+fn add_off_diag_elem(wf: &mut Wf, i: usize, j: usize, elem: f64) {
+    if i < j {
+        wf.sparse_ham.off_diag[i].push((j, elem));
+        // if j >= wf.n_stored_h() { wf.sparse_ham.off_diag[i].push((j, elem)); }
+    } else {
+        wf.sparse_ham.off_diag[j].push((i, elem));
+        // if i >= wf.n_stored_h() { wf.sparse_ham.off_diag[j].push((i, elem)); }
     }
 }
 
 /// Add an off-diagonal element H_{ij}, as well as its spin-flipped counterpart, to off_diag_elems
 /// i and j can be of any order
 pub fn add_el_and_spin_flipped(wf: &mut Wf, ham: &Ham, i: usize, j: usize) {
-
     if i == j {
         return;
     }

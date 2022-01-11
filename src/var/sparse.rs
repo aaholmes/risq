@@ -95,7 +95,6 @@ impl SparseMat {
     /// Convert a dense matrix to a sparse matrix
     /// (for testing only)
     pub fn from_dense(mtx: DMatrix<f64>) -> Self {
-
         let n = mtx.ncols();
         println!("n = {}", n);
 

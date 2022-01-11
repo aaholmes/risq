@@ -131,7 +131,6 @@ impl Ham {
 
     /// Get the double excitation matrix element corresponding to the excitation from det1 to det2
     pub fn ham_doub(&self, det1: &Config, det2: &Config) -> f64 {
-
         if det1.dn == det2.dn {
             // Same spin, up
             let mut ind: [i32; 4] = [0; 4];

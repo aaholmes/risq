@@ -21,7 +21,6 @@ pub fn sample_cdf<'a>(
     max_cdf: Option<f64>,
     rand: &mut Rand,
 ) -> Option<(&'a StoredExcite, f64)> {
-    
     let n = cdf.len();
     // println!("CDF has size: {}", n);
 

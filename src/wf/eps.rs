@@ -47,7 +47,6 @@ impl Default for Eps {
 /// We use this initial eps so that when we do excited states, there will be at least two closed
 /// shell and at least two open shell determinants
 pub fn init_eps(wf: &Wf, global: &Global, excite_gen: &ExciteGenerator) -> Eps {
-
     let mut max_sym: f64 = global.eps_var;
     let mut max_asym: f64 = global.eps_var;
     let mut this_doub: f64;

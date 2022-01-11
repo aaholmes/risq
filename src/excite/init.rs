@@ -243,8 +243,7 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
 fn compute_sum_remaining(v: &mut Vec<StoredExcite>) {
     for i in (0..v.len() - 1).rev() {
         v[i].sum_remaining_abs_h = v[i + 1].sum_remaining_abs_h + v[i].abs_h;
-        v[i].sum_remaining_h_squared =
-            v[i + 1].sum_remaining_h_squared + v[i].abs_h * v[i].abs_h;
+        v[i].sum_remaining_h_squared = v[i + 1].sum_remaining_h_squared + v[i].abs_h * v[i].abs_h;
     }
 }
 

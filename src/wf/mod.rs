@@ -648,8 +648,7 @@ impl Wf {
                                                     det,
                                                     init: Orbs::Single(i),
                                                     is_alpha: Some(*is_alpha),
-                                                    sum_abs_h: stored_excite
-                                                        .sum_remaining_abs_h,
+                                                    sum_abs_h: stored_excite.sum_remaining_abs_h,
                                                     sum_h_squared: stored_excite
                                                         .sum_remaining_h_squared,
                                                     sum_abs_hc: det.coeff.abs()
@@ -1209,8 +1208,7 @@ impl Wf {
                             if let Some(d) = new_det {
                                 // Valid excite: add to H*psi
                                 if let Some(ind) = self.inds.get(&d) {
-                                    out[*ind] +=
-                                        ham.ham_doub(&det.config, &d) * input_coeffs[i_det]
+                                    out[*ind] += ham.ham_doub(&det.config, &d) * input_coeffs[i_det]
                                 }
                             }
                         }
@@ -1240,8 +1238,7 @@ impl Wf {
                             if let Some(d) = new_det {
                                 // Valid excite: add to H*psi
                                 if let Some(ind) = self.inds.get(&d) {
-                                    out[*ind] +=
-                                        ham.ham_doub(&det.config, &d) * input_coeffs[i_det]
+                                    out[*ind] += ham.ham_doub(&det.config, &d) * input_coeffs[i_det]
                                 }
                             }
                         }
@@ -1269,8 +1266,7 @@ impl Wf {
                             if let Some(d) = new_det {
                                 // Valid excite: add to H*psi
                                 if let Some(ind) = self.inds.get(&d) {
-                                    out[*ind] +=
-                                        ham.ham_sing(&det.config, &d) * input_coeffs[i_det]
+                                    out[*ind] += ham.ham_sing(&det.config, &d) * input_coeffs[i_det]
                                 }
                             }
                         }
@@ -1335,8 +1331,7 @@ impl Wf {
                             if let Some(d) = new_det {
                                 // Valid excite: add to H*psi
                                 if let Some(ind) = self.inds.get(&d) {
-                                    out[*ind] +=
-                                        ham.ham_doub(&det.config, &d) * input_coeffs[i_det]
+                                    out[*ind] += ham.ham_doub(&det.config, &d) * input_coeffs[i_det]
                                 }
                             }
                         }
@@ -1366,8 +1361,7 @@ impl Wf {
                             if let Some(d) = new_det {
                                 // Valid excite: add to H*psi
                                 if let Some(ind) = self.inds.get(&d) {
-                                    out[*ind] +=
-                                        ham.ham_doub(&det.config, &d) * input_coeffs[i_det]
+                                    out[*ind] += ham.ham_doub(&det.config, &d) * input_coeffs[i_det]
                                 }
                             }
                         }
@@ -1383,12 +1377,7 @@ impl Wf {
     /// Iterate over all dets; for each, propose all excitations; for each, check if new;
     /// if new, add to wf
     /// Returns true if no new dets (i.e., returns whether already converged)
-    pub fn find_new_dets(
-        &mut self,
-        ham: &Ham,
-        excite_gen: &ExciteGenerator,
-    ) -> bool {
-
+    pub fn find_new_dets(&mut self, ham: &Ham, excite_gen: &ExciteGenerator) -> bool {
         self.eps = self.eps_iter.next().unwrap();
 
         let new_dets: Wf = self.iterate_excites(ham, excite_gen, self.eps, false);

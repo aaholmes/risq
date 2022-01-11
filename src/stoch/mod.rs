@@ -129,7 +129,6 @@ pub fn matmul_sample_remaining(
     ham: &Ham,
     rand: &mut Rand,
 ) -> (Option<(Det, Excite, Det)>, f64) {
-
     let det_orb_sample: DetOrbSample;
     let det_orb_prob: f64;
     let sampled_excite: &StoredExcite;

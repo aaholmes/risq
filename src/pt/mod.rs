@@ -1,5 +1,6 @@
 //! Epstein-Nesbet perturbation theory
 
+use crate::excite::init::ExciteGenerator;
 use crate::excite::Excite;
 use crate::ham::Ham;
 use crate::rng::{init_rand, Rand};
@@ -8,6 +9,7 @@ use crate::semistoch::{
     importance_sampled_semistoch_enpt2,
     old_semistoch_enpt2,
 };
+use crate::utils::read_input::Global;
 use crate::wf::det::{Config, Det};
 use crate::wf::Wf;
 use itertools::enumerate;
@@ -15,8 +17,7 @@ use std::collections::HashMap;
 // use rand::Rng;
 
 /// Perform the perturbative stage (Epstein-Nesbet perturbation theory, that is)
-pub fn perturbative(global: &GLOBAL, ham: &HAM, excite_gen: &EXCITE_GEN, wf: &Wf) {
-
+pub fn perturbative(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, wf: &Wf) {
     // Initialize random number genrator
     let mut rand: Rand = init_rand();
     // let r: f64 = rand.rng.gen();
@@ -108,7 +109,12 @@ impl PtSamples {
         }
     }
 
-    fn process_resampled_pt_det(var_det: &Det, pt_det: Det, sampled_prob: f64, pt_det_info: &mut (f64, HashMap<Config, (f64, f64, i32)>)) {
+    fn process_resampled_pt_det(
+        var_det: &Det,
+        pt_det: Det,
+        sampled_prob: f64,
+        pt_det_info: &mut (f64, HashMap<Config, (f64, f64, i32)>),
+    ) {
         match pt_det_info.1.get_mut(&var_det.config) {
             None => {
                 // New var det to reach this PT det; add to variational det map

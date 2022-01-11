@@ -19,7 +19,6 @@ pub fn importance_sampled_semistoch_enpt2(
     excite_gen: &ExciteGenerator,
     rand: &mut Rand,
 ) -> (f64, f64) {
-
     // Basically just the original SHCI except the sum on "a" is importance sampled
     // i.e., instead of computing the sum deterministically, sample according to some
     // importance sampled probability distribution, specifically, P(a|i)P(i) ~ (H_{ai} c_i)^2,

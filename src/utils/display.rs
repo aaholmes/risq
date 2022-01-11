@@ -102,11 +102,9 @@ impl Wf {
         for (ind, det) in self.dets.iter().enumerate() {
             if ind < k {
                 heap.push(Reverse(DetByCoeff { det }));
-            } else {
-                if det.coeff.abs() > heap.peek().unwrap().0.det.coeff.abs() {
-                    heap.pop();
-                    heap.push(Reverse(DetByCoeff { det }));
-                }
+            } else if det.coeff.abs() > heap.peek().unwrap().0.det.coeff.abs() {
+                heap.pop();
+                heap.push(Reverse(DetByCoeff { det }));
             }
         }
 

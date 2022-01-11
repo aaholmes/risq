@@ -128,7 +128,7 @@ impl Alias {
             die
         } else {
             self.alias[die]
-        }
+        };
     }
 
     // This function selects an element from the VoseAlias table given a die (a column) and a coin (the element or its alias). This function has been separated from the `sample` function to allow unit testing, but should never be called by itself.
@@ -139,7 +139,7 @@ impl Alias {
         } else {
             let alias = self.alias[die];
             (alias, self.sample_prob[alias])
-        }
+        };
     }
 
     pub fn test(&mut self, n_samples: i32, rand: &mut Rand) {

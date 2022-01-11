@@ -15,7 +15,7 @@ use crate::var::davidson::sparse_optimize;
 use std::time::Instant;
 
 /// Perform variational selected CI
-pub fn variational(global: &GLOBAL, ham: &HAM, excite_gen: &EXCITE_GEN, wf: &mut Wf) {
+pub fn variational(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, wf: &mut Wf) {
     let mut iter: i32 = 0;
 
     println!(

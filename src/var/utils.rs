@@ -143,8 +143,8 @@ impl<'a> IntoIterator for Intersection<'a> {
                 linear: n1 + n2 <= n1 * ((n2 as f32).log2()).ceil() as usize,
                 v1: self.v1,
                 v2: self.v2,
-                n1: n1,
-                n2: n2,
+                n1,
+                n2,
                 ind1: 0,
                 ind2: 0,
             }

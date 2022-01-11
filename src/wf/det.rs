@@ -175,7 +175,6 @@ impl Det {
         new_diag
     }
 
-
     fn one_body(&self, ham: &Ham, init: (i32, i32), target: (i32, i32)) -> f64 {
         self.diag + ham.one_body(target.0, target.0) + ham.one_body(target.1, target.1)
             - ham.one_body(init.0, init.0)
@@ -225,14 +224,17 @@ impl Det {
     }
 
     fn direct_this_occ_orb(ham: &Ham, init: (i32, i32), target: (i32, i32), i: i32) -> f64 {
-        ham.direct(i, target.0, i, target.0)
-            + ham.direct(i, target.1, i, target.1)
+        ham.direct(i, target.0, i, target.0) + ham.direct(i, target.1, i, target.1)
             - ham.direct(i, init.0, i, init.0)
             - ham.direct(i, init.1, i, init.1)
     }
 
-
-    fn direct_plus_exchange_this_occ_orb(ham: &Ham, init: (i32, i32), target: (i32, i32), i: i32) -> f64 {
+    fn direct_plus_exchange_this_occ_orb(
+        ham: &Ham,
+        init: (i32, i32),
+        target: (i32, i32),
+        i: i32,
+    ) -> f64 {
         ham.direct_plus_exchange(i, target.0, i, target.0)
             + ham.direct_plus_exchange(i, target.1, i, target.1)
             - ham.direct_plus_exchange(i, init.0, i, init.0)
@@ -316,7 +318,13 @@ impl Det {
                             is_alpha: None,
                         };
                         new_det = self.config.safe_excite_det(&excite);
-                        self.add_det_if_valid_excite(var_wf, ham, &mut excite, &mut new_det, &mut out_wf)
+                        self.add_det_if_valid_excite(
+                            var_wf,
+                            ham,
+                            &mut excite,
+                            &mut new_det,
+                            &mut out_wf,
+                        )
                     }
                 }
             }
@@ -342,7 +350,13 @@ impl Det {
                             is_alpha: Some(*is_alpha),
                         };
                         new_det = self.config.safe_excite_det(&excite);
-                        self.add_det_if_valid_excite(var_wf, ham, &mut excite, &mut new_det, &mut out_wf)
+                        self.add_det_if_valid_excite(
+                            var_wf,
+                            ham,
+                            &mut excite,
+                            &mut new_det,
+                            &mut out_wf,
+                        )
                     }
                 }
             }
@@ -392,7 +406,14 @@ impl Det {
         out_wf
     }
 
-    fn add_det_if_valid_excite(&self, var_wf: &Wf, ham: &Ham, excite: &mut Excite, new_det: &Option<Config>, out_wf: &mut Wf) {
+    fn add_det_if_valid_excite(
+        &self,
+        var_wf: &Wf,
+        ham: &Ham,
+        excite: &mut Excite,
+        new_det: &Option<Config>,
+        out_wf: &mut Wf,
+    ) {
         match new_det {
             Some(d) => {
                 if !var_wf.inds.contains_key(&d) {

@@ -10,11 +10,27 @@ use crate::wf::det::Config;
 use crate::wf::Wf;
 use std::cmp::Ordering::Equal;
 use std::collections::{HashMap, HashSet};
+use std::hash::Hash;
 use std::time::Instant;
 // extern crate threads_pool;
 // use threads_pool::ThreadPool;
 // use std::thread;
 // use std::time::Duration;
+
+/// Insert a (key, value) pair into a hashmap of vectors, i.e., append value to hashmap(key)
+fn insert_into_hashmap_of_vectors<T, U>(hashmap: &mut HashMap<T, Vec<U>>, key: T, value: U)
+where
+    T: Eq + Hash,
+{
+    match hashmap.get_mut(&key) {
+        None => {
+            hashmap.insert(key, vec![value]);
+        }
+        Some(v) => {
+            v.push(value);
+        }
+    }
+}
 
 // pub fn gen_sparse_ham_doubles<'a>(wf: &'a Wf, ham: &'a Ham, excite_gen: &ExciteGenerator) -> SparseMatDoubles<'a> {
 //     // Generate the sparse H where the doubles are done in O(N^2 N_det log N_det) time
@@ -133,14 +149,7 @@ pub fn gen_doubles(
                     dn: ibclr(det.config.dn, j),
                 };
                 let key = (i, j, None);
-                match doub.get_mut(&key) {
-                    None => {
-                        doub.insert(key, vec![(det_r2, det_ind)]);
-                    }
-                    Some(v) => {
-                        v.push((det_r2, det_ind));
-                    }
-                }
+                insert_into_hashmap_of_vectors(&mut doub, key, (det_r2, det_ind))
             }
         }
 
@@ -161,14 +170,7 @@ pub fn gen_doubles(
                     }
                 };
                 let key = (i, j, Some(*is_alpha));
-                match doub.get_mut(&key) {
-                    None => {
-                        doub.insert(key, vec![(det_r2, det_ind)]);
-                    }
-                    Some(v) => {
-                        v.push((det_r2, det_ind));
-                    }
-                }
+                insert_into_hashmap_of_vectors(&mut doub, key, (det_r2, det_ind))
             }
         }
     }
@@ -306,14 +308,7 @@ pub fn gen_sparse_ham_fast(global: &Global, wf: &mut Wf, ham: &Ham, excite_gen: 
     let mut unique_up_dict: HashMap<u128, Vec<(usize, u128)>> = HashMap::default();
     let mut new_unique_up_dict: HashMap<u128, Vec<(usize, u128)>> = HashMap::default();
     for (config, ind) in &wf.inds {
-        match unique_up_dict.get_mut(&config.up) {
-            None => {
-                unique_up_dict.insert(config.up, vec![(*ind, config.dn)]);
-            }
-            Some(v) => {
-                v.push((*ind, config.dn));
-            }
-        }
+        insert_into_hashmap_of_vectors(&mut unique_up_dict, config.up, (*ind, config.dn));
         if *ind >= wf.n_stored_h() {
             match new_unique_up_dict.get_mut(&config.up) {
                 None => {
@@ -371,14 +366,7 @@ pub fn gen_sparse_ham_fast(global: &Global, wf: &mut Wf, ham: &Ham, excite_gen: 
     let mut up_single_excite_constructor: HashMap<u128, Vec<usize>> = HashMap::default();
     for (ind, unique) in unique_ups_sorted.iter().enumerate() {
         for up_r1 in remove_1e(unique.up) {
-            match up_single_excite_constructor.get_mut(&up_r1) {
-                None => {
-                    up_single_excite_constructor.insert(up_r1, vec![ind]);
-                }
-                Some(v) => {
-                    v.push(ind);
-                }
-            }
+            insert_into_hashmap_of_vectors(&mut up_single_excite_constructor, up_r1, ind);
         }
     }
     // up_singles is *new* to *all*
@@ -432,14 +420,7 @@ pub fn gen_sparse_ham_fast(global: &Global, wf: &mut Wf, ham: &Ham, excite_gen: 
     let mut dn_single_excite_constructor: HashMap<u128, Vec<usize>> = HashMap::default();
     for (ind, dn) in new_unique_dns_vec.iter().enumerate() {
         for dn_r1 in remove_1e(*dn) {
-            match dn_single_excite_constructor.get_mut(&dn_r1) {
-                None => {
-                    dn_single_excite_constructor.insert(dn_r1, vec![ind]);
-                }
-                Some(v) => {
-                    v.push(ind);
-                }
-            }
+            insert_into_hashmap_of_vectors(&mut dn_single_excite_constructor, dn_r1, ind);
         }
     }
     // dn_singles is *all* to *new*
@@ -508,7 +489,7 @@ pub fn gen_sparse_ham_fast(global: &Global, wf: &mut Wf, ham: &Ham, excite_gen: 
     // });
 
     // Parameter for choosing which of the two same-spin algorithms to use
-    let max_n_dets_double_loop = global.ndn as usize; // ((global.ndn * (global.ndn - 1)) / 2) as usize;
+    // let max_n_dets_double_loop = global.ndn as usize; // ((global.ndn * (global.ndn - 1)) / 2) as usize;
 
     let start_opp: Instant = Instant::now();
     all_opposite_spin_excites(
@@ -867,14 +848,7 @@ pub fn same_spin_excites(
             Some(dns) => {
                 for dn in dns {
                     for dn_r2 in remove_2e(dn.1) {
-                        match double_excite_constructor.get_mut(&dn_r2) {
-                            None => {
-                                double_excite_constructor.insert(dn_r2, vec![dn.0]);
-                            }
-                            Some(v) => {
-                                v.push(dn.0);
-                            }
-                        }
+                        insert_into_hashmap_of_vectors(&mut double_excite_constructor, dn_r2, dn.0);
                     }
                 }
             }

@@ -199,9 +199,9 @@ impl Iterator for BitPairsIntoIterator {
             self.second_bits_left = self.first_bits_left;
             self.first_bit = res;
         };
-        let res: i32 = self.second_bits_left.trailing_zeros() as i32;
-        self.second_bits_left &= !(1 << res);
-        Some((self.first_bit, res))
+        let second_bit: i32 = self.second_bits_left.trailing_zeros() as i32;
+        self.second_bits_left &= !(1 << second_bit);
+        Some((self.first_bit, second_bit))
     }
 }
 
