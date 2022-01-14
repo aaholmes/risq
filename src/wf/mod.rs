@@ -422,6 +422,186 @@ impl Wf {
         (out_wf, generate_screened_sampler(eps, det_orbs))
     }
 
+    pub fn approx_matmul_external_skip_singles(
+        &self,
+        ham: &Ham,
+        excite_gen: &ExciteGenerator,
+        eps: f64,
+    ) -> (Wf, ScreenedSampler) {
+        // For debugging: Skip singles entirely
+
+        // Approximate matrix-vector multiplication
+        // Deterministic step uses eps as a cutoff for doubles
+
+        // Only returns dets that are "external" to self, i.e., dets not in self (variational space)
+        // ScreenedSampler object is able to sample according to multiple probabilities
+        // Note: we can't use the max_sing and max_doub values here, because we have to create the sampler,
+        // which requires iterating over exciting electrons even if they will all be screened out deterministically
+
+        // Iterate over all dets; for each, use eps to truncate the excitations; for each excitation,
+        // add to output wf
+        let mut local_eps: f64;
+        let mut excite: Excite;
+        let mut new_det: Option<Config>;
+
+        // For making screened sampler
+        let mut det_orbs: Vec<DetOrbSample> = vec![];
+
+        // Diagonal component - none because this is 'external' to the current wf (i.e., perturbative space rather than variational space)
+        let mut out_wf: Wf = Wf::default();
+
+        // Off-diagonal component
+
+        // Keep track of statistics for how much singles would be oversampled
+        let mut singles_oversampled_abs_hc: Stats<f64> = Stats::new();
+        let mut singles_oversampled_hc_squared: Stats<f64> = Stats::new();
+
+        for det in &self.dets {
+            local_eps = eps / det.coeff.abs();
+
+            // Double excitations
+
+            // Opposite spin
+            for i in bits(excite_gen.valence & det.config.up) {
+                for j in bits(excite_gen.valence & det.config.dn) {
+                    for stored_excite in excite_gen
+                        .opp_doub_sorted_list
+                        .get(&Orbs::Double((i, j)))
+                        .unwrap()
+                    {
+                        excite = Excite {
+                            init: Orbs::Double((i, j)),
+                            target: stored_excite.target,
+                            abs_h: stored_excite.abs_h,
+                            is_alpha: None,
+                        };
+
+                        new_det = det.config.safe_excite_det(&excite);
+
+                        match new_det {
+                            None => {} // If not a valid excitation, do nothing
+
+                            Some(d) => {
+                                if stored_excite.abs_h >= local_eps {
+                                    // |H| >= eps: deterministic component
+                                    // First check whether this is a valid excite
+                                    // Make sure excite is to a perturbative det (not a variational one)
+                                    if !self.inds.contains_key(&d) {
+                                        // Valid excite: add to H*psi
+                                        // Compute matrix element and compare its magnitude to eps
+                                        // TODO: Do this in a cache efficient way
+                                        out_wf.add_det_with_coeff(
+                                            det,
+                                            ham,
+                                            &excite,
+                                            d,
+                                            ham.ham_doub(&det.config, &d) * det.coeff,
+                                        );
+                                    }
+                                } else {
+                                    // |H| < eps: no more deterministic pieces allowed
+
+                                    // Update the screened sampler if this excite is valid and points to
+                                    // a perturbative det (else, skip until we reach an excite that fits those criteria!)
+
+                                    // First check whether this is a valid excite
+                                    // Make sure excite is to a perturbative det (not a variational one)
+                                    if !self.inds.contains_key(&d) {
+                                        det_orbs.push(DetOrbSample {
+                                            det,
+                                            init: Orbs::Double((i, j)),
+                                            is_alpha: None,
+                                            sum_abs_h: stored_excite.sum_remaining_abs_h,
+                                            sum_h_squared: stored_excite.sum_remaining_h_squared,
+                                            sum_abs_hc: det.coeff.abs()
+                                                * stored_excite.sum_remaining_abs_h,
+                                            sum_hc_squared: det.coeff
+                                                * det.coeff
+                                                * stored_excite.sum_remaining_h_squared,
+                                        });
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Same spin
+            for (config, is_alpha) in &[(det.config.up, true), (det.config.dn, false)] {
+                for (i, j) in bit_pairs(excite_gen.valence & *config) {
+                    for stored_excite in excite_gen
+                        .same_doub_sorted_list
+                        .get(&Orbs::Double((i, j)))
+                        .unwrap()
+                    {
+                        excite = Excite {
+                            init: Orbs::Double((i, j)),
+                            target: stored_excite.target,
+                            abs_h: stored_excite.abs_h,
+                            is_alpha: Some(*is_alpha),
+                        };
+
+                        new_det = det.config.safe_excite_det(&excite);
+
+                        match new_det {
+                            None => {} // If not a valid excitation, do nothing
+
+                            Some(d) => {
+                                if stored_excite.abs_h >= local_eps {
+                                    // |H| >= eps: deterministic component
+                                    // First check whether this is a valid excite
+                                    // Make sure excite is to a perturbative det (not a variational one)
+                                    if !self.inds.contains_key(&d) {
+                                        // Valid excite: add to H*psi
+                                        // Compute matrix element and compare its magnitude to eps
+                                        // TODO: Do this in a cache efficient way
+                                        out_wf.add_det_with_coeff(
+                                            det,
+                                            ham,
+                                            &excite,
+                                            d,
+                                            ham.ham_doub(&det.config, &d) * det.coeff,
+                                        );
+                                    }
+                                } else {
+                                    // |H| < eps: no more deterministic pieces allowed
+
+                                    // Update the screened sampler if this excite is valid and points to
+                                    // a perturbative det (else, skip until we reach an excite that fits those criteria!)
+
+                                    // First check whether this is a valid excite
+                                    // Make sure excite is to a perturbative det (not a variational one)
+                                    if !self.inds.contains_key(&d) {
+                                        det_orbs.push(DetOrbSample {
+                                            det,
+                                            init: Orbs::Double((i, j)),
+                                            is_alpha: Some(*is_alpha),
+                                            sum_abs_h: stored_excite.sum_remaining_abs_h,
+                                            sum_h_squared: stored_excite.sum_remaining_h_squared,
+                                            sum_abs_hc: det.coeff.abs()
+                                                * stored_excite.sum_remaining_abs_h,
+                                            sum_hc_squared: det.coeff
+                                                * det.coeff
+                                                * stored_excite.sum_remaining_h_squared,
+                                        });
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+        } // for det in self.dets
+
+        // Now, convert det_orbs to a screened_sampler
+        (out_wf, generate_screened_sampler(eps, det_orbs))
+    }
+
+
     pub fn approx_matmul_external_semistoch_singles(
         &self,
         ham: &Ham,
