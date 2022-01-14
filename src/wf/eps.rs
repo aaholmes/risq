@@ -61,29 +61,26 @@ pub fn init_eps(wf: &Wf, global: &Global, excite_gen: &ExciteGenerator) -> Eps {
                     .get(&Orbs::Double((i, j)))
                     .unwrap()
                 {
-                    match excite.target {
-                        Orbs::Double(t) => {
-                            if !btest(det.config.up, t.0) && !btest(det.config.dn, t.1) {
-                                this_doub = excite.abs_h;
-                                if i == j && t.0 == t.1 {
-                                    // Symmetric
-                                    found_sym = true;
-                                    if this_doub > max_sym {
-                                        max_sym = this_doub;
-                                    }
-                                } else {
-                                    // Asymmetric
-                                    found_asym = true;
-                                    if this_doub > max_asym {
-                                        max_asym = this_doub;
-                                    }
+                    if let Orbs::Double(t) = excite.target {
+                        if !btest(det.config.up, t.0) && !btest(det.config.dn, t.1) {
+                            this_doub = excite.abs_h;
+                            if i == j && t.0 == t.1 {
+                                // Symmetric
+                                found_sym = true;
+                                if this_doub > max_sym {
+                                    max_sym = this_doub;
                                 }
-                                if found_sym && found_asym {
-                                    break;
-                                };
+                            } else {
+                                // Asymmetric
+                                found_asym = true;
+                                if this_doub > max_asym {
+                                    max_asym = this_doub;
+                                }
                             }
+                            if found_sym && found_asym {
+                                break;
+                            };
                         }
-                        _ => {}
                     }
                 }
             }
@@ -96,17 +93,14 @@ pub fn init_eps(wf: &Wf, global: &Global, excite_gen: &ExciteGenerator) -> Eps {
                     .get(&Orbs::Double((i, j)))
                     .unwrap()
                 {
-                    match excite.target {
-                        Orbs::Double(t) => {
-                            if !btest(*config, t.0) && !btest(*config, t.1) {
-                                this_doub = excite.abs_h;
-                                if this_doub > max_asym {
-                                    max_asym = this_doub;
-                                }
-                                break;
+                    if let Orbs::Double(t) = excite.target {
+                        if !btest(*config, t.0) && !btest(*config, t.1) {
+                            this_doub = excite.abs_h;
+                            if this_doub > max_asym {
+                                max_asym = this_doub;
                             }
+                            break;
                         }
-                        _ => {}
                     }
                 }
             }
