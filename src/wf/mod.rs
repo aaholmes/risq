@@ -23,17 +23,24 @@ use rolling_stats::Stats;
 use std::cmp::Reverse;
 use std::time::Instant;
 
-/// Variational wavefunction data structure
+/// Wavefunction data structure
 #[derive(Default)]
 pub struct Wf {
+    pub n: usize,      // number of dets
+    pub inds: HashMap<Config, usize>, // hashtable : det -> usize for looking up index by det
+    pub dets: Vec<Det>, // for looking up det by index
+    pub energy: f64,   // variational energy
+}
+
+/// Variational wavefunction data structure:
+/// contains both the wavefunction and the variational Hamiltonian
+#[derive(Default)]
+pub struct VarWf {
+    pub wf: Wf, // the variational wf
     pub n_states: i32, // number of states - same as in input file, but want it attached to the wf
     pub converged: bool, // whether variational wf is converged. Update at end of each HCI iteration
     pub eps_iter: Eps, // iterator that produces the variational epsilon for each HCI iteration
     pub eps: f64,      // current eps value
-    pub n: usize,      // number of dets
-    pub energy: f64,   // variational energy
-    pub inds: HashMap<Config, usize>, // hashtable : det -> usize for looking up index by det
-    pub dets: Vec<Det>, // for looking up det by index
     n_stored_h: usize, // n for which the variational H has already been stored
     pub sparse_ham: SparseMatUpperTri, // store the sparse variational H off-diagonal elements here
 }
@@ -188,7 +195,7 @@ impl Wf {
                 for (config, is_alpha) in &[(det.config.up, true), (det.config.dn, false)] {
                     for i in bits(excite_gen.valence & *config) {
                         for stored_excite in
-                            excite_gen.sing_sorted_list.get(&Orbs::Single(i)).unwrap()
+                        excite_gen.sing_sorted_list.get(&Orbs::Single(i)).unwrap()
                         {
                             if stored_excite.abs_h < local_eps {
                                 // No more deterministic excitations will meet the eps cutoff
@@ -366,7 +373,7 @@ impl Wf {
                 for (config, is_alpha) in &[(det.config.up, true), (det.config.dn, false)] {
                     for i in bits(excite_gen.valence & *config) {
                         for stored_excite in
-                            excite_gen.sing_sorted_list.get(&Orbs::Single(i)).unwrap()
+                        excite_gen.sing_sorted_list.get(&Orbs::Single(i)).unwrap()
                         {
                             if stored_excite.abs_h < local_eps {
                                 // No more deterministic excitations will meet the eps cutoff
@@ -602,7 +609,7 @@ impl Wf {
                     for i in bits(excite_gen.valence & *config) {
                         let mut stored_sampler: bool = false;
                         for stored_excite in
-                            excite_gen.sing_sorted_list.get(&Orbs::Single(i)).unwrap()
+                        excite_gen.sing_sorted_list.get(&Orbs::Single(i)).unwrap()
                         {
                             if stored_excite.abs_h >= local_eps {
                                 // *max* |H| >= eps: deterministic component
@@ -926,9 +933,9 @@ impl Wf {
         // for the double excitation part
         let n_dets_dtm_sings = num_doub_excites
             / ((4
-                * (global.nup - global.norb_core)
-                * (global.norb - global.nup)
-                * (global.nup - global.norb_core - 1)) as usize);
+            * (global.nup - global.norb_core)
+            * (global.norb - global.nup)
+            * (global.nup - global.norb_core - 1)) as usize);
         println!("Performing single excitations deterministically for the {} largest-magnitude determinants", n_dets_dtm_sings);
 
         // Single excitations
@@ -1251,7 +1258,7 @@ impl Wf {
                 for (config, is_alpha) in &[(det.config.up, true), (det.config.dn, false)] {
                     for i in bits(excite_gen.valence & *config) {
                         for stored_excite in
-                            excite_gen.sing_sorted_list.get(&Orbs::Single(i)).unwrap()
+                        excite_gen.sing_sorted_list.get(&Orbs::Single(i)).unwrap()
                         {
                             if stored_excite.abs_h < local_eps {
                                 break;
@@ -1284,11 +1291,11 @@ impl Wf {
             f64,
             Dynamic,
             Const<1_usize>,
-            VecStorage<f64, Dynamic, Const<1_usize>>,
-        >,
-        ham: &Ham,
-        excite_gen: &ExciteGenerator,
-        eps: f64,
+            VecStorage<f64, Dynamic, Const<1_usize >>,
+            >,
+                ham: &Ham,
+                excite_gen: &ExciteGenerator,
+                eps: f64,
     ) -> Vec<f64> {
         // Approximate matrix-vector multiplication within variational space only
         // WARNING: Uses self only to define and access variational dets; uses input_coeffs as the vector to multiply with
@@ -1372,7 +1379,10 @@ impl Wf {
 
         out
     }
+}
 
+
+impl VarWf {
     /// Get new dets
     /// Iterate over all dets; for each, propose all excitations; for each, check if new;
     /// if new, add to wf
@@ -1380,16 +1390,18 @@ impl Wf {
     pub fn find_new_dets(&mut self, ham: &Ham, excite_gen: &ExciteGenerator) -> bool {
         self.eps = self.eps_iter.next().unwrap();
 
-        let new_dets: Wf = self.iterate_excites(ham, excite_gen, self.eps, false);
+        let new_dets: Wf = self.wf.iterate_excites(ham, excite_gen, self.eps, false);
 
         // Add all new dets to the wf
         for det in new_dets.dets {
-            self.push(det);
+            self.wf.push(det);
         }
 
         new_dets.n == 0
     }
+}
 
+impl Wf {
     /// Iterate over excitations using heat-bath cutoff eps
     /// Used internally by both approx_matmul and get_new_dets
     /// If matmul, then return H*psi; else, return a wf composed of new dets
@@ -1556,6 +1568,9 @@ impl Wf {
 
         out
     }
+}
+
+impl VarWf {
 
     pub fn update_n_stored_h(&mut self, n: usize) {
         // Make this setter explicit because we really don't want to accidentally change it
@@ -1570,13 +1585,13 @@ impl Wf {
     /// Don't update self.n_stored_h yet, because we haven't computed the off-diagonal elements yet
     pub fn new_sparse_ham(&mut self) {
         self.sparse_ham = SparseMatUpperTri {
-            n: self.n,
-            diag: vec![0.0; self.n],
-            nnz: vec![0; self.n],
-            off_diag: vec![Vec::with_capacity(100); self.n],
+            n: self.wf.n,
+            diag: vec![0.0; self.wf.n],
+            nnz: vec![0; self.wf.n],
+            off_diag: vec![Vec::with_capacity(100); self.wf.n],
         };
-        for i in 0..self.n {
-            self.sparse_ham.diag[i] = self.dets[i].diag;
+        for i in 0..self.wf.n {
+            self.sparse_ham.diag[i] = self.wf.dets[i].diag;
         }
     }
 
@@ -1586,31 +1601,31 @@ impl Wf {
     pub fn expand_sparse_ham_rows(&mut self) {
         println!(
             "Expanding variational H from size {} to size {}",
-            self.sparse_ham.n, self.n
+            self.sparse_ham.n, self.wf.n
         );
         self.sparse_ham
             .diag
-            .append(&mut vec![0.0; self.n - self.sparse_ham.n]);
+            .append(&mut vec![0.0; self.wf.n - self.sparse_ham.n]);
         self.sparse_ham
             .nnz
-            .append(&mut vec![0; self.n - self.sparse_ham.n]);
+            .append(&mut vec![0; self.wf.n - self.sparse_ham.n]);
         self.sparse_ham.off_diag.append(&mut vec![
             Vec::with_capacity(100);
-            self.n - self.sparse_ham.n
+            self.wf.n - self.sparse_ham.n
         ]);
-        for i in self.sparse_ham.n..self.n {
-            self.sparse_ham.diag[i] = self.dets[i].diag;
+        for i in self.sparse_ham.n..self.wf.n {
+            self.sparse_ham.diag[i] = self.wf.dets[i].diag;
         }
-        self.sparse_ham.n = self.n;
+        self.sparse_ham.n = self.wf.n;
     }
 }
 
 /// Initialize variational wf to the HF det (only needs to be called once)
-pub fn init_var_wf(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator) -> Wf {
-    let mut wf: Wf = Wf::default();
+pub fn init_var_wf(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator) -> VarWf {
+    let mut wf: VarWf = VarWf::default();
     wf.n_states = global.n_states;
     wf.converged = false;
-    wf.n = 1;
+    wf.wf.n = 1;
     wf.update_n_stored_h(0); // No stored H yet
     let mut hf = Det {
         config: Config {
@@ -1622,10 +1637,10 @@ pub fn init_var_wf(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator) -> 
     };
     let h: f64 = ham.ham_diag(&hf.config);
     hf.diag = h;
-    wf.inds = HashMap::new();
-    wf.inds.insert(hf.config, 0);
-    wf.dets.push(hf);
-    wf.energy = wf.dets[0].diag;
-    wf.eps_iter = init_eps(&wf, global, excite_gen);
+    wf.wf.inds = HashMap::new();
+    wf.wf.inds.insert(hf.config, 0);
+    wf.wf.dets.push(hf);
+    wf.wf.energy = wf.wf.dets[0].diag;
+    wf.eps_iter = init_eps(&wf.wf, global, excite_gen);
     wf
 }

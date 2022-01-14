@@ -7,7 +7,7 @@ use crate::utils::read_input::Global;
 use crate::var::eigenvalues::algorithms::davidson::{Davidson, DavidsonError};
 use crate::var::eigenvalues::algorithms::{DavidsonCorrection, SpectrumTarget};
 use crate::var::ham_gen::gen_sparse_ham_fast;
-use crate::wf::Wf;
+use crate::wf::VarWf;
 use nalgebra::DMatrix;
 use std::time::Instant;
 
@@ -16,7 +16,7 @@ pub fn sparse_optimize(
     global: &Global,
     ham: &Ham,
     excite_gen: &ExciteGenerator,
-    wf: &mut Wf,
+    wf: &mut VarWf,
     coeff_eps: f64,
     energy_eps: f64,
     init_last_iter: bool,
@@ -34,8 +34,8 @@ pub fn sparse_optimize(
     let init: Option<DMatrix<f64>> = {
         if init_last_iter {
             // Use inital guess
-            let mut init = DMatrix::from_vec(wf.n, 1, vec![0.0; wf.n]);
-            for (i, det) in wf.dets.iter().enumerate() {
+            let mut init = DMatrix::from_vec(wf.wf.n, 1, vec![0.0; wf.wf.n]);
+            for (i, det) in wf.wf.dets.iter().enumerate() {
                 init[(i, 0)] = det.coeff;
             }
             Some(init)
@@ -55,7 +55,7 @@ pub fn sparse_optimize(
         energy_eps,
         ham,
         excite_gen,
-        wf,
+        &wf.wf,
     );
     println!(
         "Time to perform Davidson diagonalization: {:?}",
@@ -64,9 +64,9 @@ pub fn sparse_optimize(
 
     match dav {
         Ok(eig) => {
-            wf.energy = eig.eigenvalues[0];
-            for i in 0..wf.n {
-                wf.dets[i].coeff = eig.eigenvectors[(i, 0)];
+            wf.wf.energy = eig.eigenvalues[0];
+            for i in 0..wf.wf.n {
+                wf.wf.dets[i].coeff = eig.eigenvectors[(i, 0)];
             }
         }
         Err(err) => {

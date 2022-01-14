@@ -19,7 +19,7 @@ use ham::Ham;
 mod excite;
 use excite::init::{init_excite_generator, ExciteGenerator};
 pub mod wf;
-use wf::{init_var_wf, Wf};
+use wf::{init_var_wf, VarWf};
 mod pt;
 mod rng;
 mod semistoch;
@@ -59,7 +59,7 @@ fn main() {
     }
 
     println!("Initializing wavefunction");
-    let mut wf: Wf = init_var_wf(&GLOBAL, &HAM, &EXCITE_GEN);
+    let mut wf: VarWf = init_var_wf(&GLOBAL, &HAM, &EXCITE_GEN);
     wf.print();
     println!("Time for setup: {:?}", start_setup.elapsed());
 
@@ -70,7 +70,7 @@ fn main() {
 
     println!("\n\n==================\nPerturbative stage\n==================\n");
     let start_enpt2: Instant = Instant::now();
-    perturbative(&GLOBAL, &HAM, &EXCITE_GEN, &wf);
+    perturbative(&GLOBAL, &HAM, &EXCITE_GEN, &wf.wf);
     println!("Time for perturbative stage: {:?}", start_enpt2.elapsed());
 
     println!("Total Time: {:?}", start.elapsed());

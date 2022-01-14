@@ -2,12 +2,11 @@
 
 use crate::excite::init::ExciteGenerator;
 use crate::ham::Ham;
-use crate::utils::bits::{bit_pairs, bits, ibclr};
 use crate::utils::read_input::Global;
 use crate::var::off_diag::{add_el, add_el_and_spin_flipped};
 use crate::var::utils::{remove_1e, remove_2e};
 use crate::wf::det::Config;
-use crate::wf::Wf;
+use crate::wf::VarWf;
 use std::cmp::Ordering::Equal;
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
@@ -296,7 +295,7 @@ pub fn gen_doubles(
 //     ham_matrix
 // }
 
-pub fn gen_sparse_ham_fast(global: &Global, wf: &mut Wf, ham: &Ham, excite_gen: &ExciteGenerator) {
+pub fn gen_sparse_ham_fast(global: &Global, wf: &mut VarWf, ham: &Ham, excite_gen: &ExciteGenerator) {
     // Generate Ham as a sparse matrix using my 2019 notes when I was working pro bono
     // For now, assumes that nup == ndn
     // Updates wf.sparse_ham if it already exists from the previous iteration
@@ -308,7 +307,7 @@ pub fn gen_sparse_ham_fast(global: &Global, wf: &mut Wf, ham: &Ham, excite_gen: 
     // TODO: make this a wf member variable so we don't have to regenerate the whole thing from scratch
     let mut unique_up_dict: HashMap<u128, Vec<(usize, u128)>> = HashMap::default();
     let mut new_unique_up_dict: HashMap<u128, Vec<(usize, u128)>> = HashMap::default();
-    for (config, ind) in &wf.inds {
+    for (config, ind) in &wf.wf.inds {
         insert_into_hashmap_of_vectors(&mut unique_up_dict, config.up, (*ind, config.dn));
         if *ind >= wf.n_stored_h() {
             match new_unique_up_dict.get_mut(&config.up) {
@@ -402,7 +401,7 @@ pub fn gen_sparse_ham_fast(global: &Global, wf: &mut Wf, ham: &Ham, excite_gen: 
     // (analogous to upSingles, except want all excitations, not just to later unique dets)
     let mut unique_dns_set: HashSet<u128> = HashSet::default();
     let mut new_unique_dns_set: HashSet<u128> = HashSet::default();
-    for (ind, det) in wf.dets.iter().enumerate() {
+    for (ind, det) in wf.wf.dets.iter().enumerate() {
         unique_dns_set.insert(det.config.dn);
         if ind >= wf.n_stored_h() {
             new_unique_dns_set.insert(det.config.dn);
@@ -451,7 +450,7 @@ pub fn gen_sparse_ham_fast(global: &Global, wf: &mut Wf, ham: &Ham, excite_gen: 
     // 6. Dn excite constructor: Look up (ind, dn) lists using keys (up, dn_r1)
     let mut dn_single_constructor: HashMap<Config, Vec<(usize, u128)>> = HashMap::default();
     if global.opp_algo == 4 {
-        for (ind, det) in wf.dets.iter().enumerate() {
+        for (ind, det) in wf.wf.dets.iter().enumerate() {
             for dn_r1 in remove_1e(excite_gen.valence & det.config.dn) {
                 let key = Config {
                     up: det.config.up,
@@ -523,12 +522,12 @@ pub fn gen_sparse_ham_fast(global: &Global, wf: &mut Wf, ham: &Ham, excite_gen: 
     wf.sparse_ham.sort_remove_duplicates();
 
     // Update wf.n_stored_h
-    wf.update_n_stored_h(wf.n);
+    wf.update_n_stored_h(wf.wf.n);
 }
 
 fn all_opposite_spin_excites(
     global: &Global,
-    wf: &mut Wf,
+    wf: &mut VarWf,
     ham: &Ham,
     excite_gen: &ExciteGenerator,
     unique_up_dict: &HashMap<u128, Vec<(usize, u128)>>,
@@ -558,7 +557,7 @@ fn all_opposite_spin_excites(
 
 fn all_same_spin_excites(
     global: &Global,
-    wf: &mut Wf,
+    wf: &mut VarWf,
     ham: &Ham,
     unique_up_dict: &HashMap<u128, Vec<(usize, u128)>>,
     new_unique_up_dict: &HashMap<u128, Vec<(usize, u128)>>,
@@ -587,7 +586,7 @@ pub struct Unique {
 
 pub fn opposite_spin_excites(
     global: &Global,
-    wf: &mut Wf,
+    wf: &mut VarWf,
     ham: &Ham,
     excite_gen: &ExciteGenerator,
     unique_up_dict: &HashMap<u128, Vec<(usize, u128)>>,
@@ -645,7 +644,7 @@ pub fn opposite_spin_excites(
                             None => {}
                             Some(dn_connections) => {
                                 // We need to do this one in terms of up config rather than ind
-                                let ind1 = wf.inds[&Config { up: *up, dn: dn.1 }];
+                                let ind1 = wf.wf.inds[&Config { up: *up, dn: dn.1 }];
                                 for dn_connection_ind in dn_connections {
                                     // Check that the index is new (because even if up and dn are independently new, (up, dn) can be old)
                                     if *dn_connection_ind >= wf.n_stored_h() {
@@ -764,7 +763,7 @@ pub fn opposite_spin_excites(
                         Some(dns) => {
                             for all_up in ups {
                                 for all_dn in dns {
-                                    match wf.inds.get(&Config {
+                                    match wf.wf.inds.get(&Config {
                                         up: *all_up,
                                         dn: *all_dn,
                                     }) {
@@ -789,12 +788,12 @@ pub fn opposite_spin_excites(
                             None => {}
                             Some(dn_connections) => {
                                 // We need to do this one in terms of up config rather than ind
-                                let ind1 = wf.inds[&Config {
+                                let ind1 = wf.wf.inds[&Config {
                                     up: *all_up,
                                     dn: all_dn.1,
                                 }];
                                 for dn_new in dn_connections {
-                                    if let Some(ind2) = wf.inds.get(&Config {
+                                    if let Some(ind2) = wf.wf.inds.get(&Config {
                                         up: unique.up,
                                         dn: *dn_new,
                                     }) {
@@ -816,7 +815,7 @@ pub fn opposite_spin_excites(
 
 pub fn same_spin_excites(
     global: &Global,
-    wf: &mut Wf,
+    wf: &mut VarWf,
     ham: &Ham,
     unique_up_dict: &HashMap<u128, Vec<(usize, u128)>>,
     new_unique_up_dict: &HashMap<u128, Vec<(usize, u128)>>,

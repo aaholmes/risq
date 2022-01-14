@@ -50,9 +50,9 @@ pub struct ScreenedSampler<'a> {
     // pub single_excitable_det_sampler: Alias, // Alias sampler for selecting dets to perform single excites on
 }
 
+/// Individual sample of a det and an electron or electron pair to excite from
 #[derive(Clone, Copy, Debug)]
 pub struct DetOrbSample<'a> {
-    // Individual sample of a det and an electron or electron pair to excite from
     pub det: &'a Det, // just the pointers to the wf's dets because we don't want to copy them; hence the lifetime parameter
     pub init: Orbs,
     pub is_alpha: Option<bool>,

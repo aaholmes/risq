@@ -8,19 +8,19 @@ pub(crate) mod sparse;
 mod utils;
 
 use super::ham::Ham;
-use super::wf::Wf;
 use crate::excite::init::ExciteGenerator;
 use crate::utils::read_input::Global;
 use crate::var::davidson::sparse_optimize;
 use std::time::Instant;
+use crate::wf::VarWf;
 
 /// Perform variational selected CI
-pub fn variational(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, wf: &mut Wf) {
+pub fn variational(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, wf: &mut VarWf) {
     let mut iter: i32 = 0;
 
     println!(
         "Start of variational stage: Wavefunction has {} det with energy {:.4}",
-        wf.n, wf.energy
+        wf.wf.n, wf.wf.energy
     );
 
     // let eps_energy_converged: f64 = 2.5e-4;
@@ -37,12 +37,12 @@ pub fn variational(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, wf:
         }
         println!("Time to find new dets: {:?}", start_find_new_dets.elapsed());
 
-        last_energy = Some(wf.energy);
+        last_energy = Some(wf.wf.energy);
 
         let coeff_eps: f64 = 1e-3; // Davidson convergence epsilon for coefficients
         let energy_eps: f64 = 1e-6; // Davidson convergence epsilon for energy
 
-        println!("\nOptimizing coefficients of wf with {} dets", wf.n);
+        println!("\nOptimizing coefficients of wf with {} dets", wf.wf.n);
         let start_optimize_coeffs: Instant = Instant::now();
         sparse_optimize(
             &global,
@@ -59,8 +59,8 @@ pub fn variational(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, wf:
             start_optimize_coeffs.elapsed()
         );
 
-        println!("End of iteration {} (eps = {:.1e}): Wavefunction has {} determinants with energy {:.6}", iter, wf.eps, wf.n, wf.energy);
-        if wf.n <= 10 {
+        println!("End of iteration {} (eps = {:.1e}): Wavefunction has {} determinants with energy {:.6}", iter, wf.eps, wf.wf.n, wf.wf.energy);
+        if wf.wf.n <= 10 {
             wf.print();
         } else {
             wf.print_largest(10);

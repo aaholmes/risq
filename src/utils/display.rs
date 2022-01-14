@@ -3,7 +3,7 @@
 use crate::excite::Orbs;
 use crate::stoch::DetOrbSample;
 use crate::wf::det::{Config, Det};
-use crate::wf::Wf;
+use crate::wf::VarWf;
 use std::cmp::Ordering::Equal;
 use std::cmp::{Ordering, Reverse};
 use std::collections::BinaryHeap;
@@ -73,14 +73,14 @@ impl fmt::Display for DetOrbSample<'_> {
     }
 }
 
-impl Wf {
+impl VarWf {
     pub fn print(&self) {
         println!(
             "\nWavefunction has {} dets with energy {:.4}",
-            self.n, self.energy
+            self.wf.n, self.wf.energy
         );
         println!("Coeff     Det_up     Det_dn    <D|H|D>");
-        for d in self.dets.iter() {
+        for d in self.wf.dets.iter() {
             println!(
                 "{:.4}   {}   {}   {:.3}",
                 d.coeff,
@@ -99,7 +99,7 @@ impl Wf {
         // Use a min-heap of the k largest elements
         let mut heap = BinaryHeap::with_capacity(k);
 
-        for (ind, det) in self.dets.iter().enumerate() {
+        for (ind, det) in self.wf.dets.iter().enumerate() {
             if ind < k {
                 heap.push(Reverse(DetByCoeff { det }));
             } else if det.coeff.abs() > heap.peek().unwrap().0.det.coeff.abs() {
@@ -119,7 +119,7 @@ impl Wf {
 
         println!(
             "\nWavefunction has {} dets with energy {:.4}",
-            self.n, self.energy
+            self.wf.n, self.wf.energy
         );
         println!("Coeff     Det_up     Det_dn    <D|H|D>");
         for d in top_k {

@@ -2,7 +2,7 @@
 
 use crate::ham::Ham;
 use crate::wf::det::Config;
-use crate::wf::Wf;
+use crate::wf::VarWf;
 
 /// Off-diag elems data structure
 #[cfg(test)]
@@ -35,13 +35,13 @@ impl OffDiagElemsNoHash {
 
 /// Add an off-diagonal element H_{ij} to off_diag_elems
 /// i and j can be of any order
-pub fn add_el(wf: &mut Wf, ham: &Ham, i: usize, j: usize, elem: Option<f64>) {
+pub fn add_el(wf: &mut VarWf, ham: &Ham, i: usize, j: usize, elem: Option<f64>) {
     match elem {
         None => {
             if i == j {
                 return;
             }
-            let elem = ham.ham_off_diag_no_excite(&wf.dets[i].config, &wf.dets[j].config);
+            let elem = ham.ham_off_diag_no_excite(&wf.wf.dets[i].config, &wf.wf.dets[j].config);
             if elem != 0.0 {
                 add_off_diag_elem(wf, i, j, elem);
             }
@@ -50,7 +50,7 @@ pub fn add_el(wf: &mut Wf, ham: &Ham, i: usize, j: usize, elem: Option<f64>) {
     }
 }
 
-fn add_off_diag_elem(wf: &mut Wf, i: usize, j: usize, elem: f64) {
+fn add_off_diag_elem(wf: &mut VarWf, i: usize, j: usize, elem: f64) {
     if i < j {
         wf.sparse_ham.off_diag[i].push((j, elem));
         // if j >= wf.n_stored_h() { wf.sparse_ham.off_diag[i].push((j, elem)); }
@@ -62,26 +62,26 @@ fn add_off_diag_elem(wf: &mut Wf, i: usize, j: usize, elem: f64) {
 
 /// Add an off-diagonal element H_{ij}, as well as its spin-flipped counterpart, to off_diag_elems
 /// i and j can be of any order
-pub fn add_el_and_spin_flipped(wf: &mut Wf, ham: &Ham, i: usize, j: usize) {
+pub fn add_el_and_spin_flipped(wf: &mut VarWf, ham: &Ham, i: usize, j: usize) {
     if i == j {
         return;
     }
-    let elem = ham.ham_off_diag_no_excite(&wf.dets[i].config, &wf.dets[j].config);
+    let elem = ham.ham_off_diag_no_excite(&wf.wf.dets[i].config, &wf.wf.dets[j].config);
     if elem != 0.0 {
         // Element
         add_el(wf, ham, i, j, Some(elem));
 
         // Spin-flipped element
         let i_spin_flipped = {
-            let config = wf.dets[i].config;
-            wf.inds[&Config {
+            let config = wf.wf.dets[i].config;
+            wf.wf.inds[&Config {
                 up: config.dn,
                 dn: config.up,
             }]
         };
         let j_spin_flipped = {
-            let config = wf.dets[j].config;
-            wf.inds[&Config {
+            let config = wf.wf.dets[j].config;
+            wf.wf.inds[&Config {
                 up: config.dn,
                 dn: config.up,
             }]
