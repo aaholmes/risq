@@ -1,14 +1,18 @@
 //! Semistochastic methods - for now, just includes Epstein-Nesbet perturbation theory
 
+mod utils;
+
 use crate::excite::init::ExciteGenerator;
 use crate::ham::Ham;
 use crate::pt::PtSamples;
 use crate::rng::Rand;
+use crate::semistoch::utils::sample_diag_update_welford;
 use crate::stoch::alias::Alias;
 use crate::stoch::{matmul_sample_remaining, ImpSampleDist};
 use crate::utils::read_input::Global;
 use crate::wf::Wf;
 use rolling_stats::Stats;
+use std::intrinsics::sqrtf64;
 use std::time::Instant;
 
 /// Importance sampled semistochastic ENPT2
@@ -185,6 +189,161 @@ pub fn importance_sampled_semistoch_enpt2(
     (dtm_enpt2 + stoch_enpt2.mean, stoch_enpt2.std_dev)
 }
 
+pub fn new_stoch_enpt2(
+    input_wf: &Wf,
+    global: &Global,
+    ham: &Ham,
+    excite_gen: &ExciteGenerator,
+    rand: &mut Rand,
+) -> (f64, f64) {
+    // For now, just do the fully stochastic algorithm
+
+    // Compute deterministic component (even though not used), and create sampler object for sampling remaining component
+    let start_dtm_enpt2: Instant = Instant::now();
+    let (_, mut screened_sampler) =
+        input_wf.approx_matmul_external_skip_singles(ham, excite_gen, global.eps_var);
+    println!("Time for sampling setup: {:?}", start_dtm_enpt2.elapsed());
+
+    // Stochastic component
+
+    // Initially, take samples of several batches of each of the diagonal and off-diagonal components
+    // Keep track of the uncertainties in the two components
+    // While total uncertainty is too high, take a batch of the component that has the higher uncertainty
+    // of the two
+
+    // Need functions: sample_diag, sample_off_diag
+    // sample_diag is trivial: just sample one (a, i), compute E(a, i), and add it to the Welford struct
+    // sample_off_diag is more complicated:
+    // Loop over samples in the batch:
+    // For each, add to the hash table {a: E_a, {i: w_i, H_{ai} c_i / q_i}}
+    // Then, computing the energy is straightforward:
+    // Loop over a:
+    // For each, compute the two sums over that a's i values, and use that to update the energy
+
+    let target_uncertainty: f64 = 0.01;
+
+    let start_pt: Instant = Instant::now();
+
+    let mut enpt2_diag: Stats<f64> = Stats::new();
+    let mut enpt2_off_diag: Stats<f64> = Stats::new();
+    let mut off_diag_samples: PtSamples = Default::default();
+
+    let n_diag_init: i32 = 100;
+    let n_off_diag_init: i32 = 10;
+
+    for i_batch in 0..n_diag_init {
+        // Sample diag, update Welford
+        sample_diag_update_welford(
+            &screened_sampler,
+            excite_gen,
+            ham,
+            rand,
+            input_wf.energy,
+            &mut enpt2_diag,
+        );
+    }
+
+    for i_batch in 0..n_off_diag_init {
+        // Sample off_diag, update Welford
+    }
+
+    let mut total_std_dev: f64 = (enpt2_diag.std_dev * enpt2_diag.std_dev
+        + enpt2_off_diag.std_dev * enpt2_off_diag.std_dev)
+        .sqrt();
+    println!(
+        "After init, diag and off-diag components: {} +- {}, {} +- {}, total: {} +- {}",
+        enpt2_diag.mean,
+        enpt2_diag.std_dev,
+        enpt2_off_diag.mean,
+        enpt2_off_diag.std_dev,
+        enpt2_diag.mean + enpt2_off_diag.mean,
+        total_std_dev
+    );
+
+    while total_std_dev > target_uncertainty {
+        // Collect another batch of the less certain component
+        if enpt2_diag.std_dev >= enpt2_off_diag.std_dev {
+            // Sample diag, update Welford
+            sample_diag_update_welford(
+                &screened_sampler,
+                excite_gen,
+                ham,
+                rand,
+                input_wf.energy,
+                &mut enpt2_diag,
+            );
+        } else {
+            // Sample off_diag, update Welford
+        }
+        total_std_dev = (enpt2_diag.std_dev * enpt2_diag.std_dev
+            + enpt2_off_diag.std_dev * enpt2_off_diag.std_dev)
+            .sqrt();
+        println!("diag ({} samples) and off-diag ({} batches) components: {:.4} +- {:.4}, {:.4} +- {:.4}, total: {:.4} +- {:.4}",
+                 enpt2_diag.count, enpt2_off_diag.count,
+                 enpt2_diag.mean, enpt2_diag.std_dev,
+                 enpt2_off_diag.mean, enpt2_off_diag.std_dev,
+                 enpt2_diag.mean + enpt2_off_diag.mean, total_std_dev
+        );
+    }
+
+    (enpt2_diag.mean + enpt2_off_diag.mean, total_std_dev)
+
+
+
+
+    let n_batches_max = 10;
+    for i_batch in 0..n_batches_max {
+        // Sample a
+
+        // Sample a batch of samples, updating the stoch component of the energy for each sample
+        println!("\n Starting batch {}", i_batch);
+        samples.clear();
+        for _i_sample in 0..global.n_samples_per_batch {
+            // Sample with probability proportional to (Hc)^2
+            let (sampled_det_info, sampled_prob) = matmul_sample_remaining(
+                &mut screened_sampler,
+                ImpSampleDist::HcSquared,
+                excite_gen,
+                ham,
+                rand,
+            );
+
+            match sampled_det_info {
+                None => {}
+                Some((exciting_det, excite, target_det)) => {
+                    // Collect this sample for the quadratic contribution
+                    // This is analogous to the SHCI contribution, but only applies to the (<eps)
+                    // terms. The sampling probability (Hc)^2 was chosen because the largest terms
+                    // in this component are (Hc)^2 / (E_0 - E_a).
+                    samples.add_sample_compute_diag(
+                        exciting_det,
+                        &excite,
+                        target_det,
+                        sampled_prob,
+                        ham,
+                    );
+                }
+            }
+        }
+
+        // Collect the samples, evaluate their contributions a la the original SHCI paper
+        let sampled_e: f64 = samples.pt_estimator(input_wf.energy, samples.n);
+        println!("Sampled energy this batch = {}", sampled_e);
+        stoch_enpt2_quadratic.update(sampled_e);
+        println!(
+            "Current estimate of stochastic component: {:.4} +- {:.4}",
+            stoch_enpt2_quadratic.mean, stoch_enpt2_quadratic.std_dev
+        );
+
+        if i_batch > 9 && stoch_enpt2_quadratic.std_dev <= global.target_uncertainty / 2f64.sqrt() {
+            println!("Target uncertainty reached!");
+            break;
+        }
+    }
+    println!("Time for sampling: {:?}", start_pt.elapsed());
+
+    (stoch_enpt2.mean, stoch_enpt2.std_dev)
+}
 
 pub fn fast_stoch_enpt2(
     input_wf: &Wf,
@@ -231,8 +390,7 @@ pub fn fast_stoch_enpt2(
             );
 
             match sampled_det_info {
-                None => {
-                }
+                None => {}
                 Some((exciting_det, excite, target_det)) => {
                     // Collect this sample for the quadratic contribution
                     // This is analogous to the SHCI contribution, but only applies to the (<eps)
@@ -265,10 +423,8 @@ pub fn fast_stoch_enpt2(
     }
     println!("Time for sampling: {:?}", start_quadratic.elapsed());
 
-
     (stoch_enpt2_quadratic.mean, stoch_enpt2_quadratic.std_dev)
 }
-
 
 //
 // pub fn faster_semistoch_enpt2(

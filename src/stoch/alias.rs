@@ -109,13 +109,13 @@ impl Alias {
     }
 
     /// Sample an element and also return its sample probability
-    pub fn sample_with_prob(&mut self, rand: &mut Rand) -> (usize, f64) {
+    pub fn sample_with_prob(&self, rand: &mut Rand) -> (usize, f64) {
         let (i, r) = self.roll_die_and_flip_coin(rand);
         return self.select_element_and_prob(i, r);
     }
 
     // This function 'rolls the unweighted die' (selects an element uniformly) and 'flips the weighted coin' (selects a uniform real between 0 and 1 for comparing to the probability of using the alias)
-    fn roll_die_and_flip_coin(&mut self, rand: &mut Rand) -> (usize, f64) {
+    fn roll_die_and_flip_coin(&self, rand: &mut Rand) -> (usize, f64) {
         let i: usize = rand.rng.sample(self.uniform);
         let r: f64 = rand.rng.gen();
         return (i, r);

@@ -4,7 +4,7 @@ use crate::excite::init::ExciteGenerator;
 use crate::excite::Excite;
 use crate::ham::Ham;
 use crate::rng::{init_rand, Rand};
-use crate::semistoch::{fast_stoch_enpt2, importance_sampled_semistoch_enpt2, old_semistoch_enpt2};
+use crate::semistoch::{new_stoch_enpt2, importance_sampled_semistoch_enpt2, old_semistoch_enpt2};
 use crate::utils::read_input::Global;
 use crate::wf::det::{Config, Det};
 use crate::wf::Wf;
@@ -30,8 +30,9 @@ pub fn perturbative(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, wf
         std_dev = out.1;
     } else {
         println!("\nCalling semistoch ENPT2 the new way!");
+        let out = new_stoch_enpt2(wf, global, ham, excite_gen, &mut rand);
         // let out = importance_sampled_semistoch_enpt2(wf, global, ham, excite_gen, &mut rand);
-        let out = fast_stoch_enpt2(wf, global, ham, excite_gen, &mut rand);
+        // let out = fast_stoch_enpt2(wf, global, ham, excite_gen, &mut rand);
         // let out = faster_semistoch_enpt2(wf, global, ham, excite_gen);
         e_pt2 = out.0;
         std_dev = out.1;
