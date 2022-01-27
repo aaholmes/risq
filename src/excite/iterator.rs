@@ -1,14 +1,13 @@
 //! Generate excitations as an iterator
 
-use std::slice::Iter;
-use std::collections::HashMap;
 use crate::excite;
+use std::collections::HashMap;
+use std::slice::Iter;
 
 use crate::excite::init::ExciteGenerator;
 use crate::excite::{Excite, Orbs, StoredExcite};
 use crate::utils::bits::{epairs, orbs};
 use crate::wf::det::{Config, Det};
-
 
 /// Iterate over double excitations from the given determinant (only excitations whose matrix elements
 /// are larger in magnitude than eps)
@@ -17,54 +16,38 @@ pub fn double_excites<'a>(
     excite_gen: &'a ExciteGenerator,
     eps: f64,
 ) -> impl Iterator<Item = (Option<bool>, Orbs, &'a StoredExcite)> {
-    epairs(&det.config)
-        .flat_map(move |(is_alpha, orbs)| excite_gen.excites_from((is_alpha, &orbs))
+    epairs(&det.config).flat_map(move |(is_alpha, orbs)| {
+        excite_gen
+            .excites_from((is_alpha, &orbs))
             .take_while(move |excite| excite.abs_h * det.coeff.abs() >= eps)
             .filter(move |excite| det.config.is_valid_stored(excite))
             .map(move |excite| (is_alpha, orbs, excite))
-        )
+    })
 }
-
 
 impl ExciteGenerator {
     /// Iterate over the excitations from these orbitals
-    fn excites_from(
-        &self,
-        init: (Option<bool>, &Orbs)
-    ) -> impl Iterator<Item=&StoredExcite> {
+    fn excites_from(&self, init: (Option<bool>, &Orbs)) -> impl Iterator<Item = &StoredExcite> {
         match init.1 {
             Orbs::Double(_) => {
                 match init.0 {
                     None => {
                         // Opposite-spin double
-                        self
-                            .opp_doub_sorted_list
-                            .get(init.1)
-                            .unwrap()
-                            .iter()
+                        self.opp_doub_sorted_list.get(init.1).unwrap().iter()
                     }
                     Some(_) => {
                         // Same-spin double
-                        self
-                            .same_doub_sorted_list
-                            .get(init.1)
-                            .unwrap()
-                            .iter()
+                        self.same_doub_sorted_list.get(init.1).unwrap().iter()
                     }
                 }
             }
             Orbs::Single(_) => {
                 // Single
-                self
-                    .sing_sorted_list
-                    .get(init.1)
-                    .unwrap()
-                    .iter()
+                self.sing_sorted_list.get(init.1).unwrap().iter()
             }
         }
     }
 }
-
 
 #[cfg(test)]
 mod tests {

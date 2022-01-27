@@ -40,12 +40,12 @@ pub fn bit_pairs(n: u128) -> impl Iterator<Item = (i32, i32)> {
             second_bits_left &= !(1 << second_bit);
             Some((first_bit, second_bit))
         }
-    }
+    })
 }
 
 /// Iterate over the cartesian product of bits(det.up) and bits(det.dn)
 pub fn product_bits(det: &Config) -> impl Iterator<Item = (i32, i32)> {
-    let dn= det.dn;
+    let dn = det.dn;
     bits(det.up).flat_map(move |i| bits(dn).map(move |j| (i, j)))
 }
 
@@ -53,18 +53,21 @@ pub fn product_bits(det: &Config) -> impl Iterator<Item = (i32, i32)> {
 /// and is_alpha, which is None of opposite-spin and Some(bool) for same spin
 pub fn epairs(det: &Config) -> impl Iterator<Item = (Option<bool>, Orbs)> {
     product_bits(det).map(|pq| (None, Orbs::Double(pq))).chain(
-    bit_pairs(det.up).map(|pq| (Some(true), Orbs::Double(pq))).chain(
-    bit_pairs(det.dn).map(|pq| (Some(false), Orbs::Double(pq)))))
+        bit_pairs(det.up)
+            .map(|pq| (Some(true), Orbs::Double(pq)))
+            .chain(bit_pairs(det.dn).map(|pq| (Some(false), Orbs::Double(pq)))),
+    )
 }
 
 /// Iterate over all occupied orbs (as Orbs::Single) and orb pairs (as Orbs::Double),
 /// also returns is_alpha for each
 pub fn orbs(det: &Config) -> impl Iterator<Item = (Option<bool>, Orbs)> {
     epairs(det).chain(
-        bits(det.up).map(|p| (Some(true), Orbs::Single(p))).chain(
-            bits(det.dn).map(|p| (Some(false), Orbs::Single(p)))))
+        bits(det.up)
+            .map(|p| (Some(true), Orbs::Single(p)))
+            .chain(bits(det.dn).map(|p| (Some(false), Orbs::Single(p)))),
+    )
 }
-
 
 // Bit operations named after Fortran intrinsics...
 
@@ -91,7 +94,6 @@ pub fn parity(mut n: u128) -> i32 {
     n ^= n >> 1;
     1 - 2 * ((n & 1) as i32)
 }
-
 
 #[cfg(test)]
 mod tests {
