@@ -51,18 +51,18 @@ pub fn product_bits(det: &Config) -> impl Iterator<Item = (i32, i32)> {
 
 /// Iterate over the pairs of orbs in a det, returns both the orbs (as an Orbs::Double)
 /// and is_alpha, which is None of opposite-spin and Some(bool) for same spin
-pub fn epairs(det: &Config) -> impl Iterator<Item = (Orbs, Option<bool>)> {
-    product_bits(det).map(|pq| (Orbs::Double(pq), None)).chain(
-    bit_pairs(det.up).map(|pq| (Orbs::Double(pq), Some(true))).chain(
-    bit_pairs(det.dn).map(|pq| (Orbs::Double(pq), Some(false)))))
+pub fn epairs(det: &Config) -> impl Iterator<Item = (Option<bool>, Orbs)> {
+    product_bits(det).map(|pq| (None, Orbs::Double(pq))).chain(
+    bit_pairs(det.up).map(|pq| (Some(true), Orbs::Double(pq))).chain(
+    bit_pairs(det.dn).map(|pq| (Some(false), Orbs::Double(pq)))))
 }
 
 /// Iterate over all occupied orbs (as Orbs::Single) and orb pairs (as Orbs::Double),
 /// also returns is_alpha for each
-pub fn orbs(det: &Config) -> impl Iterator<Item = (Orbs, Option<bool>)> {
+pub fn orbs(det: &Config) -> impl Iterator<Item = (Option<bool>, Orbs)> {
     epairs(det).chain(
-        bits(det.up).map(|p| (Orbs::Single(p), Some(true))).chain(
-            bits(det.dn).map(|p| (Orbs::Single(p), Some(false)))))
+        bits(det.up).map(|p| (Some(true), Orbs::Single(p))).chain(
+            bits(det.dn).map(|p| (Some(false), Orbs::Single(p)))))
 }
 
 
