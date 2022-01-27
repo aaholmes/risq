@@ -6,37 +6,100 @@
 // where singles are candidates whose matrix elements must be computed separately
 // (because we want to check if they're new first before computing their matrix element)
 
-// use std::slice::Iter;
-// use std::collections::HashMap;
+use std::slice::Iter;
+use std::collections::HashMap;
+use crate::excite;
 
-// use crate::excite::init::ExciteGenerator;
-// use crate::excite::{Excite, Orbs, StoredExcite};
-// use crate::utils::bits::{opp_iter, same_iter, sing_iter};
-// use crate::wf::det::{Config, Det};
-// use crate::utils::iter::empty;
+use crate::excite::init::ExciteGenerator;
+use crate::excite::{Excite, Orbs, StoredExcite};
+use crate::utils::bits::{epairs, orbs};
+use crate::wf::det::{Config, Det};
+
+
+/// Iterate over double excitations from the given determinant (only excitations whose matrix elements
+/// are larger in magnitude than eps)
+pub fn double_excites<'a>(
+    det: &'a Det,
+    excite_gen: &'a ExciteGenerator,
+    eps: f64,
+) -> impl Iterator<Item = (Orbs, Option<bool>, &'a StoredExcite)> {
+    epairs(&det.config)
+        .flat_map(move |(orbs, is_alpha)| excite_gen.excites_from((&orbs, is_alpha))
+            .take_while(move |excite| excite.abs_h * det.coeff.abs() >= eps)
+            .filter(move |excite| det.config.is_valid_stored(excite))
+            .map(move |excite| (orbs, is_alpha, excite))
+        )
+}
+
+
+impl ExciteGenerator {
+    /// Iterate over the excitations from these orbitals
+    fn excites_from(
+        &self,
+        init: (&Orbs, Option<bool>)
+    ) -> impl Iterator<Item=&StoredExcite> {
+        match init.0 {
+            Orbs::Double(_) => {
+                match init.1 {
+                    None => {
+                        // Opposite-spin double
+                        self
+                            .opp_doub_sorted_list
+                            .get(init.0)
+                            .unwrap()
+                            .iter()
+                    }
+                    Some(_) => {
+                        // Same-spin double
+                        self
+                            .same_doub_sorted_list
+                            .get(init.0)
+                            .unwrap()
+                            .iter()
+                    }
+                }
+            }
+            Orbs::Single(_) => {
+                // Single
+                self
+                    .sing_sorted_list
+                    .get(init.0)
+                    .unwrap()
+                    .iter()
+            }
+        }
+    }
+}
+
+
+
+
+
+
 
 // impl ExciteGenerator {
-//     pub fn truncated_excites(
+//     pub fn truncated_excites<'a>(
 //         &'static self,
-//         det: &'static Det,
+//         det: &'a Det,
 //         eps: f64,
+//         doubles_only: bool
 //     ) -> impl Iterator<Item=Excite> {
 //         // Returns an iterator over all double excitations that exceed eps
 //         // and all *candidate* single excitations that *may* exceed eps
 //         // The single excitation matrix elements must still be compared to eps
 //         // TODO: Put in max_doub, etc
 //         let local_eps: f64 = eps / det.coeff.abs();
-//         Exciter {
+//         let mut doubles_exciter = Exciter {
 //             det: &det.config,
 //             epair_iter: Box::new(opp_iter(&det.config)),
-//             sorted_excites: &self.opp_doub_generator,
+//             sorted_excites: &self.opp_doub_sorted_list,
 //             eps: local_eps,
 //             is_alpha: None
 //         }.into_iter().chain(
 //             Exciter {
 //                 det: &det.config,
 //                 epair_iter: Box::new(same_iter(det.config.up)),
-//                 sorted_excites: &self.same_doub_generator,
+//                 sorted_excites: &self.same_doub_sorted_list,
 //                 eps: local_eps,
 //                 is_alpha: Some(true)
 //             }.into_iter()
@@ -44,15 +107,20 @@
 //             Exciter {
 //                 det: &det.config,
 //                 epair_iter: Box::new(same_iter(det.config.dn)),
-//                 sorted_excites: &self.same_doub_generator,
+//                 sorted_excites: &self.same_doub_sorted_list,
 //                 eps: local_eps,
 //                 is_alpha: Some(false)
 //             }.into_iter()
-//         ).chain(
+//         );
+//
+//         if doubles_only {
+//             doubles_exciter
+//         } else {
+//             doubles_exciter.chain(
 //             Exciter {
 //                 det: &det.config,
 //                 epair_iter: Box::new(sing_iter(det.config.up)),
-//                 sorted_excites: &self.sing_generator,
+//                 sorted_excites: &self.sing_sorted_list,
 //                 eps: local_eps,
 //                 is_alpha: Some(true)
 //             }.into_iter()
@@ -60,7 +128,7 @@
 //             Exciter {
 //                 det: &det.config,
 //                 epair_iter: Box::new(sing_iter(det.config.dn)),
-//                 sorted_excites: &self.sing_generator,
+//                 sorted_excites: &self.sing_sorted_list,
 //                 eps: local_eps,
 //                 is_alpha: Some(false)
 //             }.into_iter()
@@ -175,44 +243,44 @@
 //         }
 //     }
 // }
-//
-//
-// #[cfg(test)]
-// mod tests {
-//
-//     use super::*;
-//     use crate::excite::init::init_excite_generator;
-//     use crate::ham::read_ints::read_ints;
-//     use crate::ham::Ham;
-//     use crate::utils::read_input::{read_input, Global};
-//
-//     #[test]
-//     fn test_iter() {
-//         println!("Reading input file");
-//         lazy_static! {
-//             static ref GLOBAL: Global = read_input("in.json").unwrap();
-//         }
-//
-//         println!("Reading integrals");
-//         lazy_static! {
-//             static ref HAM: Ham = read_ints(&GLOBAL, "FCIDUMP");
-//         }
-//
-//         println!("Initializing excitation generator");
-//         lazy_static! {
-//             static ref EXCITE_GEN: ExciteGenerator = init_excite_generator(&GLOBAL, &HAM);
-//         }
-//
-//         let det = Det {
-//             config: Config { up: 3, dn: 3 },
-//             coeff: 1.0,
-//             diag: 0.0,
-//         };
-//
-//         let eps = 0.1;
-//         println!("About to iterate!");
-//         for excite in EXCITE_GEN.truncated_excites(det, eps) {
-//             println!("Got here");
-//         }
-//     }
-// }
+
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+    use crate::excite::init::init_excite_generator;
+    use crate::ham::read_ints::read_ints;
+    use crate::ham::Ham;
+    use crate::utils::read_input::{read_input, Global};
+
+    #[test]
+    fn test_iter() {
+        println!("Reading input file");
+        lazy_static! {
+            static ref GLOBAL: Global = read_input("in.json").unwrap();
+        }
+
+        println!("Reading integrals");
+        lazy_static! {
+            static ref HAM: Ham = read_ints(&GLOBAL, "FCIDUMP");
+        }
+
+        println!("Initializing excitation generator");
+        lazy_static! {
+            static ref EXCITE_GEN: ExciteGenerator = init_excite_generator(&GLOBAL, &HAM);
+        }
+
+        let det = Det {
+            config: Config { up: 3, dn: 3 },
+            coeff: 1.0,
+            diag: 0.0,
+        };
+
+        let eps = 0.1;
+        println!("About to iterate!");
+        for excite in EXCITE_GEN.truncated_excites(det, eps) {
+            println!("Got here");
+        }
+    }
+}

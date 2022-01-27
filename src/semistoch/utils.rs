@@ -1,11 +1,14 @@
-use rand::distributions::Uniform;
+use std::collections::HashMap;
+use rand::distributions::{Distribution, Uniform};
 use rand::Rng;
 use crate::excite::init::ExciteGenerator;
 use crate::ham::Ham;
 use crate::rng::Rand;
 use crate::stoch::{matmul_sample_remaining, ImpSampleDist, ScreenedSampler};
 use rolling_stats::Stats;
+use crate::excite::Excite;
 use crate::stoch::alias::Alias;
+use crate::wf::det::{Config, Det};
 use crate::wf::Wf;
 
 /// Sample the 'diagonal' contribution to the PT energy (i.e., the term coming from the diagonal of
@@ -52,6 +55,62 @@ pub fn sample_diag_update_welford(
 }
 
 
+/// Holds the off-diagonal samples: (E_a,
+/// sum_i H_{ai} c_i w_i / p_i, sum_i (H_{ai} c_i w_i / p_i) ^ 2)
+/// for each PT det
+struct OffDiagSamples {
+    pub n: i32,
+    pub pt_energies_and_sums: HashMap<Config, (f64, f64, f64)>,
+}
+
+
+impl OffDiagSamples {
+    /// Clear data structure to start collecting a new batch of samples
+    pub fn clear(&mut self) {
+        self.n = 0;
+        self.pt_energies_and_sums = Default::default();
+    }
+
+    /// Add a (variational det, PT det) pair
+    /// Note that all the relevant information is contained in pt_det, so var_det is not
+    /// even needed except for efficiently computing new pt_det energies
+    fn add_var_and_pt(&mut self, var_det: &Det, excite: &Excite, pt_det: &Det, w: i32, prob: f64, ham: &Ham) {
+        let x_ai: f64 = pt_det.coeff * (w as f64) / prob; // pt_det.coeff = H_{ai} c_i
+        match self.pt_energies_and_sums.get_mut(&pt_det.config) {
+            None => {
+                // compute diagonal element e_a
+                let e_a: f64 = var_det.new_diag(ham, excite);
+                self.pt_energies_and_sums.insert(pt_det.config, (e_a, x_ai, x_ai * x_ai));
+            }
+            Some((_, s, s_sq)) => {
+                *s += x_ai;
+                *s_sq += x_ai * x_ai;
+            }
+        }
+    }
+
+    /// Add the PT samples corresponding to a new variational det
+    pub fn add_new_var_det(&mut self, wf: &Wf, var_det: &Det, w: i32, prob: f64, excite_gen: &ExciteGenerator, ham: &Ham) {
+        self.n += w;
+        for pt_det in var_det.excites() {
+            if !wf.inds.contains(pt_det) {
+                self.add_var_and_pt(var_det, excite, pt_det, w, prob, ham);
+            }
+        }
+    }
+
+    /// Compute the off-diagonal contribution to the PT energy estimate
+    /// using the stored samples
+    pub fn pt_energy(&self, e0: f64) -> f64 {
+        let mut e_pt: f64 = 0.0;
+        for (e_a, s, s_sq) in self.pt_energies_and_sums.values() {
+            e_pt += (*s * *s - *s_sq) / (e0 - e_a);
+        }
+        e_pt / (self.n as f64) / ((self.n - 1) as f64)
+    }
+}
+
+
 /// Sample the 'off-diagonal' contribution to the PT energy (i.e., the term coming from the off-diagonal of
 /// the matrix V \[1 / (E_0 - E_a)\] V), and update the Welford statistics for the energy
 pub fn sample_off_diag_update_welford(
@@ -60,21 +119,37 @@ pub fn sample_off_diag_update_welford(
     ham: &Ham,
     n_samples_per_batch: i32,
     rand: &mut Rand,
-    e0: f64,
     enpt2_off_diag: &mut Stats<f64>,
 ) {
     // Sample i with probability proportional to |c_i| max_a |H_{ai}|
     // Interestingly, this is approximately uniform!
     // We just use uniform sampling for now
 
-    let mut between: Uniform<usize> = Uniform::from(0..wf.n);
+    let mut counts: HashMap<usize, i32>;
+    let mut uniform_dist: Uniform<usize> = Uniform::from(0..wf.n);
     for i_sample in 0..n_samples_per_batch {
         // Sample a variational det i, and add it to the samples data structure
-        let i =  between.sample(&mut rand.rng);
+        let i =  uniform_dist.sample(&mut rand.rng);
+        match counts.get_mut(&i) {
+            None => {
+                counts.insert(&i, 1);
+            }
+            Some(w) => {
+                *w += 1;
+            }
+        }
     }
 
+    // Obtain var_dets and their counts {w}
+    let mut off_diag: OffDiagSamples;
+    let prob: f64 = 1.0 / (wf.n as f64);
+    for (i, w) in counts {
+        off_diag.add_new_var_det(wf, &wf.dets[i], w, prob, excite_gen, ham);
+    }
+    assert_eq!(n_samples_per_batch, off_diag.n);
 
-    // Energy is (\sum_i  )^2 - (\sum_i  )^2
-
+    let off_diag_estimate: f64 = off_diag.pt_energy(wf.energy);
+    println!("Sampled off-diagonal energy this batch: {:.4}", off_diag_estimate);
+    enpt2_off_diag.update(off_diag_estimate);
 
 }

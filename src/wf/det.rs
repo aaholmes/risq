@@ -3,7 +3,7 @@
 //! quickly from the initial det's diagonal element
 
 use crate::excite::init::ExciteGenerator;
-use crate::excite::{Excite, Orbs};
+use crate::excite::{Excite, Orbs, StoredExcite};
 use crate::ham::Ham;
 use crate::utils::bits::{bit_pairs, bits, btest, ibclr, ibset};
 use crate::wf::Wf;
@@ -44,6 +44,39 @@ impl Hash for Det {
 // Public functions
 
 impl Config {
+    pub fn is_valid_stored(&self, excite: &StoredExcite) -> bool {
+        match excite.target {
+            Orbs::Double((r, s)) => match excite.is_alpha {
+                None => {
+                    if btest(self.up, r) {
+                        return false;
+                    }
+                    !btest(self.dn, s)
+                }
+                Some(is_a) => {
+                    if is_a {
+                        if btest(self.up, r) {
+                            return false;
+                        }
+                        !btest(self.up, s)
+                    } else {
+                        if btest(self.dn, r) {
+                            return false;
+                        }
+                        !btest(self.dn, s)
+                    }
+                }
+            },
+            Orbs::Single(r) => {
+                if excite.is_alpha.unwrap() {
+                    !btest(self.up, r)
+                } else {
+                    !btest(self.dn, r)
+                }
+            }
+        }
+    }
+
     pub fn is_valid(&self, excite: &Excite) -> bool {
         match excite.target {
             Orbs::Double((r, s)) => match excite.is_alpha {

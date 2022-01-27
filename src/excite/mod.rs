@@ -16,10 +16,10 @@ pub enum Orbs {
 /// orb(s) `target`, absolute value of the excitation matrix element `abs_h`, and whether it is an
 /// alpha-spin excitation `is_alpha` (`is_alpha = None` for opposite-spin double excitations)
 pub struct Excite {
+    pub is_alpha: Option<bool>, // if None, then opposite spin
     pub init: Orbs,
     pub target: Orbs,
     pub abs_h: f64,
-    pub is_alpha: Option<bool>, // if None, then opposite spin
 }
 
 /// Excitation information to be stored in `ExciteGenerator`.  Contains only `target` and `abs_h`

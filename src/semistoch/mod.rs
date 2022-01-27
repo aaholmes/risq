@@ -6,7 +6,7 @@ use crate::excite::init::ExciteGenerator;
 use crate::ham::Ham;
 use crate::pt::PtSamples;
 use crate::rng::Rand;
-use crate::semistoch::utils::sample_diag_update_welford;
+use crate::semistoch::utils::{sample_diag_update_welford, sample_off_diag_update_welford};
 use crate::stoch::alias::Alias;
 use crate::stoch::{matmul_sample_remaining, ImpSampleDist};
 use crate::utils::read_input::Global;
@@ -189,6 +189,7 @@ pub fn importance_sampled_semistoch_enpt2(
     (dtm_enpt2 + stoch_enpt2.mean, stoch_enpt2.std_dev)
 }
 
+
 pub fn new_stoch_enpt2(
     input_wf: &Wf,
     global: &Global,
@@ -226,12 +227,11 @@ pub fn new_stoch_enpt2(
 
     let mut enpt2_diag: Stats<f64> = Stats::new();
     let mut enpt2_off_diag: Stats<f64> = Stats::new();
-    let mut off_diag_samples: PtSamples = Default::default();
 
     let n_diag_init: i32 = 100;
     let n_off_diag_init: i32 = 10;
 
-    for i_batch in 0..n_diag_init {
+    for _i_batch in 0..n_diag_init {
         // Sample diag, update Welford
         sample_diag_update_welford(
             &screened_sampler,
@@ -243,8 +243,9 @@ pub fn new_stoch_enpt2(
         );
     }
 
-    for i_batch in 0..n_off_diag_init {
+    for _i_batch in 0..n_off_diag_init {
         // Sample off_diag, update Welford
+        sample_off_diag_update_welford(input_wf, excite_gen, ham, global.n_samples_per_batch, rand, &mut enpt2_off_diag);
     }
 
     let mut total_std_dev: f64 = (enpt2_diag.std_dev * enpt2_diag.std_dev
@@ -274,6 +275,7 @@ pub fn new_stoch_enpt2(
             );
         } else {
             // Sample off_diag, update Welford
+            sample_off_diag_update_welford(input_wf, excite_gen, ham, global.n_samples_per_batch, rand, &mut enpt2_off_diag);
         }
         total_std_dev = (enpt2_diag.std_dev * enpt2_diag.std_dev
             + enpt2_off_diag.std_dev * enpt2_off_diag.std_dev)
@@ -286,64 +288,12 @@ pub fn new_stoch_enpt2(
         );
     }
 
+    println!("Time for new stochastic PT algorithm: {:?}", start_pt.elapsed());
+
     (enpt2_diag.mean + enpt2_off_diag.mean, total_std_dev)
 
-
-
-
-    let n_batches_max = 10;
-    for i_batch in 0..n_batches_max {
-        // Sample a
-
-        // Sample a batch of samples, updating the stoch component of the energy for each sample
-        println!("\n Starting batch {}", i_batch);
-        samples.clear();
-        for _i_sample in 0..global.n_samples_per_batch {
-            // Sample with probability proportional to (Hc)^2
-            let (sampled_det_info, sampled_prob) = matmul_sample_remaining(
-                &mut screened_sampler,
-                ImpSampleDist::HcSquared,
-                excite_gen,
-                ham,
-                rand,
-            );
-
-            match sampled_det_info {
-                None => {}
-                Some((exciting_det, excite, target_det)) => {
-                    // Collect this sample for the quadratic contribution
-                    // This is analogous to the SHCI contribution, but only applies to the (<eps)
-                    // terms. The sampling probability (Hc)^2 was chosen because the largest terms
-                    // in this component are (Hc)^2 / (E_0 - E_a).
-                    samples.add_sample_compute_diag(
-                        exciting_det,
-                        &excite,
-                        target_det,
-                        sampled_prob,
-                        ham,
-                    );
-                }
-            }
-        }
-
-        // Collect the samples, evaluate their contributions a la the original SHCI paper
-        let sampled_e: f64 = samples.pt_estimator(input_wf.energy, samples.n);
-        println!("Sampled energy this batch = {}", sampled_e);
-        stoch_enpt2_quadratic.update(sampled_e);
-        println!(
-            "Current estimate of stochastic component: {:.4} +- {:.4}",
-            stoch_enpt2_quadratic.mean, stoch_enpt2_quadratic.std_dev
-        );
-
-        if i_batch > 9 && stoch_enpt2_quadratic.std_dev <= global.target_uncertainty / 2f64.sqrt() {
-            println!("Target uncertainty reached!");
-            break;
-        }
-    }
-    println!("Time for sampling: {:?}", start_pt.elapsed());
-
-    (stoch_enpt2.mean, stoch_enpt2.std_dev)
 }
+
 
 pub fn fast_stoch_enpt2(
     input_wf: &Wf,
