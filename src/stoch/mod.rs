@@ -291,7 +291,7 @@ pub fn matmul_sample_remaining(
                     Det {
                         config: d,
                         coeff: new_det_coeff,
-                        diag: 0.0, // Compute diagonal element later, only if needed (since it would be the most expensive step)
+                        diag: None, // Compute diagonal element later, only if needed (since it would be the most expensive step)
                     },
                 )),
                 prob_sampled_det,

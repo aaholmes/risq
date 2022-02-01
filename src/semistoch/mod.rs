@@ -12,7 +12,6 @@ use crate::stoch::{matmul_sample_remaining, ImpSampleDist};
 use crate::utils::read_input::Global;
 use crate::wf::Wf;
 use rolling_stats::Stats;
-use std::intrinsics::sqrtf64;
 use std::time::Instant;
 
 /// Importance sampled semistochastic ENPT2
@@ -52,7 +51,7 @@ pub fn importance_sampled_semistoch_enpt2(
     // Compute approximate delta E using approx H psi
     let mut dtm_enpt2: f64 = 0.0;
     for det in dtm_result.dets {
-        dtm_enpt2 += det.coeff * det.coeff / (input_wf.energy - det.diag);
+        dtm_enpt2 += det.coeff * det.coeff / (input_wf.energy - det.diag.unwrap());
     }
     println!(
         "Deterministic approximation to Delta E using eps = {} ({} dets): {:.6}",
@@ -847,7 +846,7 @@ pub fn old_semistoch_enpt2(
     // Compute approximate delta E using approx H psi
     let mut dtm_enpt2: f64 = 0.0;
     for det in dtm_result.dets {
-        dtm_enpt2 += det.coeff * det.coeff / (input_wf.energy - det.diag);
+        dtm_enpt2 += det.coeff * det.coeff / (input_wf.energy - det.diag.unwrap());
     }
     println!(
         "Deterministic approximation to Delta E using eps = {} ({} dets): {:.6}",

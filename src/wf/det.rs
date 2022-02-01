@@ -22,7 +22,7 @@ pub struct Config {
 pub struct Det {
     pub config: Config,
     pub coeff: f64,
-    pub diag: f64,
+    pub diag: Option<f64>, // None if it hasn't been computed yet (since computing it is expensive)
 }
 
 // These functions are needed for Alias sampling
@@ -44,31 +44,22 @@ impl Hash for Det {
 // Public functions
 
 impl Config {
-    pub fn is_valid_stored(&self, excite: &StoredExcite) -> bool {
+    pub fn is_valid_stored(&self, is_alpha: Option<bool>, excite: &StoredExcite) -> bool {
         match excite.target {
-            Orbs::Double((r, s)) => match excite.is_alpha {
+            Orbs::Double((r, s)) => match is_alpha {
                 None => {
-                    if btest(self.up, r) {
-                        return false;
-                    }
-                    !btest(self.dn, s)
+                    !(btest(self.up, r) || btest(self.dn, s))
                 }
                 Some(is_a) => {
                     if is_a {
-                        if btest(self.up, r) {
-                            return false;
-                        }
-                        !btest(self.up, s)
+                        !(btest(self.up, r) || btest(self.up, s))
                     } else {
-                        if btest(self.dn, r) {
-                            return false;
-                        }
-                        !btest(self.dn, s)
+                        !(btest(self.dn, r) || btest(self.dn, s))
                     }
                 }
             },
             Orbs::Single(r) => {
-                if excite.is_alpha.unwrap() {
+                if is_alpha.unwrap() {
                     !btest(self.up, r)
                 } else {
                     !btest(self.dn, r)
@@ -151,6 +142,7 @@ impl Config {
         }
     }
 
+
     pub fn safe_excite_det(&self, excite: &Excite) -> Option<Config> {
         // Applies excite to det, checking if it's valid first
         if self.is_valid(excite) {
@@ -159,9 +151,73 @@ impl Config {
             None
         }
     }
+
+
+    /// Apply a stored excite to a given det, compute new coefficient, but don't compute diagonal
+    /// element yet, since it may not be needed
+    pub fn apply_excite(
+        self,
+        is_alpha: Option<bool>,
+        init_orbs: Orbs,
+        excite: &StoredExcite,
+    ) -> Config {
+        match (init_orbs, excite.target) {
+            (Orbs::Double((p, q)), Orbs::Double((r, s))) => {
+                match is_alpha {
+                    None => Config {
+                        up: ibset(ibclr(self.up, p), r),
+                        dn: ibset(ibclr(self.dn, q), s),
+                    },
+                    Some(is_a) => {
+                        if is_a {
+                            Config {
+                                up: ibset(ibset(ibclr(ibclr(self.up, p), q), r), s),
+                                dn: self.dn,
+                            }
+                        } else {
+                            Config {
+                                up: self.up,
+                                dn: ibset(ibset(ibclr(ibclr(self.dn, p), q), r), s),
+                            }
+                        }
+                    }
+                }
+            }
+            (Orbs::Single(p), Orbs::Single(r)) => {
+                if is_alpha.unwrap() {
+                    Config {
+                        up: ibset(ibclr(self.up, p), r),
+                        dn: self.dn,
+                    }
+                } else {
+                    Config {
+                        up: self.up,
+                        dn: ibset(ibclr(self.dn, p), r),
+                    }
+                }
+            }
+            _ => {
+                panic!()
+            }
+        }
+    }
 }
 
 impl Det {
+
+    pub fn new_diag_stored(&self, ham: &Ham, is_alpha: Option<bool>, init_orbs: Orbs, excite: &StoredExcite) -> f64 {
+        match (init_orbs, excite.target) {
+            (Orbs::Double((p, q)), Orbs::Double((r, s))) => match is_alpha {
+                None => self.new_diag_opp(&ham, (p, q), (r, s)),
+                Some(is_a) => self.new_diag_same(&ham, (p, q), (r, s), is_a),
+            },
+            (Orbs::Single(p), Orbs::Single(r)) => {
+                self.new_diag_sing(&ham, p, r, is_alpha.unwrap())
+            }
+            _ => 0.0, // Because could be (single, double), etc
+        }
+    }
+
     pub fn new_diag(&self, ham: &Ham, excite: &Excite) -> f64 {
         match (excite.init, excite.target) {
             (Orbs::Double((p, q)), Orbs::Double((r, s))) => match excite.is_alpha {
@@ -209,7 +265,7 @@ impl Det {
     }
 
     fn one_body(&self, ham: &Ham, init: (i32, i32), target: (i32, i32)) -> f64 {
-        self.diag + ham.one_body(target.0, target.0) + ham.one_body(target.1, target.1)
+        self.diag.unwrap() + ham.one_body(target.0, target.0) + ham.one_body(target.1, target.1)
             - ham.one_body(init.0, init.0)
             - ham.one_body(init.1, init.1)
     }
@@ -278,7 +334,7 @@ impl Det {
         // Compute new diagonal element given the old one
 
         // O(1) One-body part: E += h(r) - h(p)
-        let mut new_diag: f64 = self.diag + ham.one_body(target, target) - ham.one_body(init, init);
+        let mut new_diag: f64 = self.diag.unwrap() + ham.one_body(target, target) - ham.one_body(init, init);
 
         // O(N) Two-body direct part: E += sum_{i in occ. but not in p} direct(i,r) - direct(i,p)
         if is_alpha {
