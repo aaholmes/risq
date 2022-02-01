@@ -2,10 +2,10 @@
 
 pub mod read_ints;
 
-use super::utils::bits::{bits, det_bits};
+use super::utils::bits::bits;
 use super::utils::ints::{combine_2, combine_4, permute, permute_2};
 use crate::excite::{Excite, Orbs};
-use crate::utils::bits::bit_pairs;
+use crate::utils::bits::{bit_pairs, det_bits};
 use crate::wf::det::Config;
 use read_ints::Ints;
 

@@ -43,6 +43,11 @@ pub fn bit_pairs(n: u128) -> impl Iterator<Item = (i32, i32)> {
     })
 }
 
+/// Iterate over the union of bits(det.up) and bits(det.dn), ignoring spin
+pub fn det_bits(det: &Config) -> impl Iterator<Item = i32> {
+    bits(det.up).chain(bits(det.dn))
+}
+
 /// Iterate over the cartesian product of bits(det.up) and bits(det.dn)
 pub fn product_bits(det: &Config) -> impl Iterator<Item = (i32, i32)> {
     let dn = det.dn;

@@ -4,7 +4,7 @@ use crate::excite::init::ExciteGenerator;
 use crate::excite::Excite;
 use crate::ham::Ham;
 use crate::rng::{init_rand, Rand};
-use crate::semistoch::{new_stoch_enpt2, importance_sampled_semistoch_enpt2, old_semistoch_enpt2};
+use crate::semistoch::{new_stoch_enpt2, old_semistoch_enpt2};
 use crate::utils::read_input::Global;
 use crate::wf::det::{Config, Det};
 use crate::wf::Wf;
@@ -136,7 +136,7 @@ impl PtSamples {
                 let mut var_det_map: HashMap<Config, (f64, f64, i32)> = Default::default();
                 var_det_map.insert(var_det.config, (pt_det.coeff, sampled_prob, 1));
                 self.samples
-                    .insert(pt_det.config, (pt_det.diag, var_det_map));
+                    .insert(pt_det.config, (pt_det.diag.unwrap(), var_det_map));
             }
             Some(pt_det_info) => {
                 // No need to recompute the diagonal element

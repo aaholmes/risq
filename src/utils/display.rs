@@ -26,7 +26,7 @@ impl fmt::Display for Det {
         write!(
             f,
             "{} : coeff = {}, diag = {}",
-            self.config, self.coeff, self.diag
+            self.config, self.coeff, self.diag.unwrap()
         )
     }
 }
@@ -86,7 +86,7 @@ impl VarWf {
                 d.coeff,
                 fmt_det(d.config.up),
                 fmt_det(d.config.dn),
-                d.diag
+                d.diag.unwrap()
             );
         }
         println!("\n");
@@ -128,7 +128,7 @@ impl VarWf {
                 d.0.det.coeff,
                 fmt_det(d.0.det.config.up),
                 fmt_det(d.0.det.config.dn),
-                d.0.det.diag
+                d.0.det.diag.unwrap()
             );
         }
         println!("\n");

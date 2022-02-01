@@ -200,7 +200,7 @@ pub fn new_stoch_enpt2(
 
     // Compute deterministic component (even though not used), and create sampler object for sampling remaining component
     let start_dtm_enpt2: Instant = Instant::now();
-    let (_, mut screened_sampler) =
+    let (_, screened_sampler) =
         input_wf.approx_matmul_external_skip_singles(ham, excite_gen, global.eps_var);
     println!("Time for sampling setup: {:?}", start_dtm_enpt2.elapsed());
 
@@ -877,7 +877,7 @@ pub fn old_semistoch_enpt2(
     }
     println!("Setting up wf sampler");
     println!("Normalization: {}", var_probs.iter().sum::<f64>());
-    let mut wf_sampler: Alias = Alias::new(var_probs);
+    let wf_sampler: Alias = Alias::new(var_probs);
     println!("Done setting up wf sampler");
     // println!("Alias sampler:");
     // wf_sampler.print();

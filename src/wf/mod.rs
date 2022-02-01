@@ -75,7 +75,7 @@ impl Wf {
                 self.dets.push(Det {
                     config: new_det,
                     coeff,
-                    diag: exciting_det.new_diag(ham, excite),
+                    diag: Some(exciting_det.new_diag(ham, excite)),
                 });
             }
         }
@@ -451,11 +451,6 @@ impl Wf {
         let mut out_wf: Wf = Wf::default();
 
         // Off-diagonal component
-
-        // Keep track of statistics for how much singles would be oversampled
-        let mut singles_oversampled_abs_hc: Stats<f64> = Stats::new();
-        let mut singles_oversampled_hc_squared: Stats<f64> = Stats::new();
-
         for det in &self.dets {
             local_eps = eps / det.coeff.abs();
 
@@ -1363,7 +1358,7 @@ impl Wf {
 
         // Diagonal component
         for (i_det, det) in enumerate(self.dets.iter()) {
-            out[i_det] = det.diag * input_coeffs[i_det];
+            out[i_det] = det.diag.unwrap() * input_coeffs[i_det];
         }
 
         // Off-diagonal component
@@ -1635,7 +1630,7 @@ impl Wf {
                                             out.push(Det {
                                                 config: d,
                                                 coeff: 0.0,
-                                                diag: det.new_diag_opp(ham, (i, j), rs),
+                                                diag: Some(det.new_diag_opp(ham, (i, j), rs)),
                                             });
                                         }
                                     }
@@ -1677,12 +1672,12 @@ impl Wf {
                                         out.push(Det {
                                             config: d,
                                             coeff: 0.0,
-                                            diag: det.new_diag_same(
+                                            diag: Some(det.new_diag_same(
                                                 ham,
                                                 (i, j),
                                                 rs,
                                                 *is_alpha,
-                                            ),
+                                            ))
                                         });
                                     }
                                 }
@@ -1771,7 +1766,7 @@ impl VarWf {
             off_diag: vec![Vec::with_capacity(100); self.wf.n],
         };
         for i in 0..self.wf.n {
-            self.sparse_ham.diag[i] = self.wf.dets[i].diag;
+            self.sparse_ham.diag[i] = self.wf.dets[i].diag.unwrap();
         }
     }
 
@@ -1794,7 +1789,7 @@ impl VarWf {
             self.wf.n - self.sparse_ham.n
         ]);
         for i in self.sparse_ham.n..self.wf.n {
-            self.sparse_ham.diag[i] = self.wf.dets[i].diag;
+            self.sparse_ham.diag[i] = self.wf.dets[i].diag.unwrap();
         }
         self.sparse_ham.n = self.wf.n;
     }
@@ -1813,14 +1808,14 @@ pub fn init_var_wf(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator) -> 
             dn: ((1u128 << global.ndn) - 1),
         },
         coeff: 1.0,
-        diag: 0.0,
+        diag: None,
     };
     let h: f64 = ham.ham_diag(&hf.config);
-    hf.diag = h;
+    hf.diag = Some(h);
     wf.wf.inds = HashMap::new();
     wf.wf.inds.insert(hf.config, 0);
     wf.wf.dets.push(hf);
-    wf.wf.energy = wf.wf.dets[0].diag;
+    wf.wf.energy = wf.wf.dets[0].diag.unwrap();
     wf.eps_iter = init_eps(&wf.wf, global, excite_gen);
     wf
 }

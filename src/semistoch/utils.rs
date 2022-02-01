@@ -56,6 +56,7 @@ pub fn sample_diag_update_welford(
 /// Holds the off-diagonal samples: (E_a,
 /// sum_i H_{ai} c_i w_i / p_i, sum_i (H_{ai} c_i w_i / p_i) ^ 2)
 /// for each PT det
+#[derive(Default)]
 struct OffDiagSamples {
     pub n: i32,
     pub pt_energies_and_sums: HashMap<Config, (f64, f64, f64)>,
@@ -63,10 +64,10 @@ struct OffDiagSamples {
 
 impl OffDiagSamples {
     /// Clear data structure to start collecting a new batch of samples
-    pub fn clear(&mut self) {
-        self.n = 0;
-        self.pt_energies_and_sums = Default::default();
-    }
+    // pub fn clear(&mut self) {
+    //     self.n = 0;
+    //     self.pt_energies_and_sums = Default::default();
+    // }
 
     /// Add a (variational det, PT det) pair
     /// Note that all the relevant information is contained in pt_det, so var_det is not
@@ -156,8 +157,8 @@ pub fn sample_off_diag_update_welford(
     // Interestingly, this is approximately uniform!
     // We just use uniform sampling for now
 
-    let mut counts: HashMap<usize, i32>;
-    let mut uniform_dist: Uniform<usize> = Uniform::from(0..wf.n);
+    let mut counts: HashMap<usize, i32> = HashMap::default();
+    let uniform_dist: Uniform<usize> = Uniform::from(0..wf.n);
     for _i_sample in 0..n_samples_per_batch {
         // Sample a variational det i, and add it to the samples data structure
         let i = uniform_dist.sample(&mut rand.rng);
@@ -172,7 +173,7 @@ pub fn sample_off_diag_update_welford(
     }
 
     // Obtain var_dets and their counts {w}
-    let mut off_diag: OffDiagSamples;
+    let mut off_diag: OffDiagSamples = OffDiagSamples::default();
     let prob: f64 = 1.0 / (wf.n as f64);
     for (i, w) in counts {
         off_diag.add_new_var_det(wf, &wf.dets[i], w, prob, excite_gen, ham);
