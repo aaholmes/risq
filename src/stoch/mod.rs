@@ -123,7 +123,7 @@ pub fn generate_screened_sampler(eps: f64, det_orbs: Vec<DetOrbSample>) -> Scree
 /// Returns tuple containing (option(exciting det, excitation, and sampled determinant (with coeff attached)), and probability of that sample
 /// O(log M) time
 pub fn matmul_sample_remaining(
-    screened_sampler: & ScreenedSampler,
+    screened_sampler: &ScreenedSampler,
     imp_sample_dist: ImpSampleDist,
     excite_gen: &ExciteGenerator,
     ham: &Ham,

@@ -188,7 +188,6 @@ pub fn importance_sampled_semistoch_enpt2(
     (dtm_enpt2 + stoch_enpt2.mean, stoch_enpt2.std_dev)
 }
 
-
 pub fn new_stoch_enpt2(
     input_wf: &Wf,
     global: &Global,
@@ -244,7 +243,14 @@ pub fn new_stoch_enpt2(
 
     for _i_batch in 0..n_off_diag_init {
         // Sample off_diag, update Welford
-        sample_off_diag_update_welford(input_wf, excite_gen, ham, global.n_samples_per_batch, rand, &mut enpt2_off_diag);
+        sample_off_diag_update_welford(
+            input_wf,
+            excite_gen,
+            ham,
+            global.n_samples_per_batch,
+            rand,
+            &mut enpt2_off_diag,
+        );
     }
 
     let mut total_std_dev: f64 = (enpt2_diag.std_dev * enpt2_diag.std_dev
@@ -274,7 +280,14 @@ pub fn new_stoch_enpt2(
             );
         } else {
             // Sample off_diag, update Welford
-            sample_off_diag_update_welford(input_wf, excite_gen, ham, global.n_samples_per_batch, rand, &mut enpt2_off_diag);
+            sample_off_diag_update_welford(
+                input_wf,
+                excite_gen,
+                ham,
+                global.n_samples_per_batch,
+                rand,
+                &mut enpt2_off_diag,
+            );
         }
         total_std_dev = (enpt2_diag.std_dev * enpt2_diag.std_dev
             + enpt2_off_diag.std_dev * enpt2_off_diag.std_dev)
@@ -287,12 +300,13 @@ pub fn new_stoch_enpt2(
         );
     }
 
-    println!("Time for new stochastic PT algorithm: {:?}", start_pt.elapsed());
+    println!(
+        "Time for new stochastic PT algorithm: {:?}",
+        start_pt.elapsed()
+    );
 
     (enpt2_diag.mean + enpt2_off_diag.mean, total_std_dev)
-
 }
-
 
 pub fn fast_stoch_enpt2(
     input_wf: &Wf,

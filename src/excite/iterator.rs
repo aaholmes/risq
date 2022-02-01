@@ -12,13 +12,13 @@ pub fn double_excites<'a>(
     excite_gen: &'a ExciteGenerator,
     eps: f64,
 ) -> impl Iterator<Item = (Option<bool>, Orbs, &'a StoredExcite)> {
-    epairs(&det.config).flat_map(move |(is_alpha, orbs)|
+    epairs(&det.config).flat_map(move |(is_alpha, orbs)| {
         excite_gen
             .excites_from((is_alpha, &orbs))
             .take_while(move |excite| excite.abs_h * det.coeff.abs() >= eps)
             .filter(move |excite| det.config.is_valid_stored(is_alpha, excite))
             .map(move |excite| (is_alpha, orbs, excite))
-    )
+    })
 }
 
 impl ExciteGenerator {

@@ -295,7 +295,12 @@ pub fn gen_doubles(
 //     ham_matrix
 // }
 
-pub fn gen_sparse_ham_fast(global: &Global, wf: &mut VarWf, ham: &Ham, excite_gen: &ExciteGenerator) {
+pub fn gen_sparse_ham_fast(
+    global: &Global,
+    wf: &mut VarWf,
+    ham: &Ham,
+    excite_gen: &ExciteGenerator,
+) {
     // Generate Ham as a sparse matrix using my 2019 notes when I was working pro bono
     // For now, assumes that nup == ndn
     // Updates wf.sparse_ham if it already exists from the previous iteration

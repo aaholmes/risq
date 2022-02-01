@@ -11,8 +11,8 @@ use super::ham::Ham;
 use crate::excite::init::ExciteGenerator;
 use crate::utils::read_input::Global;
 use crate::var::davidson::sparse_optimize;
-use std::time::Instant;
 use crate::wf::VarWf;
+use std::time::Instant;
 
 /// Perform variational selected CI
 pub fn variational(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, wf: &mut VarWf) {

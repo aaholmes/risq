@@ -295,7 +295,8 @@ impl ExciteGenerator {
                 }
             }
         }
-        sample.map(|s| (
+        sample.map(|s| {
+            (
                 Excite {
                     init,
                     target: s.0.target,
@@ -303,7 +304,8 @@ impl ExciteGenerator {
                     is_alpha,
                 },
                 s.1,
-            ))
+            )
+        })
     }
 
     pub fn sample_excites_from_all_pairs(

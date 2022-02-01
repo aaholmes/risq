@@ -26,7 +26,9 @@ impl fmt::Display for Det {
         write!(
             f,
             "{} : coeff = {}, diag = {}",
-            self.config, self.coeff, self.diag.unwrap()
+            self.config,
+            self.coeff,
+            self.diag.unwrap()
         )
     }
 }

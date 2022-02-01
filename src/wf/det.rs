@@ -47,9 +47,7 @@ impl Config {
     pub fn is_valid_stored(&self, is_alpha: Option<bool>, excite: &StoredExcite) -> bool {
         match excite.target {
             Orbs::Double((r, s)) => match is_alpha {
-                None => {
-                    !(btest(self.up, r) || btest(self.dn, s))
-                }
+                None => !(btest(self.up, r) || btest(self.dn, s)),
                 Some(is_a) => {
                     if is_a {
                         !(btest(self.up, r) || btest(self.up, s))
@@ -142,7 +140,6 @@ impl Config {
         }
     }
 
-
     pub fn safe_excite_det(&self, excite: &Excite) -> Option<Config> {
         // Applies excite to det, checking if it's valid first
         if self.is_valid(excite) {
@@ -151,7 +148,6 @@ impl Config {
             None
         }
     }
-
 
     /// Apply a stored excite to a given det, compute new coefficient, but don't compute diagonal
     /// element yet, since it may not be needed
@@ -162,27 +158,25 @@ impl Config {
         excite: &StoredExcite,
     ) -> Config {
         match (init_orbs, excite.target) {
-            (Orbs::Double((p, q)), Orbs::Double((r, s))) => {
-                match is_alpha {
-                    None => Config {
-                        up: ibset(ibclr(self.up, p), r),
-                        dn: ibset(ibclr(self.dn, q), s),
-                    },
-                    Some(is_a) => {
-                        if is_a {
-                            Config {
-                                up: ibset(ibset(ibclr(ibclr(self.up, p), q), r), s),
-                                dn: self.dn,
-                            }
-                        } else {
-                            Config {
-                                up: self.up,
-                                dn: ibset(ibset(ibclr(ibclr(self.dn, p), q), r), s),
-                            }
+            (Orbs::Double((p, q)), Orbs::Double((r, s))) => match is_alpha {
+                None => Config {
+                    up: ibset(ibclr(self.up, p), r),
+                    dn: ibset(ibclr(self.dn, q), s),
+                },
+                Some(is_a) => {
+                    if is_a {
+                        Config {
+                            up: ibset(ibset(ibclr(ibclr(self.up, p), q), r), s),
+                            dn: self.dn,
+                        }
+                    } else {
+                        Config {
+                            up: self.up,
+                            dn: ibset(ibset(ibclr(ibclr(self.dn, p), q), r), s),
                         }
                     }
                 }
-            }
+            },
             (Orbs::Single(p), Orbs::Single(r)) => {
                 if is_alpha.unwrap() {
                     Config {
@@ -204,16 +198,19 @@ impl Config {
 }
 
 impl Det {
-
-    pub fn new_diag_stored(&self, ham: &Ham, is_alpha: Option<bool>, init_orbs: Orbs, excite: &StoredExcite) -> f64 {
+    pub fn new_diag_stored(
+        &self,
+        ham: &Ham,
+        is_alpha: Option<bool>,
+        init_orbs: Orbs,
+        excite: &StoredExcite,
+    ) -> f64 {
         match (init_orbs, excite.target) {
             (Orbs::Double((p, q)), Orbs::Double((r, s))) => match is_alpha {
                 None => self.new_diag_opp(&ham, (p, q), (r, s)),
                 Some(is_a) => self.new_diag_same(&ham, (p, q), (r, s), is_a),
             },
-            (Orbs::Single(p), Orbs::Single(r)) => {
-                self.new_diag_sing(&ham, p, r, is_alpha.unwrap())
-            }
+            (Orbs::Single(p), Orbs::Single(r)) => self.new_diag_sing(&ham, p, r, is_alpha.unwrap()),
             _ => 0.0, // Because could be (single, double), etc
         }
     }
@@ -334,7 +331,8 @@ impl Det {
         // Compute new diagonal element given the old one
 
         // O(1) One-body part: E += h(r) - h(p)
-        let mut new_diag: f64 = self.diag.unwrap() + ham.one_body(target, target) - ham.one_body(init, init);
+        let mut new_diag: f64 =
+            self.diag.unwrap() + ham.one_body(target, target) - ham.one_body(init, init);
 
         // O(N) Two-body direct part: E += sum_{i in occ. but not in p} direct(i,r) - direct(i,p)
         if is_alpha {

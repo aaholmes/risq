@@ -26,7 +26,7 @@ pub fn sample_diag_update_welford(
         ImpSampleDist::HcSquared,
         excite_gen,
         ham,
-        rand
+        rand,
     );
 
     match sampled_det_info {
