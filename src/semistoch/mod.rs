@@ -39,11 +39,11 @@ pub fn importance_sampled_semistoch_enpt2(
     let start_dtm_enpt2: Instant = Instant::now();
 
     // Create a sampler that importance samples all excitations smaller than eps_var (since excitations that exceed eps_var would have already been used to construct wf_var)
-    let (_, mut screened_sampler_lt_var_eps) =
+    let (_, screened_sampler_lt_var_eps) =
         input_wf.approx_matmul_external_semistoch_singles(ham, excite_gen, global.eps_var);
 
     // Compute deterministic approximation to H psi using large PT eps (i.e., the eps that determines whether a deterministic or stochastic contribution)
-    let (dtm_result, mut screened_sampler_lt_pt_eps) =
+    let (dtm_result, screened_sampler_lt_pt_eps) =
         input_wf.approx_matmul_external_semistoch_singles(ham, excite_gen, global.eps_pt_dtm);
 
     println!("Time for dtm ENPT2: {:?}", start_dtm_enpt2.elapsed());
@@ -81,7 +81,7 @@ pub fn importance_sampled_semistoch_enpt2(
 
             // Sample with probability proportional to (Hc)^2
             let (sampled_det_info, sampled_prob) = matmul_sample_remaining(
-                &mut screened_sampler_lt_var_eps,
+                &screened_sampler_lt_var_eps,
                 ImpSampleDist::HcSquared,
                 excite_gen,
                 ham,
@@ -127,7 +127,7 @@ pub fn importance_sampled_semistoch_enpt2(
 
             // Sample with probability proportional to (Hc)^2
             let (sampled_det_info, sampled_prob) = matmul_sample_remaining(
-                &mut screened_sampler_lt_pt_eps,
+                &screened_sampler_lt_pt_eps,
                 ImpSampleDist::HcSquared,
                 excite_gen,
                 ham,
@@ -229,6 +229,7 @@ pub fn new_stoch_enpt2(
     let n_diag_init: i32 = 100;
     let n_off_diag_init: i32 = 10;
 
+    println!("\nCollecting {} initial samples of the diagonal contribution to E_PT", n_diag_init);
     for _i_batch in 0..n_diag_init {
         // Sample diag, update Welford
         sample_diag_update_welford(
@@ -240,7 +241,9 @@ pub fn new_stoch_enpt2(
             &mut enpt2_diag,
         );
     }
+    println!("Initial estimate of the diagonal contribution: {:.4} +- {:.4}", enpt2_diag.mean, enpt2_diag.std_dev);
 
+    println!("\nCollecting {} initial samples of the off-diagonal contribution to E_PT", n_off_diag_init);
     for _i_batch in 0..n_off_diag_init {
         // Sample off_diag, update Welford
         sample_off_diag_update_welford(
@@ -252,6 +255,7 @@ pub fn new_stoch_enpt2(
             &mut enpt2_off_diag,
         );
     }
+    println!("Initial estimate of the off-diagonal contribution: {:.4} +- {:.4}", enpt2_off_diag.mean, enpt2_off_diag.std_dev);
 
     let mut total_std_dev: f64 = (enpt2_diag.std_dev * enpt2_diag.std_dev
         + enpt2_off_diag.std_dev * enpt2_off_diag.std_dev)
@@ -328,7 +332,7 @@ pub fn fast_stoch_enpt2(
 
     // Compute deterministic component (even though not used), and create sampler object for sampling remaining component
     let start_dtm_enpt2: Instant = Instant::now();
-    let (_, mut screened_sampler) =
+    let (_, screened_sampler) =
         input_wf.approx_matmul_external_skip_singles(ham, excite_gen, global.eps_var);
     println!("Time for sampling setup: {:?}", start_dtm_enpt2.elapsed());
 
@@ -345,7 +349,7 @@ pub fn fast_stoch_enpt2(
         for _i_sample in 0..global.n_samples_per_batch {
             // Sample with probability proportional to (Hc)^2
             let (sampled_det_info, sampled_prob) = matmul_sample_remaining(
-                &mut screened_sampler,
+                &screened_sampler,
                 ImpSampleDist::HcSquared,
                 excite_gen,
                 ham,

@@ -2,7 +2,7 @@
 
 use crate::excite::init::ExciteGenerator;
 use crate::excite::{Orbs, StoredExcite};
-use crate::utils::bits::epairs;
+use crate::utils::bits::valence_epairs;
 use crate::wf::det::Det;
 
 /// Iterate over double excitations from the given determinant (only excitations whose matrix elements
@@ -12,7 +12,7 @@ pub fn double_excites<'a>(
     excite_gen: &'a ExciteGenerator,
     eps: f64,
 ) -> impl Iterator<Item = (Option<bool>, Orbs, &'a StoredExcite)> {
-    epairs(&det.config).flat_map(move |(is_alpha, orbs)| {
+    valence_epairs(&det.config, excite_gen).flat_map(move |(is_alpha, orbs)| {
         excite_gen
             .excites_from((is_alpha, &orbs))
             .take_while(move |excite| excite.abs_h * det.coeff.abs() >= eps)

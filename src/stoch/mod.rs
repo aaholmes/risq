@@ -204,7 +204,6 @@ pub fn matmul_sample_remaining(
                 .sample_with_prob(rand);
             det_orb_sample = screened_sampler.elements[sample.0];
             det_orb_prob = sample.1;
-            println!("Sampled det/orb {}, prob {}", det_orb_sample, det_orb_prob);
 
             // Sample excitation from this det/orb pair by binary search the stored cdf with prob H^2
             match det_orb_sample.is_alpha {

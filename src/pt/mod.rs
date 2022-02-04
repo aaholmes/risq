@@ -10,15 +10,11 @@ use crate::wf::det::{Config, Det};
 use crate::wf::Wf;
 use itertools::enumerate;
 use std::collections::HashMap;
-// use rand::Rng;
 
 /// Perform the perturbative stage (Epstein-Nesbet perturbation theory, that is)
 pub fn perturbative(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, wf: &Wf) {
     // Initialize random number genrator
     let mut rand: Rand = init_rand();
-    // let r: f64 = rand.rng.gen();
-    // println!("Debug: {}", r);
-    // panic!("DEBUG");
 
     let e_pt2: f64;
     let std_dev: f64;
@@ -29,7 +25,7 @@ pub fn perturbative(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, wf
         e_pt2 = out.0;
         std_dev = out.1;
     } else {
-        println!("\nCalling semistoch ENPT2 the new way!");
+        println!("\nCalling semistoch ENPT2 the new way with importance sampling");
         let out = new_stoch_enpt2(wf, global, ham, excite_gen, &mut rand);
         // let out = importance_sampled_semistoch_enpt2(wf, global, ham, excite_gen, &mut rand);
         // let out = fast_stoch_enpt2(wf, global, ham, excite_gen, &mut rand);

@@ -2,6 +2,7 @@
 //! Bits(n) iterates over set bits in n, bit_pairs(n) iterates over pairs of set bits in n,
 //! plus functions for computing parity and getting and setting bits
 
+use crate::excite::init::ExciteGenerator;
 use crate::excite::Orbs;
 use crate::wf::det::Config;
 
@@ -54,7 +55,7 @@ pub fn product_bits(det: &Config) -> impl Iterator<Item = (i32, i32)> {
     bits(det.up).flat_map(move |i| bits(dn).map(move |j| (i, j)))
 }
 
-/// Iterate over the pairs of orbs in a det, returns both the orbs (as an Orbs::Double)
+/// Iterate over the pairs of occupied orbs in a det, returns both the orbs (as an Orbs::Double)
 /// and is_alpha, which is None of opposite-spin and Some(bool) for same spin
 pub fn epairs(det: &Config) -> impl Iterator<Item = (Option<bool>, Orbs)> {
     product_bits(det).map(|pq| (None, Orbs::Double(pq))).chain(
@@ -62,6 +63,13 @@ pub fn epairs(det: &Config) -> impl Iterator<Item = (Option<bool>, Orbs)> {
             .map(|pq| (Some(true), Orbs::Double(pq)))
             .chain(bit_pairs(det.dn).map(|pq| (Some(false), Orbs::Double(pq)))),
     )
+}
+
+/// Iterate over the pairs of occupied valence orbs in a det, returns both the orbs (as an Orbs::Double)
+/// and is_alpha, which is None of opposite-spin and Some(bool) for same spin
+pub fn valence_epairs(det: &Config, excite_gen: &ExciteGenerator) -> impl Iterator<Item = (Option<bool>, Orbs)> {
+    let valence_det: Config = Config { up: det.up & excite_gen.valence, dn: det.dn & excite_gen.valence };
+    epairs(&valence_det)
 }
 
 /// Iterate over all occupied orbs (as Orbs::Single) and orb pairs (as Orbs::Double),

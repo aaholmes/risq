@@ -31,19 +31,16 @@ pub fn sample_diag_update_welford(
 
     match sampled_det_info {
         None => {
-            println!(
-                "Sampled excitation not valid! Sample prob = {}",
-                sampled_prob
-            );
+            // Sampled excitation not valid
         }
-        Some((exciting_det, excite, target_det)) => {
-            println!(
-                "Sampled excitation: Sampled det = {}, Sample prob = {}, (H_ai c_i)^2 / p = {}",
-                target_det,
-                sampled_prob,
-                excite.abs_h * excite.abs_h * exciting_det.coeff * exciting_det.coeff
-                    / sampled_prob
-            );
+        Some((exciting_det, excite, _target_det)) => {
+            // println!(
+            //     "Sampled excitation: Sampled det = {}, Sample prob = {}, (H_ai c_i)^2 / p = {}",
+            //     target_det,
+            //     sampled_prob,
+            //     excite.abs_h * excite.abs_h * exciting_det.coeff * exciting_det.coeff
+            //         / sampled_prob
+            // );
             let e_a: f64 = exciting_det.new_diag(ham, &excite);
             let energy: f64 = excite.abs_h * excite.abs_h * exciting_det.coeff * exciting_det.coeff
                 / (e0 - e_a)
