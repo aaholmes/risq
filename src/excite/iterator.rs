@@ -2,8 +2,26 @@
 
 use crate::excite::init::ExciteGenerator;
 use crate::excite::{Orbs, StoredExcite};
-use crate::utils::bits::valence_epairs;
+use crate::utils::bits::{valence_elecs, valence_elecs_and_epairs, valence_epairs};
 use crate::wf::det::Det;
+
+
+/// Iterate over all single and double excitations from the given determinant (only excitations whose matrix elements
+/// are larger in magnitude than eps)
+pub fn excites<'a>(
+    det: &'a Det,
+    excite_gen: &'a ExciteGenerator,
+    eps: f64,
+) -> impl Iterator<Item = (Option<bool>, Orbs, &'a StoredExcite)> {
+    valence_elecs_and_epairs(&det.config, excite_gen)
+    .flat_map(move |(is_alpha, orbs)| {
+        excite_gen
+            .excites_from((is_alpha, &orbs))
+            .take_while(move |excite| excite.abs_h * det.coeff.abs() >= eps)
+            .filter(move |excite| det.config.is_valid_stored(is_alpha, excite))
+            .map(move |excite| (is_alpha, orbs, excite))
+    })
+}
 
 /// Iterate over double excitations from the given determinant (only excitations whose matrix elements
 /// are larger in magnitude than eps)
@@ -13,6 +31,23 @@ pub fn double_excites<'a>(
     eps: f64,
 ) -> impl Iterator<Item = (Option<bool>, Orbs, &'a StoredExcite)> {
     valence_epairs(&det.config, excite_gen).flat_map(move |(is_alpha, orbs)| {
+        excite_gen
+            .excites_from((is_alpha, &orbs))
+            .take_while(move |excite| excite.abs_h * det.coeff.abs() >= eps)
+            .filter(move |excite| det.config.is_valid_stored(is_alpha, excite))
+            .map(move |excite| (is_alpha, orbs, excite))
+    })
+}
+
+
+/// Iterate over single excitations from the given determinant (only excitations whose max possible matrix elements
+/// are larger in magnitude than eps)
+pub fn single_excites<'a>(
+    det: &'a Det,
+    excite_gen: &'a ExciteGenerator,
+    eps: f64,
+) -> impl Iterator<Item = (Option<bool>, Orbs, &'a StoredExcite)> {
+    valence_elecs(&det.config, excite_gen).flat_map(move |(is_alpha, orbs)| {
         excite_gen
             .excites_from((is_alpha, &orbs))
             .take_while(move |excite| excite.abs_h * det.coeff.abs() >= eps)

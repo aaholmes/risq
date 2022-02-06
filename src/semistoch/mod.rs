@@ -188,6 +188,11 @@ pub fn importance_sampled_semistoch_enpt2(
     (dtm_enpt2 + stoch_enpt2.mean, stoch_enpt2.std_dev)
 }
 
+
+fn std_err(stats: &Stats<f64>) -> f64 {
+    stats.std_dev / (stats.count as f64).sqrt()
+}
+
 pub fn new_stoch_enpt2(
     input_wf: &Wf,
     global: &Global,
@@ -219,8 +224,6 @@ pub fn new_stoch_enpt2(
     // Loop over a:
     // For each, compute the two sums over that a's i values, and use that to update the energy
 
-    let target_uncertainty: f64 = 0.01;
-
     let start_pt: Instant = Instant::now();
 
     let mut enpt2_diag: Stats<f64> = Stats::new();
@@ -241,7 +244,7 @@ pub fn new_stoch_enpt2(
             &mut enpt2_diag,
         );
     }
-    println!("Initial estimate of the diagonal contribution: {:.4} +- {:.4}", enpt2_diag.mean, enpt2_diag.std_dev);
+    println!("Initial estimate of the diagonal contribution: {:.4} +- {:.4}", enpt2_diag.mean, std_err(&enpt2_diag));
 
     println!("\nCollecting {} initial samples of the off-diagonal contribution to E_PT", n_off_diag_init);
     for _i_batch in 0..n_off_diag_init {
@@ -255,24 +258,24 @@ pub fn new_stoch_enpt2(
             &mut enpt2_off_diag,
         );
     }
-    println!("Initial estimate of the off-diagonal contribution: {:.4} +- {:.4}", enpt2_off_diag.mean, enpt2_off_diag.std_dev);
+    println!("Initial estimate of the off-diagonal contribution: {:.4} +- {:.4}", enpt2_off_diag.mean, std_err(&enpt2_off_diag));
 
-    let mut total_std_dev: f64 = (enpt2_diag.std_dev * enpt2_diag.std_dev
-        + enpt2_off_diag.std_dev * enpt2_off_diag.std_dev)
+    let mut total_std_err: f64 = (std_err(&enpt2_diag) * std_err(&enpt2_diag)
+        + std_err(&enpt2_off_diag) * std_err(&enpt2_off_diag))
         .sqrt();
     println!(
         "After init, diag and off-diag components: {} +- {}, {} +- {}, total: {} +- {}",
         enpt2_diag.mean,
-        enpt2_diag.std_dev,
+        std_err(&enpt2_diag),
         enpt2_off_diag.mean,
-        enpt2_off_diag.std_dev,
+        std_err(&enpt2_off_diag),
         enpt2_diag.mean + enpt2_off_diag.mean,
-        total_std_dev
+        total_std_err
     );
 
-    while total_std_dev > target_uncertainty {
+    while total_std_err > global.target_uncertainty {
         // Collect another batch of the less certain component
-        if enpt2_diag.std_dev >= enpt2_off_diag.std_dev {
+        if std_err(&enpt2_diag) >= std_err(&enpt2_off_diag) {
             // Sample diag, update Welford
             sample_diag_update_welford(
                 &screened_sampler,
@@ -293,15 +296,20 @@ pub fn new_stoch_enpt2(
                 &mut enpt2_off_diag,
             );
         }
-        total_std_dev = (enpt2_diag.std_dev * enpt2_diag.std_dev
-            + enpt2_off_diag.std_dev * enpt2_off_diag.std_dev)
+        total_std_err = (std_err(&enpt2_diag) * std_err(&enpt2_diag)
+            + std_err(&enpt2_off_diag) * std_err(&enpt2_off_diag))
             .sqrt();
-        println!("diag ({} samples) and off-diag ({} batches) components: {:.4} +- {:.4}, {:.4} +- {:.4}, total: {:.4} +- {:.4}",
-                 enpt2_diag.count, enpt2_off_diag.count,
-                 enpt2_diag.mean, enpt2_diag.std_dev,
-                 enpt2_off_diag.mean, enpt2_off_diag.std_dev,
-                 enpt2_diag.mean + enpt2_off_diag.mean, total_std_dev
+        println!(
+            "diag ({} samples) and off-diag ({} batches) components: {} +- {}, {} +- {}, total: {} +- {}",
+            enpt2_diag.count, enpt2_off_diag.count,
+            enpt2_diag.mean,
+            std_err(&enpt2_diag),
+            enpt2_off_diag.mean,
+            std_err(&enpt2_off_diag),
+            enpt2_diag.mean + enpt2_off_diag.mean,
+            total_std_err
         );
+
     }
 
     println!(
@@ -309,7 +317,7 @@ pub fn new_stoch_enpt2(
         start_pt.elapsed()
     );
 
-    (enpt2_diag.mean + enpt2_off_diag.mean, total_std_dev)
+    (enpt2_diag.mean + enpt2_off_diag.mean, total_std_err)
 }
 
 pub fn fast_stoch_enpt2(

@@ -191,7 +191,7 @@ impl Config {
                 }
             }
             _ => {
-                panic!()
+                panic!("Attempted apply_excite with an invalid excite!")
             }
         }
     }

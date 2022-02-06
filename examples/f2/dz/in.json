@@ -8,7 +8,7 @@
     "eps_pt_dtm": 1e-4,
     "opp_algo": 1,
     "same_algo": 1,
-    "target_uncertainty": 1e-4,
+    "target_uncertainty": 5e-4,
     "n_samples_per_batch": 1000,
     "n_batches": 0,
     "n_cross_term_samples": 10000

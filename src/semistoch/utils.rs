@@ -1,5 +1,5 @@
 use crate::excite::init::ExciteGenerator;
-use crate::excite::iterator::double_excites;
+use crate::excite::iterator::{double_excites, excites};
 use crate::excite::{Orbs, StoredExcite};
 use crate::ham::Ham;
 use crate::rng::Rand;
@@ -67,8 +67,8 @@ impl OffDiagSamples {
     // }
 
     /// Add a (variational det, PT det) pair
-    /// Note that all the relevant information is contained in pt_det, so var_det is not
-    /// even needed except for efficiently computing new pt_det energies
+    /// For single excitations, first compares matrix element to eps (since
+    /// only an upper bound has been computed at this point)
     fn add_var_and_pt(
         &mut self,
         var_det: &Det,
@@ -79,11 +79,26 @@ impl OffDiagSamples {
         w: i32,
         prob: f64,
         ham: &Ham,
+        eps: f64,
     ) {
+        let h_ai: f64 = ham.ham_off_diag_no_excite(&var_det.config, &pt_config);
+
+        // If single excite, we only had max |h|, so may still need to reject here
+        match excite.target {
+            Orbs::Single(_) => {
+                if (h_ai * var_det.coeff).abs() < eps {
+                    return;
+                }
+            },
+            _ => {},
+        }
+        assert!((h_ai * var_det.coeff).abs() >= eps, "Got an excitation smaller than eps!");
+
         // x_{ai} = H_{ai} c_i w_i / p_i
         let x_ai: f64 =
-            ham.ham_off_diag_no_excite(&var_det.config, &pt_config) * var_det.coeff * (w as f64)
+             h_ai * var_det.coeff * (w as f64)
                 / prob;
+
         match self.pt_energies_and_sums.get_mut(&pt_config) {
             None => {
                 // compute diagonal element e_a
@@ -110,7 +125,8 @@ impl OffDiagSamples {
         ham: &Ham,
     ) {
         self.n += w;
-        for (is_alpha, init_orbs, stored_excite) in double_excites(var_det, excite_gen, 1e-9) {
+        let eps: f64 = 1e-9; // This epsilon should be effectively zero, not the usual eps_var or eps_pt_dtm
+        for (is_alpha, init_orbs, stored_excite) in excites(var_det, excite_gen, eps) {
             let pt_config = var_det
                 .config
                 .apply_excite(is_alpha, init_orbs, stored_excite);
@@ -124,6 +140,7 @@ impl OffDiagSamples {
                     w,
                     prob,
                     ham,
+                    eps
                 );
             }
         }
