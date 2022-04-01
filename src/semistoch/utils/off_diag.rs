@@ -1,5 +1,4 @@
 use crate::excite::init::ExciteGenerator;
-use crate::excite::iterator::{double_excites, excites};
 use crate::excite::{Orbs, StoredExcite};
 use crate::ham::Ham;
 use crate::rng::Rand;
@@ -9,46 +8,7 @@ use crate::wf::Wf;
 use rand::distributions::{Distribution, Uniform};
 use rolling_stats::Stats;
 use std::collections::HashMap;
-
-/// Sample the 'diagonal' contribution to the PT energy (i.e., the term coming from the diagonal of
-/// the matrix V \[1 / (E_0 - E_a)\] V), and update the Welford statistics for the energy
-pub fn sample_diag_update_welford(
-    screened_sampler: &ScreenedSampler,
-    excite_gen: &ExciteGenerator,
-    ham: &Ham,
-    rand: &mut Rand,
-    e0: f64,
-    enpt2_diag: &mut Stats<f64>,
-) {
-    // Sample with probability proportional to (Hc)^2
-    let (sampled_det_info, sampled_prob) = matmul_sample_remaining(
-        screened_sampler,
-        ImpSampleDist::HcSquared,
-        excite_gen,
-        ham,
-        rand,
-    );
-
-    match sampled_det_info {
-        None => {
-            // Sampled excitation not valid
-        }
-        Some((exciting_det, excite, _target_det)) => {
-            // println!(
-            //     "Sampled excitation: Sampled det = {}, Sample prob = {}, (H_ai c_i)^2 / p = {}",
-            //     target_det,
-            //     sampled_prob,
-            //     excite.abs_h * excite.abs_h * exciting_det.coeff * exciting_det.coeff
-            //         / sampled_prob
-            // );
-            let e_a: f64 = exciting_det.new_diag(ham, &excite);
-            let energy: f64 = excite.abs_h * excite.abs_h * exciting_det.coeff * exciting_det.coeff
-                / (e0 - e_a)
-                / sampled_prob;
-            enpt2_diag.update(energy);
-        }
-    }
-}
+use crate::excite::iterator::excites;
 
 /// Holds the off-diagonal samples: (E_a,
 /// sum_i H_{ai} c_i w_i / p_i, sum_i (H_{ai} c_i w_i / p_i) ^ 2)
@@ -114,7 +74,7 @@ impl OffDiagSamples {
         }
     }
 
-    /// Add the PT samples corresponding to a new variational det
+    /// Add the PT samples corresponding to a new variational det (only for the off-diagonal term)
     pub fn add_new_var_det(
         &mut self,
         wf: &Wf,
@@ -123,10 +83,14 @@ impl OffDiagSamples {
         prob: f64,
         excite_gen: &ExciteGenerator,
         ham: &Ham,
+        eps: Option<f64>
     ) {
         self.n += w;
-        let eps: f64 = 1e-9; // This epsilon should be effectively zero, not the usual eps_var or eps_pt_dtm
-        for (is_alpha, init_orbs, stored_excite) in excites(var_det, excite_gen, eps) {
+        let mut eps_local: f64 = 1e-9; // This epsilon should be effectively zero, not the usual eps_var or eps_pt_dtm
+        if let Some(e) = eps {
+            eps_local = eps.unwrap();
+        }
+        for (is_alpha, init_orbs, stored_excite) in excites(var_det, excite_gen, eps_local) {
             let pt_config = var_det
                 .config
                 .apply_excite(is_alpha, init_orbs, stored_excite);
@@ -134,13 +98,13 @@ impl OffDiagSamples {
                 self.add_var_and_pt(
                     var_det,
                     is_alpha,
-                    init_orbs,
+                    *init_orbs,
                     stored_excite,
                     pt_config,
                     w,
                     prob,
                     ham,
-                    eps
+                    eps_local
                 );
             }
         }
@@ -159,6 +123,7 @@ impl OffDiagSamples {
 
 /// Sample the 'off-diagonal' contribution to the PT energy (i.e., the term coming from the off-diagonal of
 /// the matrix V \[1 / (E_0 - E_a)\] V), and update the Welford statistics for the energy
+/// If eps is not None, then evaluate at eps=0 and subtract eps=eps.unwrap()
 pub fn sample_off_diag_update_welford(
     wf: &Wf,
     excite_gen: &ExciteGenerator,
@@ -166,6 +131,7 @@ pub fn sample_off_diag_update_welford(
     n_samples_per_batch: i32,
     rand: &mut Rand,
     enpt2_off_diag: &mut Stats<f64>,
+    eps: Option<f64>
 ) {
     // Sample i with probability proportional to |c_i| max_a |H_{ai}|
     // Interestingly, this is approximately uniform!
@@ -188,13 +154,16 @@ pub fn sample_off_diag_update_welford(
 
     // Obtain var_dets and their counts {w}
     let mut off_diag: OffDiagSamples = OffDiagSamples::default();
+    let mut off_diag_screened: OffDiagSamples = OffDiagSamples::default();
     let prob: f64 = 1.0 / (wf.n as f64);
     for (i, w) in counts {
-        off_diag.add_new_var_det(wf, &wf.dets[i], w, prob, excite_gen, ham);
+        off_diag.add_new_var_det(wf, &wf.dets[i], w, prob, excite_gen, ham, None);
+        if let Some(e) = eps {off_diag_screened.add_new_var_det(wf, &wf.dets[i], w, prob, excite_gen, ham, eps);}
     }
     assert_eq!(n_samples_per_batch, off_diag.n);
 
-    let off_diag_estimate: f64 = off_diag.pt_energy(wf.energy);
+    let mut off_diag_estimate: f64 = off_diag.pt_energy(wf.energy);
+    if let Some(e) = eps {off_diag_estimate -= off_diag_screened.pt_energy(wf.energy);}
     println!(
         "Sampled off-diagonal energy this batch: {:.4}",
         off_diag_estimate
