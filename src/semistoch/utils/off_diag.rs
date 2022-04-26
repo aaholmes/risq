@@ -93,12 +93,12 @@ impl OffDiagSamples {
         for (is_alpha, init_orbs, stored_excite) in excites(var_det, excite_gen, eps_local) {
             let pt_config = var_det
                 .config
-                .apply_excite(is_alpha, init_orbs, stored_excite);
+                .apply_excite(is_alpha, &init_orbs, stored_excite);
             if !wf.inds.contains_key(&pt_config) {
                 self.add_var_and_pt(
                     var_det,
                     is_alpha,
-                    *init_orbs,
+                    init_orbs,
                     stored_excite,
                     pt_config,
                     w,

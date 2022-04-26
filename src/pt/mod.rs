@@ -1,23 +1,27 @@
 //! Epstein-Nesbet perturbation theory
 
 use crate::excite::init::ExciteGenerator;
-use crate::excite::Excite;
+use crate::excite::{Excite, Orbs};
 use crate::ham::Ham;
 use crate::rng::{init_rand, Rand};
-use crate::semistoch::{new_stoch_enpt2, old_semistoch_enpt2};
+use crate::semistoch::{new_semistoch_enpt2, new_semistoch_enpt2_no_diag_singles, old_semistoch_enpt2};
 use crate::utils::read_input::Global;
 use crate::wf::det::{Config, Det};
 use crate::wf::Wf;
 use itertools::enumerate;
 use std::collections::HashMap;
+use crate::excite::iterator::dets_excites_and_excited_dets;
 
 /// Perform the perturbative stage (Epstein-Nesbet perturbation theory, that is)
 pub fn perturbative(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, wf: &Wf) {
     // Initialize random number genrator
     let mut rand: Rand = init_rand();
 
-    let e_pt2: f64;
+    let mut e_pt2: f64;
     let std_dev: f64;
+    e_pt2 = dtm_pt(wf, excite_gen, ham, global.eps_pt_dtm);
+    println!("Variational energy: {}, Deterministic PT: {}, Total energy: {}", wf.energy, e_pt2, wf.energy + e_pt2);
+    panic!("DEBUG");
     if global.n_cross_term_samples == 0 {
         // Old SHCI (2017 paper)
         println!("\nCalling semistoch ENPT2 the old way with p ~ |c|");
@@ -26,7 +30,8 @@ pub fn perturbative(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, wf
         std_dev = out.1;
     } else {
         println!("\nCalling semistoch ENPT2 the new way with importance sampling");
-        let out = new_stoch_enpt2(wf, global, ham, excite_gen, &mut rand);
+        let out = new_semistoch_enpt2_no_diag_singles(wf, global, ham, excite_gen, &mut rand);
+        // let out = new_semistoch_enpt2(wf, global, ham, excite_gen, &mut rand);
         // let out = importance_sampled_semistoch_enpt2(wf, global, ham, excite_gen, &mut rand);
         // let out = fast_stoch_enpt2(wf, global, ham, excite_gen, &mut rand);
         // let out = faster_semistoch_enpt2(wf, global, ham, excite_gen);
@@ -36,6 +41,95 @@ pub fn perturbative(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, wf
     println!("Variational energy: {:.6}", wf.energy);
     println!("PT energy: {:.6} +- {:.6}", e_pt2, std_dev);
     println!("Total energy: {:.6} +- {:.6}", wf.energy + e_pt2, std_dev);
+}
+
+/// Deterministic PT
+pub fn dtm_pt(wf: &Wf, excite_gen: &ExciteGenerator, ham: &Ham, eps: f64) -> f64 {
+    println!("Start of deterministic PT");
+    let mut h_psi: Wf = Wf::default();
+    let mut n: i16 = 0;
+    let mut old_var_det: Config = wf.dets[0].config;
+    for (var_det, excite, pt_config) in dets_excites_and_excited_dets(wf, excite_gen, eps) {
+        if var_det.config != old_var_det {
+            n += 1;
+            old_var_det = var_det.config;
+            if n % 1000 == 0 {
+                println!("Var det {} of {}", n, wf.n);
+            }
+        }
+        // println!("Var det: {}, PT det: {}", var_det, pt_config);
+
+        // Compute off-diagonal element times var_det.coeff
+        let h_ai_c_i: f64 = ham.ham_off_diag(&var_det.config, &pt_config, &excite) * var_det.coeff;
+
+        // For single excitaitons: Check whether this excite actually exceeds eps
+        if let Orbs::Single(_) = excite.init {
+            if h_ai_c_i.abs() < eps {
+                continue;
+            }
+        }
+
+        // Compute diagonal element in O(N) time only if necessary
+        if let Some(ind) = h_psi.inds.get_mut(&pt_config) {
+            h_psi.dets[*ind].coeff += h_ai_c_i;
+        } else {
+            h_psi.dets.push(Det{
+                config: pt_config,
+                coeff: h_ai_c_i,
+                diag: Some(var_det.new_diag(ham, &excite))
+            });
+        }
+    }
+    println!("Preparing to calculate PT energy from generated PT dets");
+    pt(&h_psi, wf.energy)
+}
+
+pub fn dtm_pt_basic(wf: &Wf, ham: &Ham, eps: f64) -> f64
+{
+    let mut h_psi: Wf = Wf::default();
+    for det in &wf.dets {
+
+    }
+    todo!()
+}
+
+/// Deterministic PT in batches (on average one excite per variational det per batch)
+// pub fn dtm_pt_batches(wf: &Wf, excite_gen: &ExciteGenerator, ham: &Ham, e0: f64, eps: f64) -> f64 {
+//     let mut e_pt: f64 = 0.0f64;
+//     let mut h_psi: Wf;
+//     for batch in 0..n_batches {
+//         for (var_det, excite, pt_config) in dets_excites_and_excited_dets_batched(wf, excite_gen, eps, batch) {
+//
+//             // Compute off-diagonal element times var_det.coeff
+//             let h_ai_c_i: f64 = ham.ham_off_diag(&var_det.config, &pt_config, &excite) * var_det.coeff;
+//
+//             // For single excitaitons: Check whether this excite actually exceeds eps
+//             if let Orbs::Single(_) = excite.init {
+//                 if h_ai_c_i.abs() < eps {
+//                     continue;
+//                 }
+//             }
+//
+//             // Compute diagonal element in O(N) time only if necessary
+//             if let Some(ind) = h_psi.inds.get_mut(&pt_config) {
+//                 h_psi.dets[&ind].coeff += h_ai_c_i;
+//             } else {
+//                 h_psi.dets.push(Det {
+//                     config: pt_config,
+//                     coeff: h_ai_c_i,
+//                     diag: Some(var_det.new_diag(ham, &excite))
+//                 });
+//             }
+//         }
+//         e_pt += pt(&h_psi, e0);
+//     }
+//     e_pt
+// }
+
+
+/// Evaluate the PT expression given H * Psi and E0
+pub fn pt(h_psi: &Wf, e0: f64) -> f64 {
+    h_psi.dets.iter().fold(0.0f64, |e_pt, det| e_pt + det.coeff * det.coeff / (e0 - det.diag.unwrap()))
 }
 
 /// Sampled contributions to the ENPT2 correction
@@ -157,45 +251,45 @@ impl PtSamples {
         // TODO: Exclude perturbers that only have large contributions
 
         for (ind, (pt_det, (pt_det_diag, var_det_map))) in enumerate(&self.samples) {
-            println!("\nPT det {}: {}\n", ind, pt_det);
+            // println!("\nPT det {}: {}\n", ind, pt_det);
             diag_term = 0.0;
             to_square = 0.0;
             for (hai_ci, p, w) in var_det_map.values() {
-                println!("New energy sample! H_ai c_i = {}, p = {}, (H_ai c_i)^2 / p = {}, w = {}, E0 = {}, E_a = {}", hai_ci, p, hai_ci * hai_ci / p, w, e0, pt_det_diag);
+                // println!("New energy sample! H_ai c_i = {}, p = {}, (H_ai c_i)^2 / p = {}, w = {}, E0 = {}, E_a = {}", hai_ci, p, hai_ci * hai_ci / p, w, e0, pt_det_diag);
                 if *p < 1e-9 {
-                    println!("Warning! Sample probability very small! p = {}", p);
+                    // println!("Warning! Sample probability very small! p = {}", p);
                 } else {
                     w_over_p = (*w as f64) / p;
-                    println!("p = {:.2e}", p);
-                    println!("(H_ai c_i)^2 / p_i = {:.3}", hai_ci * hai_ci / p);
+                    // println!("p = {:.2e}", p);
+                    // println!("(H_ai c_i)^2 / p_i = {:.3}", hai_ci * hai_ci / p);
                     diag_term += ((n_det - 1) as f64 - w_over_p) * w_over_p * hai_ci * hai_ci;
                     to_square += hai_ci * w_over_p;
                 }
             }
-            println!(
-                "Diag term = {:.3}, off-diag term = {:.3}, diag + off-diag^2 = {:.3}",
-                diag_term,
-                to_square,
-                diag_term + to_square * to_square
-            );
-            println!(
-                "Energy estimator: {}",
-                (diag_term + to_square * to_square) / (e0 - pt_det_diag)
-            );
+            // println!(
+            //     "Diag term = {:.3}, off-diag term = {:.3}, diag + off-diag^2 = {:.3}",
+            //     diag_term,
+            //     to_square,
+            //     diag_term + to_square * to_square
+            // );
+            // println!(
+            //     "Energy estimator: {}",
+            //     (diag_term + to_square * to_square) / (e0 - pt_det_diag)
+            // );
             out += (diag_term + to_square * to_square) / (e0 - pt_det_diag);
             tmp += diag_term + to_square * to_square;
         }
 
-        println!(
-            "Unbiased estimator ({} sampled var dets, {} sampled PT dets) = {}",
-            n_det,
-            self.n,
-            out / (n_det as f64 * (n_det - 1) as f64)
-        );
-        println!(
-            "Component of unbiased estimator that should be constant = {:.3}",
-            tmp / (n_det as f64 * (n_det - 1) as f64)
-        );
+        // println!(
+        //     "Unbiased estimator ({} sampled var dets, {} sampled PT dets) = {}",
+        //     n_det,
+        //     self.n,
+        //     out / (n_det as f64 * (n_det - 1) as f64)
+        // );
+        // println!(
+        //     "Component of unbiased estimator that should be constant = {:.3}",
+        //     tmp / (n_det as f64 * (n_det - 1) as f64)
+        // );
         out / (n_det as f64 * (n_det - 1) as f64)
     }
 }

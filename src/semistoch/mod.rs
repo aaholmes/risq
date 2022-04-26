@@ -4,9 +4,10 @@ mod utils;
 
 use crate::excite::init::ExciteGenerator;
 use crate::ham::Ham;
-use crate::pt::PtSamples;
+use crate::pt::{pt, PtSamples};
 use crate::rng::Rand;
-use crate::semistoch::utils::{sample_diag_update_welford, sample_off_diag_update_welford};
+use crate::semistoch::utils::diag::sample_diag_update_welford;
+use crate::semistoch::utils::off_diag::sample_off_diag_update_welford;
 use crate::stoch::alias::Alias;
 use crate::stoch::{matmul_sample_remaining, ImpSampleDist};
 use crate::utils::read_input::Global;
@@ -193,7 +194,304 @@ fn std_err(stats: &Stats<f64>) -> f64 {
     stats.std_dev / (stats.count as f64).sqrt()
 }
 
-pub fn new_stoch_enpt2(
+pub fn new_semistoch_enpt2(
+    input_wf: &Wf,
+    global: &Global,
+    ham: &Ham,
+    excite_gen: &ExciteGenerator,
+    rand: &mut Rand,
+) -> (f64, f64) {
+    todo!();
+    // Another new approach:
+
+    // Diagonal term:
+    // Deterministically compute only double excites > eps
+    // and singles for largest-magnitude var dets
+    // Have two methods: Importance sample double < eps, and sample single using magnitude of remaining var dets
+    // Stochastic component: Sample either single or double depending on which is
+    // more uncertain
+
+    // Off-diagonal term:
+    // Deterministically compute only double excites > eps
+    //
+
+
+
+
+
+
+    // Fully semistochastic algorithm
+
+    // Diagonal term:
+    // Deterministically compute all double excites > eps and all singles.
+    // Importance sample remaining double excites
+
+    // Off-diagonal term:
+    // Deterministically compute all excites > eps
+    // Importance sample remaining excites. Single excites may have to be uniform here.
+
+    // Compute deterministic component and create sampler object for sampling remaining component
+    // let start_dtm_diag_enpt2: Instant = Instant::now();
+    // let (dtm_diag, diag_screened_sampler) =
+    //     input_wf.approx_matmul_external_dtm_singles(global, ham, excite_gen, global.eps_pt_dtm);
+    // println!("Time for diag sampling setup: {:?}", start_dtm_diag_enpt2.elapsed());
+    //
+    // let start_dtm_off_diag_enpt2: Instant = Instant::now();
+    // let (hc_vector_for_off_diag, off_diag_screened_sampler) =
+    //     input_wf.approx_matmul_external(ham, excite_gen, global.eps_var);
+    // let dtm_off_diag = pt(&hc_vector_for_off_diag);
+    // println!("Time for off_diag sampling setup: {:?}", start_dtm_off_diag_enpt2.elapsed());
+
+    // Stochastic component
+
+    // Initially, take samples of several batches of each of the diagonal and off-diagonal components
+    // Keep track of the uncertainties in the two components
+    // While total uncertainty is too high, take a batch of the component that has the higher uncertainty
+    // of the two
+
+    // Need functions: sample_diag, sample_off_diag
+    // sample_diag is trivial: just sample one (a, i), compute E(a, i), and add it to the Welford struct
+    // sample_off_diag is more complicated:
+    // Loop over samples in the batch:
+    // For each, add to the hash table {a: E_a, {i: w_i, H_{ai} c_i / q_i}}
+    // Then, computing the energy is straightforward:
+    // Loop over a:
+    // For each, compute the two sums over that a's i values, and use that to update the energy
+
+    // let start_pt: Instant = Instant::now();
+    //
+    // let mut enpt2_diag: Stats<f64> = Stats::new();
+    // let mut enpt2_off_diag: Stats<f64> = Stats::new();
+    //
+    // let n_diag_init: i32 = 100;
+    // let n_off_diag_init: i32 = 10;
+    //
+    // println!("\nCollecting {} initial samples of the diagonal contribution to E_PT", n_diag_init);
+    // for _i_batch in 0..n_diag_init {
+    //     // Sample diag, update Welford
+    //     sample_diag_update_welford(
+    //         &screened_sampler,
+    //         excite_gen,
+    //         ham,
+    //         rand,
+    //         input_wf.energy,
+    //         &mut enpt2_diag,
+    //     );
+    // }
+    // println!("Initial estimate of the diagonal contribution: {:.4} +- {:.4}", enpt2_diag.mean, std_err(&enpt2_diag));
+    //
+    // println!("\nCollecting {} initial samples of the off-diagonal contribution to E_PT", n_off_diag_init);
+    // for _i_batch in 0..n_off_diag_init {
+    //     // Sample off_diag, update Welford
+    //     sample_off_diag_update_welford(
+    //         input_wf,
+    //         excite_gen,
+    //         ham,
+    //         global.n_samples_per_batch,
+    //         rand,
+    //         &mut enpt2_off_diag,
+    //     );
+    // }
+    // println!("Initial estimate of the off-diagonal contribution: {:.4} +- {:.4}", enpt2_off_diag.mean, std_err(&enpt2_off_diag));
+    //
+    // let mut total_std_err: f64 = (std_err(&enpt2_diag) * std_err(&enpt2_diag)
+    //     + std_err(&enpt2_off_diag) * std_err(&enpt2_off_diag))
+    //     .sqrt();
+    // println!(
+    //     "After init, diag and off-diag components: {} +- {}, {} +- {}, total: {} +- {}",
+    //     enpt2_diag.mean,
+    //     std_err(&enpt2_diag),
+    //     enpt2_off_diag.mean,
+    //     std_err(&enpt2_off_diag),
+    //     enpt2_diag.mean + enpt2_off_diag.mean,
+    //     total_std_err
+    // );
+    //
+    // while total_std_err > global.target_uncertainty {
+    //     // Collect another batch of the less certain component
+    //     if std_err(&enpt2_diag) >= std_err(&enpt2_off_diag) {
+    //         // Sample diag, update Welford
+    //         sample_diag_update_welford(
+    //             &screened_sampler,
+    //             excite_gen,
+    //             ham,
+    //             rand,
+    //             input_wf.energy,
+    //             &mut enpt2_diag,
+    //         );
+    //     } else {
+    //         // Sample off_diag, update Welford
+    //         sample_off_diag_update_welford(
+    //             input_wf,
+    //             excite_gen,
+    //             ham,
+    //             global.n_samples_per_batch,
+    //             rand,
+    //             &mut enpt2_off_diag,
+    //         );
+    //     }
+    //     total_std_err = (std_err(&enpt2_diag) * std_err(&enpt2_diag)
+    //         + std_err(&enpt2_off_diag) * std_err(&enpt2_off_diag))
+    //         .sqrt();
+    //     println!(
+    //         "diag ({} samples) and off-diag ({} batches) components: {} +- {}, {} +- {}, total: {} +- {}",
+    //         enpt2_diag.count, enpt2_off_diag.count,
+    //         enpt2_diag.mean,
+    //         std_err(&enpt2_diag),
+    //         enpt2_off_diag.mean,
+    //         std_err(&enpt2_off_diag),
+    //         enpt2_diag.mean + enpt2_off_diag.mean,
+    //         total_std_err
+    //     );
+    //
+    // }
+    //
+    // println!(
+    //     "Time for new stochastic PT algorithm: {:?}",
+    //     start_pt.elapsed()
+    // );
+    //
+    // (enpt2_diag.mean + enpt2_off_diag.mean, total_std_err)
+}
+
+pub fn new_semistoch_enpt2_no_diag_singles(
+    input_wf: &Wf,
+    global: &Global,
+    ham: &Ham,
+    excite_gen: &ExciteGenerator,
+    rand: &mut Rand,
+) -> (f64, f64) {
+    // Like the function below, but semistoch
+
+    // Compute deterministic component and create sampler object for sampling remaining component
+    // I.e., the component that wouldn't make the eps_pt cut
+    let start_dtm_enpt2: Instant = Instant::now();
+    let (dtm_result, screened_sampler) =
+        input_wf.approx_matmul_external_skip_singles(ham, excite_gen, global.eps_pt_dtm);
+    println!("Time for sampling setup: {:?}", start_dtm_enpt2.elapsed());
+
+    let mut e_dtm: f64 = 0.0;
+    for det in &dtm_result.dets {
+        e_dtm += (det.coeff * det.coeff) / (input_wf.energy - det.diag.unwrap());
+    }
+    println!("Deterministic component of the perturbative energy: {:.4}", e_dtm);
+
+    // Stochastic component
+
+    // Initially, take samples of several batches of each of the diagonal and off-diagonal components
+    // Keep track of the uncertainties in the two components
+    // While total uncertainty is too high, take a batch of the component that has the higher uncertainty
+    // of the two
+
+    // Need functions: sample_diag, sample_off_diag
+    // sample_diag is trivial: just sample one (a, i), compute E(a, i), and add it to the Welford struct
+    // sample_off_diag is more complicated:
+    // Loop over samples in the batch:
+    // For each, add to the hash table {a: E_a, {i: w_i, H_{ai} c_i / q_i}}
+    // Then, computing the energy is straightforward:
+    // Loop over a:
+    // For each, compute the two sums over that a's i values, and use that to update the energy
+
+    let start_pt: Instant = Instant::now();
+
+    let mut enpt2_diag: Stats<f64> = Stats::new();
+    let mut enpt2_off_diag: Stats<f64> = Stats::new();
+
+    let n_diag_init: i32 = 100;
+    let n_off_diag_init: i32 = 10;
+
+    println!("\nCollecting {} initial samples of the diagonal contribution to E_PT", n_diag_init);
+    for _i_batch in 0..n_diag_init {
+        // Sample diag, update Welford
+        sample_diag_update_welford(
+            &screened_sampler,
+            excite_gen,
+            ham,
+            rand,
+            input_wf.energy,
+            &mut enpt2_diag,
+        );
+    }
+    println!("Initial estimate of the diagonal contribution: {:.4} +- {:.4}", enpt2_diag.mean, std_err(&enpt2_diag));
+
+    println!("\nCollecting {} initial samples of the off-diagonal contribution to E_PT", n_off_diag_init);
+    for _i_batch in 0..n_off_diag_init {
+        // Sample off_diag, update Welford
+        sample_off_diag_update_welford(
+            input_wf,
+            excite_gen,
+            ham,
+            global.n_samples_per_batch,
+            rand,
+            &mut enpt2_off_diag,
+            Some(global.eps_pt_dtm)
+        );
+    }
+    println!("Initial estimate of the off-diagonal contribution: {:.4} +- {:.4}", enpt2_off_diag.mean, std_err(&enpt2_off_diag));
+
+    let mut total_std_err: f64 = (std_err(&enpt2_diag) * std_err(&enpt2_diag)
+        + std_err(&enpt2_off_diag) * std_err(&enpt2_off_diag))
+        .sqrt();
+    println!(
+        "After init, diag and off-diag components: {} +- {}, {} +- {}, total: {} +- {}",
+        enpt2_diag.mean,
+        std_err(&enpt2_diag),
+        enpt2_off_diag.mean,
+        std_err(&enpt2_off_diag),
+        enpt2_diag.mean + enpt2_off_diag.mean,
+        total_std_err
+    );
+
+    while total_std_err > global.target_uncertainty {
+        // Collect another batch of the less certain component
+        if std_err(&enpt2_diag) >= std_err(&enpt2_off_diag) {
+            // Sample diag, update Welford
+            sample_diag_update_welford(
+                &screened_sampler,
+                excite_gen,
+                ham,
+                rand,
+                input_wf.energy,
+                &mut enpt2_diag,
+            );
+        } else {
+            // Sample off_diag, update Welford
+            sample_off_diag_update_welford(
+                input_wf,
+                excite_gen,
+                ham,
+                global.n_samples_per_batch,
+                rand,
+                &mut enpt2_off_diag,
+                Some(global.eps_pt_dtm)
+            );
+        }
+        total_std_err = (std_err(&enpt2_diag) * std_err(&enpt2_diag)
+            + std_err(&enpt2_off_diag) * std_err(&enpt2_off_diag))
+            .sqrt();
+        println!(
+            "diag ({} samples) and off-diag ({} batches) components: {} +- {}, {} +- {}, total: {} +- {}",
+            enpt2_diag.count, enpt2_off_diag.count,
+            enpt2_diag.mean,
+            std_err(&enpt2_diag),
+            enpt2_off_diag.mean,
+            std_err(&enpt2_off_diag),
+            enpt2_diag.mean + enpt2_off_diag.mean,
+            total_std_err
+        );
+
+    }
+
+    println!(
+        "Time for new stochastic PT algorithm: {:?}",
+        start_pt.elapsed()
+    );
+
+    (e_dtm + enpt2_diag.mean + enpt2_off_diag.mean, total_std_err)
+}
+
+
+pub fn new_stoch_enpt2_no_diag_singles(
     input_wf: &Wf,
     global: &Global,
     ham: &Ham,
@@ -203,6 +501,7 @@ pub fn new_stoch_enpt2(
     // For now, just do the fully stochastic algorithm
 
     // Compute deterministic component (even though not used), and create sampler object for sampling remaining component
+    // I.e., the component that wouldn't make the eps_var cut
     let start_dtm_enpt2: Instant = Instant::now();
     let (_, screened_sampler) =
         input_wf.approx_matmul_external_skip_singles(ham, excite_gen, global.eps_var);
@@ -256,6 +555,7 @@ pub fn new_stoch_enpt2(
             global.n_samples_per_batch,
             rand,
             &mut enpt2_off_diag,
+            None
         );
     }
     println!("Initial estimate of the off-diagonal contribution: {:.4} +- {:.4}", enpt2_off_diag.mean, std_err(&enpt2_off_diag));
@@ -294,6 +594,7 @@ pub fn new_stoch_enpt2(
                 global.n_samples_per_batch,
                 rand,
                 &mut enpt2_off_diag,
+                None
             );
         }
         total_std_err = (std_err(&enpt2_diag) * std_err(&enpt2_diag)

@@ -44,12 +44,12 @@ impl Hash for Det {
 // Public functions
 
 impl Config {
-    pub fn is_valid_stored(&self, is_alpha: Option<bool>, excite: &StoredExcite) -> bool {
+    pub fn is_valid_stored(&self, is_alpha: &Option<bool>, excite: &StoredExcite) -> bool {
         match excite.target {
             Orbs::Double((r, s)) => match is_alpha {
                 None => !(btest(self.up, r) || btest(self.dn, s)),
                 Some(is_a) => {
-                    if is_a {
+                    if *is_a {
                         !(btest(self.up, r) || btest(self.up, s))
                     } else {
                         !(btest(self.dn, r) || btest(self.dn, s))
@@ -154,25 +154,25 @@ impl Config {
     pub fn apply_excite(
         self,
         is_alpha: Option<bool>,
-        init_orbs: Orbs,
+        init_orbs: &Orbs,
         excite: &StoredExcite,
     ) -> Config {
         match (init_orbs, excite.target) {
             (Orbs::Double((p, q)), Orbs::Double((r, s))) => match is_alpha {
                 None => Config {
-                    up: ibset(ibclr(self.up, p), r),
-                    dn: ibset(ibclr(self.dn, q), s),
+                    up: ibset(ibclr(self.up, *p), r),
+                    dn: ibset(ibclr(self.dn, *q), s),
                 },
                 Some(is_a) => {
                     if is_a {
                         Config {
-                            up: ibset(ibset(ibclr(ibclr(self.up, p), q), r), s),
+                            up: ibset(ibset(ibclr(ibclr(self.up, *p), *q), r), s),
                             dn: self.dn,
                         }
                     } else {
                         Config {
                             up: self.up,
-                            dn: ibset(ibset(ibclr(ibclr(self.dn, p), q), r), s),
+                            dn: ibset(ibset(ibclr(ibclr(self.dn, *p), *q), r), s),
                         }
                     }
                 }
@@ -180,13 +180,13 @@ impl Config {
             (Orbs::Single(p), Orbs::Single(r)) => {
                 if is_alpha.unwrap() {
                     Config {
-                        up: ibset(ibclr(self.up, p), r),
+                        up: ibset(ibclr(self.up, *p), r),
                         dn: self.dn,
                     }
                 } else {
                     Config {
                         up: self.up,
-                        dn: ibset(ibclr(self.dn, p), r),
+                        dn: ibset(ibclr(self.dn, *p), r),
                     }
                 }
             }
