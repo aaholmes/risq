@@ -10,12 +10,13 @@ use crate::semistoch::utils::diag::sample_diag_update_welford;
 use crate::semistoch::utils::off_diag::sample_off_diag_update_welford;
 use crate::stoch::alias::Alias;
 use crate::stoch::{matmul_sample_remaining, ImpSampleDist};
+use crate::stoch::{generate_screened_sampler, DetOrbSample, ScreenedSampler};
 use crate::utils::read_input::Global;
 use crate::wf::Wf;
 use rolling_stats::Stats;
 use std::time::Instant;
-use crate::excite::iterator::dets_excites_and_excited_dets;
-use crate::excite::Orbs;
+use crate::excite::iterator::{dets_and_excitable_orbs, dets_excites_and_excited_dets, excites_from_det_and_orbs};
+use crate::excite::{Excite, Orbs};
 use crate::wf::det::Det;
 
 /// Importance sampled semistochastic ENPT2
@@ -382,6 +383,10 @@ pub fn new_semistoch_enpt2_dtm_diag_singles(
 
     // Repeat until convergence
 
+    // For making screened sampler
+    let mut det_orbs: Vec<DetOrbSample> = vec![];
+
+    let mut excite: Excite;
     let mut h_ai_c_i: f64 = 0.0;
     let mut diag: f64 = 0.0;
     let mut h_psi: Wf = Wf::default();
@@ -390,43 +395,76 @@ pub fn new_semistoch_enpt2_dtm_diag_singles(
     let mut e_pt_diag_singles: f64 = 0.0;
 
     // Loop over all doubles that exceed eps, and all singles
-    for (var_det, excite, pt_config) in dets_excites_and_excited_dets(input_wf, excite_gen, global.eps_pt_dtm) {
-
-        // Compute off-diagonal element times var_det.coeff
-        h_ai_c_i = ham.ham_off_diag(&var_det.config, &pt_config, &excite) * var_det.coeff;
-
-        // Off-diagonal term
-        // Compute diagonal element in O(N) time only if necessary, store diag energy for next step
-        // For single excitations: Check whether this excite actually exceeds eps
-        if matches!(excite.init, Orbs::Single(_)) && h_ai_c_i.abs() < global.eps_pt_dtm {
-            // Compute diag term for later, but don't add to h_psi
-            diag = var_det.new_diag(ham, &excite);
-        } else {
-            // Compute or lookup diag term and add h_ai_c_i to h_psi
-            if let Some(ind) = h_psi.inds.get_mut(&pt_config) {
-                diag = h_psi.dets[*ind].diag.unwrap();
-                h_psi.dets[*ind].coeff += h_ai_c_i;
-            } else {
-                diag = var_det.new_diag(ham, &excite);
-                h_psi.dets.push(Det {
-                    config: pt_config,
-                    coeff: h_ai_c_i,
-                    diag: Some(diag)
+    // Separate out the iteration over var_dets and orbs from the iteration over excites leaving those orbs
+    // so that we can set up the sampler object for the remaining excites
+    // (i.e., don't use the iterator dets_excites_and_excited_dets here)
+    //for (var_det, excite, pt_config) in dets_excites_and_excited_dets(input_wf, excite_gen, global.eps_pt_dtm) {
+    for (var_det, is_alpha, init) in dets_and_excitable_orbs(input_wf, excite_gen) {
+        for (stored_excite, pt_config) in excites_from_det_and_orbs(var_det, is_alpha, init, input_wf, excite_gen) {
+            // For doubles, check whether exceeds eps
+            if matches!(init, Orbs::Double(_)) && stored_excite.abs_h * var_det.coeff.abs() < global.eps_pt_dtm {
+                // Threshold reached: set up sampler and go to next det/excitable orb
+                det_orbs.push(DetOrbSample {
+                    det: var_det,
+                    init,
+                    is_alpha,
+                    sum_abs_h: stored_excite.sum_remaining_abs_h,
+                    sum_h_squared: stored_excite.sum_remaining_h_squared,
+                    sum_abs_hc: var_det.coeff.abs()
+                        * stored_excite.sum_remaining_abs_h,
+                    sum_hc_squared: var_det.coeff
+                        * var_det.coeff
+                        * stored_excite.sum_remaining_h_squared,
                 });
+                break;
+            }
+
+            // Create excite to make calculation of off_diag and new diag elements easier
+            excite = Excite {
+                is_alpha,
+                init,
+                target: stored_excite.target,
+                abs_h: stored_excite.abs_h,
+            };
+
+            // Compute off-diagonal element times var_det.coeff
+            h_ai_c_i = ham.ham_off_diag(&var_det.config, &pt_config, &excite) * var_det.coeff;
+
+            // Off-diagonal term
+            // Compute diagonal element in O(N) time only if necessary, store diag energy for next step
+            // For single excitations: Check whether this excite actually exceeds eps
+            if matches!(init, Orbs::Single(_)) && h_ai_c_i.abs() < global.eps_pt_dtm {
+                // Compute or lookup diag term for later, but don't add to h_psi
+                if let Some(ind) = h_psi.inds.get_mut(&pt_config) {
+                    diag = h_psi.dets[*ind].diag.unwrap();
+                } else {
+                    diag = var_det.new_diag(ham, &excite);
+                }
+            } else {
+                // Compute or lookup diag term and add h_ai_c_i to h_psi
+                if let Some(ind) = h_psi.inds.get_mut(&pt_config) {
+                    diag = h_psi.dets[*ind].diag.unwrap();
+                    h_psi.dets[*ind].coeff += h_ai_c_i;
+                } else {
+                    diag = var_det.new_diag(ham, &excite);
+                    h_psi.dets.push(Det {
+                        config: pt_config,
+                        coeff: h_ai_c_i,
+                        diag: Some(diag)
+                    });
+                }
+            }
+
+            // Diagonal term
+            e = h_ai_c_i * h_ai_c_i / (input_wf.energy - diag);
+            if let Orbs::Double(_) = excite.init {
+                // Double excite, exceeds eps_pt_dtm
+                e_pt_diag_doubles += e;
+            } else {
+                // Single excite
+                e_pt_diag_singles += e;
             }
         }
-
-        // Diagonal term
-        e = h_ai_c_i * h_ai_c_i / (input_wf.energy - diag);
-        if let Orbs::Double(_) = excite.init {
-            // Double excite, exceeds eps_pt_dtm
-            e_pt_diag_doubles += e;
-        } else {
-            // Single excite
-            e_pt_diag_singles += e;
-        }
-
-        // Set up sampler for doubles
     }
 
     let e_pt_off_diag = pt(&h_psi, input_wf.energy);
@@ -439,22 +477,9 @@ pub fn new_semistoch_enpt2_dtm_diag_singles(
     println!("  Total:            {:.6}\n", e_pt_diag_doubles + e_pt_diag_singles + e_pt_off_diag);
 
 
+    // Prepare stochastic component
+    let screened_sampler: ScreenedSampler = generate_screened_sampler(global.eps_pt_dtm, det_orbs);
 
-
-
-
-    // Compute deterministic component and create sampler object for sampling remaining component
-    // I.e., the component that wouldn't make the eps_pt cut
-    let start_dtm_enpt2: Instant = Instant::now();
-    let (dtm_result, screened_sampler) =
-        input_wf.approx_matmul_external_skip_singles(ham, excite_gen, global.eps_pt_dtm);
-    println!("Time for sampling setup: {:?}", start_dtm_enpt2.elapsed());
-
-    let mut e_dtm: f64 = 0.0;
-    for det in &dtm_result.dets {
-        e_dtm += (det.coeff * det.coeff) / (input_wf.energy - det.diag.unwrap());
-    }
-    println!("Deterministic component of the perturbative energy: {:.4}", e_dtm);
 
     // Stochastic component
 

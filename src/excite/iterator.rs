@@ -52,6 +52,38 @@ pub fn dets_excites_and_excited_dets<'a>(
         })
 }
 
+/// Iterate over all variational dets and their corresponding excitable orbs (along with is_alpha)
+pub fn dets_and_excitable_orbs<'a>(
+    wf: &'a Wf,
+    excite_gen: &'a ExciteGenerator, // just needed to read the valence orbitals
+) -> impl Iterator<Item = (&'a Det, Option<bool>, Orbs)> {
+    wf.dets
+        .iter() // For each det
+        .flat_map(move |det| repeat(det).zip(valence_elecs_and_epairs(&det.config, excite_gen))) // For each electron and electron pair (det, (is_alpha, init_orbs))
+        .map(move |(det, (is_alpha, init))| (det, is_alpha, init))
+}
+
+/// Iterate over all excites from the given variational det and excitable orb
+/// (Does not check eps threshold, but does check whether valid excite)
+pub fn excites_from_det_and_orbs<'a>(
+    det: &'a Det,
+    is_alpha: Option<bool>,
+    init: Orbs,
+    wf: &'a Wf,
+    excite_gen: &'a ExciteGenerator,
+) -> impl Iterator<Item = (&'a StoredExcite, Config)> {
+    repeat((det, is_alpha, init))
+        .zip(excite_gen.excites_from((is_alpha, &init))) // For each (det, excite)
+        .filter(move |((det, is_alpha, _), excite)| det.config.is_valid_stored(is_alpha, excite)) // Filter excites to already-occupied orbitals
+        .map(move |((det, is_alpha, init), excite)| {
+            (
+                excite,
+                det.config.apply_excite(is_alpha, &init, excite),
+            )
+        }) // Compute excited determinant configuration
+        .filter(move |(excite, excited_det)| !wf.inds.contains_key(&excited_det)) // Filter excites to determinants in the exciting wavefunction
+}
+
 // /// Same as dets_excites_and_excited_dets, but only generates excites in this batch
 // pub fn dets_excites_and_excited_dets_batch<'a>(
 //     wf: &'a Wf,
@@ -88,14 +120,11 @@ pub fn excites<'a>(
         .flat_map(move |(is_alpha, init)| {
             repeat((is_alpha, init))
                 .zip(excite_gen.excites_from((is_alpha, &init))) // For each (det, excite)
-                .take_while(move |((is_alpha, init), excite)| {
-                    excite.abs_h * det.coeff.abs() >= eps
-                }) // Stop searching for excites if eps threshold reached
+                .take_while(move |((is_alpha, init), excite)| excite.abs_h * det.coeff.abs() >= eps)
+            // Stop searching for excites if eps threshold reached
         })
         .filter(move |((is_alpha, _), excite)| det.config.is_valid_stored(is_alpha, excite)) // Filter excites to already-occupied orbitals
-        .map(move |((is_alpha, init), excite)| {
-            (is_alpha, init, excite)
-        })
+        .map(move |((is_alpha, init), excite)| (is_alpha, init, excite))
 }
 
 /// Iterate over all single and double excitations from the given determinant (only excitations whose matrix elements
@@ -197,8 +226,8 @@ impl ExciteGenerator {
     }
 }
 
-    // Iterate over the excitations from these orbitals, using only excitations in this batch
-    // Needs the det's config as an input because batches are determined by generated PT dets
+// Iterate over the excitations from these orbitals, using only excitations in this batch
+// Needs the det's config as an input because batches are determined by generated PT dets
 //     fn excites_from_batch(
 //         &self,
 //         det: &Config,
