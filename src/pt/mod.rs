@@ -4,7 +4,7 @@ use crate::excite::init::ExciteGenerator;
 use crate::excite::{Excite, Orbs};
 use crate::ham::Ham;
 use crate::rng::{init_rand, Rand};
-use crate::semistoch::{new_semistoch_enpt2, new_semistoch_enpt2_no_diag_singles, old_semistoch_enpt2};
+use crate::semistoch::{new_semistoch_enpt2, new_semistoch_enpt2_dtm_diag_singles, old_semistoch_enpt2};
 use crate::utils::read_input::Global;
 use crate::wf::det::{Config, Det};
 use crate::wf::Wf;
@@ -21,7 +21,6 @@ pub fn perturbative(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, wf
     let std_dev: f64;
     e_pt2 = dtm_pt(wf, excite_gen, ham, global.eps_pt_dtm);
     println!("Variational energy: {}, Deterministic PT: {}, Total energy: {}", wf.energy, e_pt2, wf.energy + e_pt2);
-    panic!("DEBUG");
     if global.n_cross_term_samples == 0 {
         // Old SHCI (2017 paper)
         println!("\nCalling semistoch ENPT2 the old way with p ~ |c|");
@@ -30,7 +29,8 @@ pub fn perturbative(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, wf
         std_dev = out.1;
     } else {
         println!("\nCalling semistoch ENPT2 the new way with importance sampling");
-        let out = new_semistoch_enpt2_no_diag_singles(wf, global, ham, excite_gen, &mut rand);
+        let out = new_semistoch_enpt2_dtm_diag_singles(wf, global, ham, excite_gen, &mut rand);
+        // let out = new_semistoch_enpt2_no_diag_singles(wf, global, ham, excite_gen, &mut rand);
         // let out = new_semistoch_enpt2(wf, global, ham, excite_gen, &mut rand);
         // let out = importance_sampled_semistoch_enpt2(wf, global, ham, excite_gen, &mut rand);
         // let out = fast_stoch_enpt2(wf, global, ham, excite_gen, &mut rand);
