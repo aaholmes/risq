@@ -432,7 +432,7 @@ impl Wf {
         } // for det in self.dets
 
         // Now, convert det_orbs to a screened_sampler
-        (out_wf, generate_screened_sampler(eps, det_orbs))
+        (out_wf, generate_screened_sampler(det_orbs))
     }
 
     pub fn approx_matmul_external_skip_singles(
@@ -605,7 +605,7 @@ impl Wf {
         } // for det in self.dets
 
         // Now, convert det_orbs to a screened_sampler
-        (out_wf, generate_screened_sampler(eps, det_orbs))
+        (out_wf, generate_screened_sampler(det_orbs))
     }
 
 
@@ -927,7 +927,7 @@ impl Wf {
         );
 
         // Now, convert det_orbs to a screened_sampler
-        (out_wf, generate_screened_sampler(eps, det_orbs))
+        (out_wf, generate_screened_sampler(det_orbs))
     }
 
     // pub fn approx_matmul_external_dtm_singles(
@@ -1606,7 +1606,7 @@ impl Wf {
         } // for det in self.dets
 
         // Now, convert det_orbs to a screened_sampler
-        (out_wf, generate_screened_sampler(eps, det_orbs))
+        (out_wf, generate_screened_sampler(det_orbs))
     }
 
     pub fn approx_matmul_variational(

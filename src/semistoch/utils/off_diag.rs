@@ -112,7 +112,7 @@ impl OffDiagSamples {
 
     /// Compute the off-diagonal contribution to the PT energy estimate
     /// using the stored samples
-    pub fn pt_energy(&self, e0: f64) -> f64 {
+    pub fn off_diag_pt_energy(&self, e0: f64) -> f64 {
         let mut e_pt: f64 = 0.0;
         for (e_a, s, s_sq) in self.pt_energies_and_sums.values() {
             e_pt += (*s * *s - *s_sq) / (e0 - e_a);
@@ -162,8 +162,8 @@ pub fn sample_off_diag_update_welford(
     }
     assert_eq!(n_samples_per_batch, off_diag.n);
 
-    let mut off_diag_estimate: f64 = off_diag.pt_energy(wf.energy);
-    if let Some(e) = eps {off_diag_estimate -= off_diag_screened.pt_energy(wf.energy);}
+    let mut off_diag_estimate: f64 = off_diag.off_diag_pt_energy(wf.energy);
+    if let Some(e) = eps {off_diag_estimate -= off_diag_screened.off_diag_pt_energy(wf.energy);}
     println!(
         "Sampled off-diagonal energy this batch: {:.4}",
         off_diag_estimate

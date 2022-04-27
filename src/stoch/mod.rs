@@ -39,7 +39,6 @@ pub enum ImpSampleDist {
 
 /// Also, contains elements, the list of elements being sampled (e.g. det/orb pairs)
 pub struct ScreenedSampler<'a> {
-    pub eps: f64,
     // pub uniform_singles: bool,
     pub elements: Vec<DetOrbSample<'a>>,
     pub det_orb_sampler_abs_hc: Alias,
@@ -84,7 +83,7 @@ impl Hash for DetOrbSample<'_> {
 /// Generate a screened sampler object for sampling (det, orbs) pairs using Alias sampling
 /// The input det_orbs will contain the information needed for CDF-searching as a separate step
 /// (sum_abs_hc, sum_hc_squared are the sums of remaining terms to be sampled)
-pub fn generate_screened_sampler(eps: f64, det_orbs: Vec<DetOrbSample>) -> ScreenedSampler {
+pub fn generate_screened_sampler(det_orbs: Vec<DetOrbSample>) -> ScreenedSampler {
     // pub fn generate_screened_sampler<'a>(eps: f64, det_orbs: &'a Vec<DetOrbSample>) -> ScreenedSampler<'a> {
 
     println!("Generating screened sampler of size {}", det_orbs.len());
@@ -110,7 +109,6 @@ pub fn generate_screened_sampler(eps: f64, det_orbs: Vec<DetOrbSample>) -> Scree
     }
 
     ScreenedSampler {
-        eps,
         elements: det_orbs_nonzero,
         det_orb_sampler_abs_hc: Alias::new(probs_abs_hc),
         det_orb_sampler_hc_squared: Alias::new(probs_hc_squared),

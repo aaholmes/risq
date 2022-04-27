@@ -383,6 +383,8 @@ pub fn new_semistoch_enpt2_dtm_diag_singles(
 
     // Repeat until convergence
 
+    let start_dtm: Instant = Instant::now();
+
     // For making screened sampler
     let mut det_orbs: Vec<DetOrbSample> = vec![];
 
@@ -474,11 +476,16 @@ pub fn new_semistoch_enpt2_dtm_diag_singles(
     println!("  Diagonal Doubles: {:.6} ({:.1}%)", e_pt_diag_doubles, 100.0 * e_pt_diag_doubles / e_pt_dtm);
     println!("  Diagonal Singles: {:.6} ({:.1}%)", e_pt_diag_singles, 100.0 * e_pt_diag_singles / e_pt_dtm);
     println!("  Off-diagonal:     {:.6} ({:.1}%)", e_pt_off_diag, 100.0 * e_pt_off_diag / e_pt_dtm);
-    println!("  Total:            {:.6}\n", e_pt_diag_doubles + e_pt_diag_singles + e_pt_off_diag);
+    println!("  Total:            {:.6}\n", e_pt_dtm);
 
+    println!("Time for deterministic component: {:?}", start_dtm.elapsed());
 
-    // Prepare stochastic component
-    let screened_sampler: ScreenedSampler = generate_screened_sampler(global.eps_pt_dtm, det_orbs);
+    // Prepare stochastic component to be sampled (this sets up both importance sampling distributions:
+    // |Hc| and (Hc)^2, but if this is time consuming we can only set up one)
+    println!("Setting up screened sampler");
+    let start_setup_screened_sampler: Instant = Instant::now();
+    let screened_sampler: ScreenedSampler = generate_screened_sampler(det_orbs);
+    println!("Time for sampling setup: {:?}", start_setup_screened_sampler.elapsed());
 
 
     // Stochastic component
@@ -592,7 +599,7 @@ pub fn new_semistoch_enpt2_dtm_diag_singles(
         start_pt.elapsed()
     );
 
-    (e_dtm + enpt2_diag.mean + enpt2_off_diag.mean, total_std_err)
+    (e_pt_dtm + enpt2_diag.mean + enpt2_off_diag.mean, total_std_err)
 }
 
 pub fn new_semistoch_enpt2_no_diag_singles(
