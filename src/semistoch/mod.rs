@@ -1514,10 +1514,10 @@ pub fn old_semistoch_enpt2(
         stoch_enpt2.update(sampled_e);
         println!(
             "Current estimate of stochastic component: {:.4} +- {:.4}",
-            stoch_enpt2.mean, stoch_enpt2.std_dev
+            stoch_enpt2.mean, std_err(&stoch_enpt2)
         );
 
-        if i_batch > 9 && stoch_enpt2.std_dev <= global.target_uncertainty {
+        if i_batch > 9 && std_err(&stoch_enpt2) <= global.target_uncertainty {
             println!("Target uncertainty reached!");
             break;
         }
@@ -1526,10 +1526,10 @@ pub fn old_semistoch_enpt2(
 
     println!(
         "Stochastic component: {:.4} +- {:.4}",
-        stoch_enpt2.mean, stoch_enpt2.std_dev
+        stoch_enpt2.mean, std_err(&stoch_enpt2)
     );
 
-    (dtm_enpt2 + stoch_enpt2.mean, stoch_enpt2.std_dev)
+    (dtm_enpt2 + stoch_enpt2.mean, std_err(&stoch_enpt2))
 }
 
 // pub fn semistoch_matmul(input_wf: Wf, ham: &Ham, excite_gen: &ExciteGenerator, eps: f64, n_samples: i32) {
