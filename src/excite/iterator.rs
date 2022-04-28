@@ -56,11 +56,11 @@ pub fn dets_excites_and_excited_dets<'a>(
 pub fn dets_and_excitable_orbs<'a>(
     wf: &'a Wf,
     excite_gen: &'a ExciteGenerator, // just needed to read the valence orbitals
-) -> impl Iterator<Item = (&'a Det, Option<bool>, Orbs)> {
+) -> impl Iterator<Item = (usize, &'a Det, Option<bool>, Orbs)> {
     wf.dets
-        .iter() // For each det
-        .flat_map(move |det| repeat(det).zip(valence_elecs_and_epairs(&det.config, excite_gen))) // For each electron and electron pair (det, (is_alpha, init_orbs))
-        .map(move |(det, (is_alpha, init))| (det, is_alpha, init))
+        .iter().enumerate() // For each det
+        .flat_map(move |(ind, det)| repeat((ind, det)).zip(valence_elecs_and_epairs(&det.config, excite_gen))) // For each electron and electron pair (det, (is_alpha, init_orbs))
+        .map(move |((ind, det), (is_alpha, init))| (ind, det, is_alpha, init))
 }
 
 /// Iterate over all excites from the given variational det and excitable orb

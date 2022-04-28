@@ -9,6 +9,7 @@ use rand::distributions::{Distribution, Uniform};
 use rolling_stats::Stats;
 use std::collections::HashMap;
 use crate::excite::iterator::excites;
+use crate::stoch::alias::Alias;
 
 /// Holds the off-diagonal samples: (E_a,
 /// sum_i H_{ai} c_i w_i / p_i, sum_i (H_{ai} c_i w_i / p_i) ^ 2)
@@ -128,25 +129,24 @@ pub fn sample_off_diag_update_welford(
     wf: &Wf,
     excite_gen: &ExciteGenerator,
     ham: &Ham,
+    det_sampler: &Alias,
     n_samples_per_batch: i32,
     rand: &mut Rand,
     enpt2_off_diag: &mut Stats<f64>,
     eps: Option<f64>
 ) {
     // Sample i with probability proportional to |c_i| max_a |H_{ai}|
-    // Interestingly, this is approximately uniform!
-    // We just use uniform sampling for now
+    // Note that this is the max over all PT dets, not just those left over after deterministic component!
 
-    let mut counts: HashMap<usize, i32> = HashMap::default();
-    let uniform_dist: Uniform<usize> = Uniform::from(0..wf.n);
+    let mut counts_and_probs: HashMap<usize, (i32, f64)> = HashMap::default();
     for _i_sample in 0..n_samples_per_batch {
         // Sample a variational det i, and add it to the samples data structure
-        let i = uniform_dist.sample(&mut rand.rng);
-        match counts.get_mut(&i) {
+        let (i, p_i) = det_sampler.sample_with_prob(rand);
+        match counts_and_probs.get_mut(&i) {
             None => {
-                counts.insert(i, 1);
+                counts_and_probs.insert(i, (1, p_i));
             }
-            Some(w) => {
+            Some((w, _)) => {
                 *w += 1;
             }
         }
@@ -155,10 +155,9 @@ pub fn sample_off_diag_update_welford(
     // Obtain var_dets and their counts {w}
     let mut off_diag: OffDiagSamples = OffDiagSamples::default();
     let mut off_diag_screened: OffDiagSamples = OffDiagSamples::default();
-    let prob: f64 = 1.0 / (wf.n as f64);
-    for (i, w) in counts {
-        off_diag.add_new_var_det(wf, &wf.dets[i], w, prob, excite_gen, ham, None);
-        if let Some(e) = eps {off_diag_screened.add_new_var_det(wf, &wf.dets[i], w, prob, excite_gen, ham, eps);}
+    for (i, (w_i, p_i)) in counts_and_probs {
+        off_diag.add_new_var_det(wf, &wf.dets[i], w_i, p_i, excite_gen, ham, None);
+        if let Some(e) = eps {off_diag_screened.add_new_var_det(wf, &wf.dets[i], w_i, p_i, excite_gen, ham, eps);}
     }
     assert_eq!(n_samples_per_batch, off_diag.n);
 
