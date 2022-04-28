@@ -19,9 +19,9 @@ pub fn perturbative(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, wf
 
     let mut e_pt2: f64;
     let std_dev: f64;
-    e_pt2 = dtm_pt(wf, excite_gen, ham, global.eps_pt_dtm);
-    println!("Variational energy: {}, Deterministic PT: {}, Total energy: {}", wf.energy, e_pt2, wf.energy + e_pt2);
-    if global.n_cross_term_samples == 0 {
+    // e_pt2 = dtm_pt(wf, excite_gen, ham, 1e-6);
+    // println!("Variational energy: {}, Deterministic PT: {}, Total energy: {}", wf.energy, e_pt2, wf.energy + e_pt2);
+    if !global.use_new_semistoch {
         // Old SHCI (2017 paper)
         println!("\nCalling semistoch ENPT2 the old way with p ~ |c|");
         let out = old_semistoch_enpt2(wf, global, ham, excite_gen, false, &mut rand);

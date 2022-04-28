@@ -28,6 +28,7 @@ pub struct Global {
     pub n_samples_per_batch: i32,
     pub n_batches: i32,
     pub n_cross_term_samples: i32, // 0 for old semistochastic method; >0 for new
+    pub use_new_semistoch: bool,
 }
 
 /// Read input from in.json, put it into Global struct
@@ -51,6 +52,7 @@ pub fn read_input<P: AsRef<Path>>(path: P) -> Result<Global> {
     println!("  n_samples_per_batch: {}", global.n_samples_per_batch);
     println!("  n_batches: {}", global.n_batches);
     println!("  n_cross_term_samples: {}", global.n_cross_term_samples);
+    println!("  use_new_semistoch: {}", global.use_new_semistoch);
     println!("\n");
 
     // if n_states != 1 {
