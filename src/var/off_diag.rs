@@ -89,4 +89,3 @@ pub fn add_el_and_spin_flipped(wf: &mut VarWf, ham: &Ham, i: usize, j: usize) {
         add_el(wf, ham, i_spin_flipped, j_spin_flipped, Some(elem));
     }
 }
-

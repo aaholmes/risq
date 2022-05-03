@@ -26,7 +26,11 @@ impl Iterator for Eps {
         } else {
             self.target
         };
-        self.next = if self.next * 0.5 > self.target { self.next * 0.5 } else { self.target };
+        self.next = if self.next * 0.5 > self.target {
+            self.next * 0.5
+        } else {
+            self.target
+        };
         Some(curr)
     }
 }

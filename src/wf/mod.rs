@@ -10,6 +10,7 @@ use std::collections::HashMap;
 use super::ham::Ham;
 use super::utils::read_input::Global;
 use crate::excite::init::ExciteGenerator;
+use crate::excite::iterator::dets_excites_and_excited_dets;
 use crate::excite::{Excite, Orbs};
 use crate::stoch::{generate_screened_sampler, DetOrbSample, ScreenedSampler};
 use crate::utils::bits::{bit_pairs, bits};
@@ -19,7 +20,6 @@ use eps::{init_eps, Eps};
 use itertools::enumerate;
 use nalgebra::{Const, Dynamic, Matrix, VecStorage};
 use rolling_stats::Stats;
-use crate::excite::iterator::dets_excites_and_excited_dets;
 
 /// Wavefunction data structure
 #[derive(Default)]
@@ -54,10 +54,10 @@ impl Wf {
     }
 
     pub fn push_config(&mut self, config: Config) {
-        self.push(Det{
+        self.push(Det {
             config,
             coeff: 0.0,
-            diag: None
+            diag: None,
         });
     }
 
@@ -604,7 +604,6 @@ impl Wf {
         (out_wf, generate_screened_sampler(det_orbs))
     }
 
-
     pub fn approx_matmul_external_semistoch_singles(
         &self,
         ham: &Ham,
@@ -925,8 +924,6 @@ impl Wf {
         // Now, convert det_orbs to a screened_sampler
         (out_wf, generate_screened_sampler(det_orbs))
     }
-
-
 
     pub fn approx_matmul_external_no_singles(
         &self,

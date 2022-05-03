@@ -43,4 +43,3 @@ pub fn sample_diag_update_welford(
         }
     }
 }
-

@@ -58,8 +58,11 @@ pub fn dets_and_excitable_orbs<'a>(
     excite_gen: &'a ExciteGenerator, // just needed to read the valence orbitals
 ) -> impl Iterator<Item = (usize, &'a Det, Option<bool>, Orbs)> {
     wf.dets
-        .iter().enumerate() // For each det
-        .flat_map(move |(ind, det)| repeat((ind, det)).zip(valence_elecs_and_epairs(&det.config, excite_gen))) // For each electron and electron pair (det, (is_alpha, init_orbs))
+        .iter()
+        .enumerate() // For each det
+        .flat_map(move |(ind, det)| {
+            repeat((ind, det)).zip(valence_elecs_and_epairs(&det.config, excite_gen))
+        }) // For each electron and electron pair (det, (is_alpha, init_orbs))
         .map(move |((ind, det), (is_alpha, init))| (ind, det, is_alpha, init))
 }
 
@@ -76,12 +79,10 @@ pub fn excites_from_det_and_orbs<'a>(
         .zip(excite_gen.excites_from((is_alpha, &init))) // For each (det, excite)
         .filter(move |((det, is_alpha, _), excite)| det.config.is_valid_stored(is_alpha, excite)) // Filter excites to already-occupied orbitals
         .map(move |((det, is_alpha, init), excite)| {
-            (
-                excite,
-                det.config.apply_excite(is_alpha, &init, excite),
-            )
+            (excite, det.config.apply_excite(is_alpha, &init, excite))
         }) // Compute excited determinant configuration
-        .filter(move |(_excite, excited_det)| !wf.inds.contains_key(&excited_det)) // Filter excites to determinants in the exciting wavefunction
+        .filter(move |(_excite, excited_det)| !wf.inds.contains_key(&excited_det))
+    // Filter excites to determinants in the exciting wavefunction
 }
 
 // /// Same as dets_excites_and_excited_dets, but only generates excites in this batch
@@ -120,14 +121,14 @@ pub fn excites<'a>(
         .flat_map(move |(is_alpha, init)| {
             repeat((is_alpha, init))
                 .zip(excite_gen.excites_from((is_alpha, &init))) // For each (det, excite)
-                .take_while(move |((_is_alpha, _init), excite)| excite.abs_h * det.coeff.abs() >= eps)
+                .take_while(move |((_is_alpha, _init), excite)| {
+                    excite.abs_h * det.coeff.abs() >= eps
+                })
             // Stop searching for excites if eps threshold reached
         })
         .filter(move |((is_alpha, _), excite)| det.config.is_valid_stored(is_alpha, excite)) // Filter excites to already-occupied orbitals
         .map(move |((is_alpha, init), excite)| (is_alpha, init, excite))
 }
-
-
 
 impl ExciteGenerator {
     /// Iterate over the excitations from these orbitals

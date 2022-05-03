@@ -3,21 +3,21 @@
 mod utils;
 
 use crate::excite::init::ExciteGenerator;
+use crate::excite::iterator::{dets_and_excitable_orbs, excites_from_det_and_orbs};
+use crate::excite::{Excite, Orbs};
 use crate::ham::Ham;
 use crate::pt::{pt, PtSamples};
 use crate::rng::Rand;
 use crate::semistoch::utils::diag::sample_diag_update_welford;
 use crate::semistoch::utils::off_diag::sample_off_diag_update_welford;
 use crate::stoch::alias::Alias;
-use crate::stoch::{matmul_sample_remaining, ImpSampleDist};
 use crate::stoch::{generate_screened_sampler, DetOrbSample, ScreenedSampler};
+use crate::stoch::{matmul_sample_remaining, ImpSampleDist};
 use crate::utils::read_input::Global;
+use crate::wf::det::Det;
 use crate::wf::Wf;
 use rolling_stats::Stats;
 use std::time::Instant;
-use crate::excite::iterator::{dets_and_excitable_orbs, excites_from_det_and_orbs};
-use crate::excite::{Excite, Orbs};
-use crate::wf::det::Det;
 
 /// Importance sampled semistochastic ENPT2
 pub fn importance_sampled_semistoch_enpt2(
@@ -193,12 +193,9 @@ pub fn importance_sampled_semistoch_enpt2(
     (dtm_enpt2 + stoch_enpt2.mean, stoch_enpt2.std_dev)
 }
 
-
 fn std_err(stats: &Stats<f64>) -> f64 {
     stats.std_dev / (stats.count as f64).sqrt()
 }
-
-
 
 /// WIP:  Like classic semistoch algo, except:
 /// 1. Diag and off-diag contributions separated
@@ -211,7 +208,6 @@ pub fn new_semistoch_enpt2_dtm_diag_singles(
     excite_gen: &ExciteGenerator,
     rand: &mut Rand,
 ) -> (f64, f64) {
-
     // Loop over all single excites: Sum their diagonal contributions, and for the ones for which
     // |H_ai c_i| > eps_dtm_pt, generate wf of their perturbative contributions
 
@@ -247,9 +243,14 @@ pub fn new_semistoch_enpt2_dtm_diag_singles(
     // (i.e., don't use the iterator dets_excites_and_excited_dets here)
     //for (var_det, excite, pt_config) in dets_excites_and_excited_dets(input_wf, excite_gen, global.eps_pt_dtm) {
     for (i_det, var_det, is_alpha, init) in dets_and_excitable_orbs(input_wf, excite_gen) {
-        for (stored_excite, pt_config) in excites_from_det_and_orbs(var_det, is_alpha, init, input_wf, excite_gen) { // Filters out excitations into variational wf
+        for (stored_excite, pt_config) in
+            excites_from_det_and_orbs(var_det, is_alpha, init, input_wf, excite_gen)
+        {
+            // Filters out excitations into variational wf
             // For doubles, check whether exceeds eps
-            if matches!(init, Orbs::Double(_)) && stored_excite.abs_h * var_det.coeff.abs() < global.eps_pt_dtm {
+            if matches!(init, Orbs::Double(_))
+                && stored_excite.abs_h * var_det.coeff.abs() < global.eps_pt_dtm
+            {
                 // Threshold reached: set up sampler and go to next det/excitable orb
                 det_orbs.push(DetOrbSample {
                     det: var_det,
@@ -257,8 +258,7 @@ pub fn new_semistoch_enpt2_dtm_diag_singles(
                     is_alpha,
                     sum_abs_h: stored_excite.sum_remaining_abs_h,
                     sum_h_squared: stored_excite.sum_remaining_h_squared,
-                    sum_abs_hc: var_det.coeff.abs()
-                        * stored_excite.sum_remaining_abs_h,
+                    sum_abs_hc: var_det.coeff.abs() * stored_excite.sum_remaining_abs_h,
                     sum_hc_squared: var_det.coeff
                         * var_det.coeff
                         * stored_excite.sum_remaining_h_squared,
@@ -302,7 +302,7 @@ pub fn new_semistoch_enpt2_dtm_diag_singles(
                     h_psi.dets.push(Det {
                         config: pt_config,
                         coeff: h_ai_c_i,
-                        diag: Some(diag)
+                        diag: Some(diag),
                     });
                 }
             }
@@ -323,13 +323,27 @@ pub fn new_semistoch_enpt2_dtm_diag_singles(
     let e_pt_dtm: f64 = e_pt_diag_doubles + e_pt_diag_singles + e_pt_off_diag;
 
     println!("\nDeterministic component of PT energy:");
-    println!("  Diagonal Doubles: {:.6} ({:.1}%)", e_pt_diag_doubles, 100.0 * e_pt_diag_doubles / e_pt_dtm);
-    println!("  Diagonal Singles: {:.6} ({:.1}%)", e_pt_diag_singles, 100.0 * e_pt_diag_singles / e_pt_dtm);
-    println!("  Off-diagonal:     {:.6} ({:.1}%)", e_pt_off_diag, 100.0 * e_pt_off_diag / e_pt_dtm);
+    println!(
+        "  Diagonal Doubles: {:.6} ({:.1}%)",
+        e_pt_diag_doubles,
+        100.0 * e_pt_diag_doubles / e_pt_dtm
+    );
+    println!(
+        "  Diagonal Singles: {:.6} ({:.1}%)",
+        e_pt_diag_singles,
+        100.0 * e_pt_diag_singles / e_pt_dtm
+    );
+    println!(
+        "  Off-diagonal:     {:.6} ({:.1}%)",
+        e_pt_off_diag,
+        100.0 * e_pt_off_diag / e_pt_dtm
+    );
     println!("  Total:            {:.6}\n", e_pt_dtm);
 
-    println!("Time for deterministic component: {:?}", start_dtm.elapsed());
-
+    println!(
+        "Time for deterministic component: {:?}",
+        start_dtm.elapsed()
+    );
 
     // Prepare stochastic component
 
@@ -339,7 +353,10 @@ pub fn new_semistoch_enpt2_dtm_diag_singles(
     println!("Setting up screened sampler");
     let start_setup_screened_sampler: Instant = Instant::now();
     let screened_sampler: ScreenedSampler = generate_screened_sampler(det_orbs);
-    println!("Time for sampling setup: {:?}", start_setup_screened_sampler.elapsed());
+    println!(
+        "Time for sampling setup: {:?}",
+        start_setup_screened_sampler.elapsed()
+    );
 
     // Off-diagonal part: for sampling D_i with probability proportional to |c_i| max_a |H_{ai}|
     println!("\ni, |c_i|, |c_i| max_a |H_ai| =");
@@ -347,11 +364,10 @@ pub fn new_semistoch_enpt2_dtm_diag_singles(
         println!("{}  {}  {}", i, input_wf.dets[i].coeff.abs(), rel_probs[i]);
     }
     println!("...");
-    for i in input_wf.n - 5 .. input_wf.n {
+    for i in input_wf.n - 5..input_wf.n {
         println!("{}  {}  {}", i, input_wf.dets[i].coeff.abs(), rel_probs[i]);
     }
     let det_sampler: Alias = Alias::new(rel_probs);
-
 
     // Stochastic component
 
@@ -377,7 +393,10 @@ pub fn new_semistoch_enpt2_dtm_diag_singles(
     let n_diag_init: i32 = 100;
     let n_off_diag_init: i32 = 10;
 
-    println!("\nCollecting {} initial samples of the diagonal contribution to E_PT", n_diag_init);
+    println!(
+        "\nCollecting {} initial samples of the diagonal contribution to E_PT",
+        n_diag_init
+    );
     for _i_batch in 0..n_diag_init {
         // Sample diag, update Welford
         sample_diag_update_welford(
@@ -389,9 +408,16 @@ pub fn new_semistoch_enpt2_dtm_diag_singles(
             &mut enpt2_diag,
         );
     }
-    println!("Initial estimate of the diagonal contribution: {:.4} +- {:.4}", enpt2_diag.mean, std_err(&enpt2_diag));
+    println!(
+        "Initial estimate of the diagonal contribution: {:.4} +- {:.4}",
+        enpt2_diag.mean,
+        std_err(&enpt2_diag)
+    );
 
-    println!("\nCollecting {} initial samples of the off-diagonal contribution to E_PT", n_off_diag_init);
+    println!(
+        "\nCollecting {} initial samples of the off-diagonal contribution to E_PT",
+        n_off_diag_init
+    );
     for _i_batch in 0..n_off_diag_init {
         // Sample off_diag, update Welford
         sample_off_diag_update_welford(
@@ -402,14 +428,18 @@ pub fn new_semistoch_enpt2_dtm_diag_singles(
             global.n_samples_per_batch,
             rand,
             &mut enpt2_off_diag,
-            Some(global.eps_pt_dtm)
+            Some(global.eps_pt_dtm),
         );
     }
-    println!("Initial estimate of the off-diagonal contribution: {:.4} +- {:.4}", enpt2_off_diag.mean, std_err(&enpt2_off_diag));
+    println!(
+        "Initial estimate of the off-diagonal contribution: {:.4} +- {:.4}",
+        enpt2_off_diag.mean,
+        std_err(&enpt2_off_diag)
+    );
 
     let mut total_std_err: f64 = (std_err(&enpt2_diag) * std_err(&enpt2_diag)
         + std_err(&enpt2_off_diag) * std_err(&enpt2_off_diag))
-        .sqrt();
+    .sqrt();
     println!(
         "After init, diag and off-diag components: {} +- {}, {} +- {}, total: {} +- {}",
         enpt2_diag.mean,
@@ -444,12 +474,12 @@ pub fn new_semistoch_enpt2_dtm_diag_singles(
                 global.n_samples_per_batch,
                 rand,
                 &mut enpt2_off_diag,
-                Some(global.eps_pt_dtm)
+                Some(global.eps_pt_dtm),
             );
         }
         total_std_err = (std_err(&enpt2_diag) * std_err(&enpt2_diag)
             + std_err(&enpt2_off_diag) * std_err(&enpt2_off_diag))
-            .sqrt();
+        .sqrt();
         println!(
             "diag ({} samples) and off-diag ({} batches) components: {} +- {}, {} +- {}, total: {} +- {}",
             enpt2_diag.count, enpt2_off_diag.count,
@@ -460,7 +490,6 @@ pub fn new_semistoch_enpt2_dtm_diag_singles(
             enpt2_diag.mean + enpt2_off_diag.mean,
             total_std_err
         );
-
     }
 
     println!(
@@ -468,9 +497,11 @@ pub fn new_semistoch_enpt2_dtm_diag_singles(
         start_pt.elapsed()
     );
 
-    (e_pt_dtm + enpt2_diag.mean + enpt2_off_diag.mean, total_std_err)
+    (
+        e_pt_dtm + enpt2_diag.mean + enpt2_off_diag.mean,
+        total_std_err,
+    )
 }
-
 
 pub fn fast_stoch_enpt2(
     input_wf: &Wf,
@@ -552,8 +583,6 @@ pub fn fast_stoch_enpt2(
 
     (stoch_enpt2_quadratic.mean, stoch_enpt2_quadratic.std_dev)
 }
-
-
 
 /// Old algorithm (2017) for semistochastic ENPT2
 pub fn old_semistoch_enpt2(
@@ -669,7 +698,8 @@ pub fn old_semistoch_enpt2(
         stoch_enpt2.update(sampled_e);
         println!(
             "Current estimate of stochastic component: {:.4} +- {:.4}",
-            stoch_enpt2.mean, std_err(&stoch_enpt2)
+            stoch_enpt2.mean,
+            std_err(&stoch_enpt2)
         );
 
         if i_batch > 9 && std_err(&stoch_enpt2) <= global.target_uncertainty {
@@ -681,13 +711,12 @@ pub fn old_semistoch_enpt2(
 
     println!(
         "Stochastic component: {:.4} +- {:.4}",
-        stoch_enpt2.mean, std_err(&stoch_enpt2)
+        stoch_enpt2.mean,
+        std_err(&stoch_enpt2)
     );
 
     (dtm_enpt2 + stoch_enpt2.mean, std_err(&stoch_enpt2))
 }
-
-
 
 // #[cfg(test)]
 // mod tests {

@@ -28,7 +28,11 @@ impl fmt::Display for Det {
             "{} : coeff = {}, diag = {}",
             self.config,
             self.coeff,
-            if let Some(_diag) = self.diag {stringify!(self.diag)} else {"N/A"}
+            if let Some(_diag) = self.diag {
+                stringify!(self.diag)
+            } else {
+                "N/A"
+            }
         )
     }
 }

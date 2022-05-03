@@ -1,13 +1,13 @@
 use crate::excite::init::ExciteGenerator;
+use crate::excite::iterator::excites;
 use crate::excite::{Orbs, StoredExcite};
 use crate::ham::Ham;
 use crate::rng::Rand;
+use crate::stoch::alias::Alias;
 use crate::wf::det::{Config, Det};
 use crate::wf::Wf;
 use rolling_stats::Stats;
 use std::collections::HashMap;
-use crate::excite::iterator::excites;
-use crate::stoch::alias::Alias;
 
 /// Holds the off-diagonal samples: (E_a,
 /// sum_i H_{ai} c_i w_i / p_i, sum_i (H_{ai} c_i w_i / p_i) ^ 2)
@@ -48,15 +48,16 @@ impl OffDiagSamples {
                 if (h_ai * var_det.coeff).abs() < eps {
                     return;
                 }
-            },
-            _ => {},
+            }
+            _ => {}
         }
-        assert!((h_ai * var_det.coeff).abs() >= eps, "Got an excitation smaller than eps!");
+        assert!(
+            (h_ai * var_det.coeff).abs() >= eps,
+            "Got an excitation smaller than eps!"
+        );
 
         // x_{ai} = H_{ai} c_i w_i / p_i
-        let x_ai: f64 =
-             h_ai * var_det.coeff * (w as f64)
-                / prob;
+        let x_ai: f64 = h_ai * var_det.coeff * (w as f64) / prob;
 
         match self.pt_energies_and_sums.get_mut(&pt_config) {
             None => {
@@ -82,7 +83,7 @@ impl OffDiagSamples {
         prob: f64,
         excite_gen: &ExciteGenerator,
         ham: &Ham,
-        eps: Option<f64>
+        eps: Option<f64>,
     ) {
         self.n += w;
         let mut eps_local: f64 = 1e-9; // This epsilon should be effectively zero, not the usual eps_var or eps_pt_dtm
@@ -103,7 +104,7 @@ impl OffDiagSamples {
                     w,
                     prob,
                     ham,
-                    eps_local
+                    eps_local,
                 );
             }
         }
@@ -131,7 +132,7 @@ pub fn sample_off_diag_update_welford(
     n_samples_per_batch: i32,
     rand: &mut Rand,
     enpt2_off_diag: &mut Stats<f64>,
-    eps: Option<f64>
+    eps: Option<f64>,
 ) {
     // Sample i with probability proportional to |c_i| max_a |H_{ai}|
     // Note that this is the max over all PT dets, not just those left over after deterministic component!
@@ -155,12 +156,16 @@ pub fn sample_off_diag_update_welford(
     let mut off_diag_screened: OffDiagSamples = OffDiagSamples::default();
     for (i, (w_i, p_i)) in counts_and_probs {
         off_diag.add_new_var_det(wf, &wf.dets[i], w_i, p_i, excite_gen, ham, None);
-        if let Some(_e) = eps {off_diag_screened.add_new_var_det(wf, &wf.dets[i], w_i, p_i, excite_gen, ham, eps);}
+        if let Some(_e) = eps {
+            off_diag_screened.add_new_var_det(wf, &wf.dets[i], w_i, p_i, excite_gen, ham, eps);
+        }
     }
     assert_eq!(n_samples_per_batch, off_diag.n);
 
     let mut off_diag_estimate: f64 = off_diag.off_diag_pt_energy(wf.energy);
-    if let Some(_e) = eps {off_diag_estimate -= off_diag_screened.off_diag_pt_energy(wf.energy);}
+    if let Some(_e) = eps {
+        off_diag_estimate -= off_diag_screened.off_diag_pt_energy(wf.energy);
+    }
     println!(
         "Sampled off-diagonal energy this batch: {:.4}",
         off_diag_estimate

@@ -31,8 +31,6 @@ where
     }
 }
 
-
-
 #[cfg(test)]
 pub fn gen_doubles(
     wf: &Wf,
@@ -93,8 +91,6 @@ pub fn gen_doubles(
 
     doub
 }
-
-
 
 pub fn gen_sparse_ham_fast(
     global: &Global,

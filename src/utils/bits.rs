@@ -56,23 +56,35 @@ pub fn product_bits(det: &Config) -> impl Iterator<Item = (i32, i32)> {
 }
 
 /// Iterate over all occupied orbs and pairs of orbs in a det
-pub fn valence_elecs_and_epairs(det: &Config, excite_gen: &ExciteGenerator) -> impl Iterator<Item = (Option<bool>, Orbs)> {
-    let valence_det: Config = Config { up: det.up & excite_gen.valence, dn: det.dn & excite_gen.valence };
+pub fn valence_elecs_and_epairs(
+    det: &Config,
+    excite_gen: &ExciteGenerator,
+) -> impl Iterator<Item = (Option<bool>, Orbs)> {
+    let valence_det: Config = Config {
+        up: det.up & excite_gen.valence,
+        dn: det.dn & excite_gen.valence,
+    };
     epairs(&valence_det).chain(elecs(&valence_det))
 }
 
 /// Iterate over the occupied orbs in a det, returns both the orbs (as an Orbs::Single)
 /// and is_alpha, which is Some(bool) (to be consistent with epairs)
 pub fn elecs(det: &Config) -> impl Iterator<Item = (Option<bool>, Orbs)> {
-    bits(det.up).map(|p| (Some(true), Orbs::Single(p))).chain(
-        bits(det.dn).map(|p| (Some(false), Orbs::Single(p)))
-    )
+    bits(det.up)
+        .map(|p| (Some(true), Orbs::Single(p)))
+        .chain(bits(det.dn).map(|p| (Some(false), Orbs::Single(p))))
 }
 
 /// Iterate over the occupied valence orbs in a det, returns both the orbs (as an Orbs::Single)
 /// and is_alpha, which is Some(bool) (to be consistent with epairs)
-pub fn valence_elecs(det: &Config, excite_gen: &ExciteGenerator) -> impl Iterator<Item = (Option<bool>, Orbs)> {
-    let valence_det: Config = Config { up: det.up & excite_gen.valence, dn: det.dn & excite_gen.valence };
+pub fn valence_elecs(
+    det: &Config,
+    excite_gen: &ExciteGenerator,
+) -> impl Iterator<Item = (Option<bool>, Orbs)> {
+    let valence_det: Config = Config {
+        up: det.up & excite_gen.valence,
+        dn: det.dn & excite_gen.valence,
+    };
     elecs(&valence_det)
 }
 
@@ -82,15 +94,20 @@ pub fn epairs(det: &Config) -> impl Iterator<Item = (Option<bool>, Orbs)> {
     product_bits(det).map(|pq| (None, Orbs::Double(pq))).chain(
         bit_pairs(det.up)
             .map(|pq| (Some(true), Orbs::Double(pq)))
-            .chain(bit_pairs(det.dn)
-                .map(|pq| (Some(false), Orbs::Double(pq))))
+            .chain(bit_pairs(det.dn).map(|pq| (Some(false), Orbs::Double(pq)))),
     )
 }
 
 /// Iterate over the pairs of occupied valence orbs in a det, returns both the orbs (as an Orbs::Double)
 /// and is_alpha, which is None of opposite-spin and Some(bool) for same spin
-pub fn valence_epairs(det: &Config, excite_gen: &ExciteGenerator) -> impl Iterator<Item = (Option<bool>, Orbs)> {
-    let valence_det: Config = Config { up: det.up & excite_gen.valence, dn: det.dn & excite_gen.valence };
+pub fn valence_epairs(
+    det: &Config,
+    excite_gen: &ExciteGenerator,
+) -> impl Iterator<Item = (Option<bool>, Orbs)> {
+    let valence_det: Config = Config {
+        up: det.up & excite_gen.valence,
+        dn: det.dn & excite_gen.valence,
+    };
     epairs(&valence_det)
 }
 

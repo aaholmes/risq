@@ -1,6 +1,7 @@
 //! Epstein-Nesbet perturbation theory
 
 use crate::excite::init::ExciteGenerator;
+use crate::excite::iterator::dets_excites_and_excited_dets;
 use crate::excite::{Excite, Orbs};
 use crate::ham::Ham;
 use crate::rng::{init_rand, Rand};
@@ -10,7 +11,6 @@ use crate::wf::det::{Config, Det};
 use crate::wf::Wf;
 use itertools::enumerate;
 use std::collections::HashMap;
-use crate::excite::iterator::dets_excites_and_excited_dets;
 
 /// Perform the perturbative stage (Epstein-Nesbet perturbation theory, that is)
 pub fn perturbative(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, wf: &Wf) {
@@ -68,10 +68,10 @@ pub fn dtm_pt(wf: &Wf, excite_gen: &ExciteGenerator, ham: &Ham, eps: f64) -> f64
         if let Some(ind) = h_psi.inds.get_mut(&pt_config) {
             h_psi.dets[*ind].coeff += h_ai_c_i;
         } else {
-            h_psi.dets.push(Det{
+            h_psi.dets.push(Det {
                 config: pt_config,
                 coeff: h_ai_c_i,
-                diag: Some(var_det.new_diag(ham, &excite))
+                diag: Some(var_det.new_diag(ham, &excite)),
             });
         }
     }
@@ -79,8 +79,7 @@ pub fn dtm_pt(wf: &Wf, excite_gen: &ExciteGenerator, ham: &Ham, eps: f64) -> f64
     pt(&h_psi, wf.energy)
 }
 
-pub fn dtm_pt_basic(wf: &Wf, ham: &Ham, eps: f64) -> f64
-{
+pub fn dtm_pt_basic(wf: &Wf, ham: &Ham, eps: f64) -> f64 {
     todo!()
     // let mut h_psi: Wf = Wf::default();
     // for det in &wf.dets {
@@ -121,10 +120,11 @@ pub fn dtm_pt_basic(wf: &Wf, ham: &Ham, eps: f64) -> f64
 //     e_pt
 // }
 
-
 /// Evaluate the PT expression given H * Psi and E0
 pub fn pt(h_psi: &Wf, e0: f64) -> f64 {
-    h_psi.dets.iter().fold(0.0f64, |e_pt, det| e_pt + det.coeff * det.coeff / (e0 - det.diag.unwrap()))
+    h_psi.dets.iter().fold(0.0f64, |e_pt, det| {
+        e_pt + det.coeff * det.coeff / (e0 - det.diag.unwrap())
+    })
 }
 
 /// Sampled contributions to the ENPT2 correction
