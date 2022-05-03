@@ -1,13 +1,8 @@
 use crate::excite::init::ExciteGenerator;
-use crate::excite::{Orbs, StoredExcite};
 use crate::ham::Ham;
 use crate::rng::Rand;
 use crate::stoch::{matmul_sample_remaining, ImpSampleDist, ScreenedSampler};
-use crate::wf::det::{Config, Det};
-use crate::wf::Wf;
-use rand::distributions::{Distribution, Uniform};
 use rolling_stats::Stats;
-use std::collections::HashMap;
 
 /// Sample the 'diagonal' contribution to the PT energy (i.e., the term coming from the diagonal of
 /// the matrix V \[1 / (E_0 - E_a)\] V), and update the Welford statistics for the energy

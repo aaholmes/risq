@@ -4,7 +4,7 @@ use crate::excite::init::ExciteGenerator;
 use crate::excite::{Excite, Orbs};
 use crate::ham::Ham;
 use crate::rng::{init_rand, Rand};
-use crate::semistoch::{new_semistoch_enpt2, new_semistoch_enpt2_dtm_diag_singles, old_semistoch_enpt2};
+use crate::semistoch::{new_semistoch_enpt2_dtm_diag_singles, old_semistoch_enpt2};
 use crate::utils::read_input::Global;
 use crate::wf::det::{Config, Det};
 use crate::wf::Wf;
@@ -17,7 +17,7 @@ pub fn perturbative(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, wf
     // Initialize random number genrator
     let mut rand: Rand = init_rand();
 
-    let mut e_pt2: f64;
+    let e_pt2: f64;
     let std_dev: f64;
     // e_pt2 = dtm_pt(wf, excite_gen, ham, 1e-6);
     // println!("Variational energy: {}, Deterministic PT: {}, Total energy: {}", wf.energy, e_pt2, wf.energy + e_pt2);
@@ -30,11 +30,6 @@ pub fn perturbative(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, wf
     } else {
         println!("\nCalling semistoch ENPT2 the new way with importance sampling");
         let out = new_semistoch_enpt2_dtm_diag_singles(wf, global, ham, excite_gen, &mut rand);
-        // let out = new_semistoch_enpt2_no_diag_singles(wf, global, ham, excite_gen, &mut rand);
-        // let out = new_semistoch_enpt2(wf, global, ham, excite_gen, &mut rand);
-        // let out = importance_sampled_semistoch_enpt2(wf, global, ham, excite_gen, &mut rand);
-        // let out = fast_stoch_enpt2(wf, global, ham, excite_gen, &mut rand);
-        // let out = faster_semistoch_enpt2(wf, global, ham, excite_gen);
         e_pt2 = out.0;
         std_dev = out.1;
     }
@@ -86,11 +81,11 @@ pub fn dtm_pt(wf: &Wf, excite_gen: &ExciteGenerator, ham: &Ham, eps: f64) -> f64
 
 pub fn dtm_pt_basic(wf: &Wf, ham: &Ham, eps: f64) -> f64
 {
-    let mut h_psi: Wf = Wf::default();
-    for det in &wf.dets {
-
-    }
     todo!()
+    // let mut h_psi: Wf = Wf::default();
+    // for det in &wf.dets {
+    //
+    // }
 }
 
 /// Deterministic PT in batches (on average one excite per variational det per batch)
@@ -243,14 +238,13 @@ impl PtSamples {
         // TODO: Figure out why PT energy is wrong and why contributions vary so much
 
         let mut out: f64 = 0.0;
-        let mut tmp: f64 = 0.0;
         let mut diag_term: f64;
         let mut to_square: f64;
         let mut w_over_p: f64;
 
         // TODO: Exclude perturbers that only have large contributions
 
-        for (ind, (pt_det, (pt_det_diag, var_det_map))) in enumerate(&self.samples) {
+        for (_pt_det, (pt_det_diag, var_det_map)) in &self.samples {
             // println!("\nPT det {}: {}\n", ind, pt_det);
             diag_term = 0.0;
             to_square = 0.0;
@@ -277,7 +271,7 @@ impl PtSamples {
             //     (diag_term + to_square * to_square) / (e0 - pt_det_diag)
             // );
             out += (diag_term + to_square * to_square) / (e0 - pt_det_diag);
-            tmp += diag_term + to_square * to_square;
+            // tmp += diag_term + to_square * to_square;
         }
 
         // println!(

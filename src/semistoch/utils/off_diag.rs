@@ -2,10 +2,8 @@ use crate::excite::init::ExciteGenerator;
 use crate::excite::{Orbs, StoredExcite};
 use crate::ham::Ham;
 use crate::rng::Rand;
-use crate::stoch::{matmul_sample_remaining, ImpSampleDist, ScreenedSampler};
 use crate::wf::det::{Config, Det};
 use crate::wf::Wf;
-use rand::distributions::{Distribution, Uniform};
 use rolling_stats::Stats;
 use std::collections::HashMap;
 use crate::excite::iterator::excites;
@@ -88,7 +86,7 @@ impl OffDiagSamples {
     ) {
         self.n += w;
         let mut eps_local: f64 = 1e-9; // This epsilon should be effectively zero, not the usual eps_var or eps_pt_dtm
-        if let Some(e) = eps {
+        if let Some(_e) = eps {
             eps_local = eps.unwrap();
         }
         for (is_alpha, init_orbs, stored_excite) in excites(var_det, excite_gen, eps_local) {
@@ -157,12 +155,12 @@ pub fn sample_off_diag_update_welford(
     let mut off_diag_screened: OffDiagSamples = OffDiagSamples::default();
     for (i, (w_i, p_i)) in counts_and_probs {
         off_diag.add_new_var_det(wf, &wf.dets[i], w_i, p_i, excite_gen, ham, None);
-        if let Some(e) = eps {off_diag_screened.add_new_var_det(wf, &wf.dets[i], w_i, p_i, excite_gen, ham, eps);}
+        if let Some(_e) = eps {off_diag_screened.add_new_var_det(wf, &wf.dets[i], w_i, p_i, excite_gen, ham, eps);}
     }
     assert_eq!(n_samples_per_batch, off_diag.n);
 
     let mut off_diag_estimate: f64 = off_diag.off_diag_pt_energy(wf.energy);
-    if let Some(e) = eps {off_diag_estimate -= off_diag_screened.off_diag_pt_energy(wf.energy);}
+    if let Some(_e) = eps {off_diag_estimate -= off_diag_screened.off_diag_pt_energy(wf.energy);}
     println!(
         "Sampled off-diagonal energy this batch: {:.4}",
         off_diag_estimate
