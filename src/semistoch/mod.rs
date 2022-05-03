@@ -361,7 +361,7 @@ pub fn new_semistoch_enpt2(
 /// WIP:  Like classic semistoch algo, except:
 /// 1. Diag and off-diag contributions separated
 /// 2. For diag, singles are deterministic, doubles importance-sampled semistochastic
-/// 3. For off-diag, usual algorithm except sample variational dets with uniform probability
+/// 3. For off-diag, usual algorithm except sample variational dets with new probability
 pub fn new_semistoch_enpt2_dtm_diag_singles(
     input_wf: &Wf,
     global: &Global,
@@ -580,16 +580,18 @@ pub fn new_semistoch_enpt2_dtm_diag_singles(
 
     while total_std_err > global.target_uncertainty {
         // Collect another batch of the less certain component
-        if std_err(&enpt2_diag) >= std_err(&enpt2_off_diag) {
+        if std_err(&enpt2_diag) >= 0.5 * std_err(&enpt2_off_diag) {
             // Sample diag, update Welford
-            sample_diag_update_welford(
-                &screened_sampler,
-                excite_gen,
-                ham,
-                rand,
-                input_wf.energy,
-                &mut enpt2_diag,
-            );
+            for _i_diag in 0..global.n_samples_per_batch {
+                sample_diag_update_welford(
+                    &screened_sampler,
+                    excite_gen,
+                    ham,
+                    rand,
+                    input_wf.energy,
+                    &mut enpt2_diag,
+                );
+            }
         } else {
             // Sample off_diag, update Welford
             sample_off_diag_update_welford(
