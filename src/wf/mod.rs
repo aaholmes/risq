@@ -1307,7 +1307,12 @@ impl VarWf {
     /// Iterate over all dets; for each, propose all excitations; for each, check if new;
     /// if new, add to wf
     /// Returns true if no new dets (i.e., returns whether already converged)
-    pub fn find_new_dets(&mut self, global: &Global, ham: &Ham, excite_gen: &ExciteGenerator) -> bool {
+    pub fn find_new_dets(
+        &mut self,
+        global: &Global,
+        ham: &Ham,
+        excite_gen: &ExciteGenerator,
+    ) -> bool {
         self.eps = self.eps_iter.next().unwrap();
 
         println!("Getting new dets with epsilon = {:.1e}", self.eps);
@@ -1393,7 +1398,8 @@ impl VarWf {
                                     todo!()
                                 } else {
                                     // If not already in input or output, compute diagonal element and add to output
-                                    if !self.wf.inds.contains_key(&d) && !out.inds.contains_key(&d) {
+                                    if !self.wf.inds.contains_key(&d) && !out.inds.contains_key(&d)
+                                    {
                                         if let Orbs::Double(rs) = excite.target {
                                             out.push(Det {
                                                 config: d,
@@ -1435,7 +1441,8 @@ impl VarWf {
                                     // out.add_det_with_coeff(det, ham, excite, d,
                                     //                       ham.ham_doub(&det.config, &d) * det.coeff);
                                     todo!()
-                                } else if !self.wf.inds.contains_key(&d) && !out.inds.contains_key(&d)
+                                } else if !self.wf.inds.contains_key(&d)
+                                    && !out.inds.contains_key(&d)
                                 {
                                     if let Orbs::Double(rs) = excite.target {
                                         out.push(Det {
@@ -1458,50 +1465,42 @@ impl VarWf {
 
             // Single excitations
             // Since this is expensive, do it only if wf.eps has reached the target value!
-            if self.eps == global.eps_var {
-                if excite_gen.max_sing >= local_eps {
-                    for (config, is_alpha) in &[(det.config.up, true), (det.config.dn, false)] {
-                        for i in bits(excite_gen.valence & *config) {
-                            for stored_excite in excite_gen.sing_sorted_list.get(&Orbs::Single(i)).unwrap() {
-                                if stored_excite.abs_h < local_eps { break; }
-                                excite = Excite {
-                                    init: Orbs::Single(i),
-                                    target: stored_excite.target,
-                                    abs_h: stored_excite.abs_h,
-                                    is_alpha: Some(*is_alpha)
-                                };
-                                new_det = det.config.safe_excite_det(&excite);
-                                match new_det {
-                                    Some(d) => {
-                                        if matmul {
-                                            // Compute matrix element and add to H*psi
-                                            // TODO: Do this in a cache efficient way
-                                            // out.add_det_with_coeff(det, ham, excite, d,
-                                            //                       ham.ham_sing(&det.config, &d) * det.coeff);
-                                            todo!()
-                                        } else {
-                                            if !self.wf.inds.contains_key(&d) {
-                                                if !out.inds.contains_key(&d) {
-                                                    match excite.target {
-                                                        Orbs::Single(r) => {
-                                                            // Compute whether single excitation actually exceeds eps!
-                                                            if ham.ham_sing(&det.config, &d).abs() > local_eps {
-                                                                out.push(
-                                                                    Det {
-                                                                        config: d,
-                                                                        coeff: 0.0,
-                                                                        diag: Some(det.new_diag_sing(ham, i, r, *is_alpha))
-                                                                    }
-                                                                );
-                                                            }
-                                                        }
-                                                        _ => {}
-                                                    }
-                                                }
-                                            }
+            if self.eps == global.eps_var && excite_gen.max_sing >= local_eps {
+                for (config, is_alpha) in &[(det.config.up, true), (det.config.dn, false)] {
+                    for i in bits(excite_gen.valence & *config) {
+                        for stored_excite in
+                            excite_gen.sing_sorted_list.get(&Orbs::Single(i)).unwrap()
+                        {
+                            if stored_excite.abs_h < local_eps {
+                                break;
+                            }
+                            excite = Excite {
+                                init: Orbs::Single(i),
+                                target: stored_excite.target,
+                                abs_h: stored_excite.abs_h,
+                                is_alpha: Some(*is_alpha),
+                            };
+                            new_det = det.config.safe_excite_det(&excite);
+                            if let Some(d) = new_det {
+                                if matmul {
+                                    // Compute matrix element and add to H*psi
+                                    // TODO: Do this in a cache efficient way
+                                    // out.add_det_with_coeff(det, ham, excite, d,
+                                    //                       ham.ham_sing(&det.config, &d) * det.coeff);
+                                    todo!()
+                                } else if !self.wf.inds.contains_key(&d)
+                                    && !out.inds.contains_key(&d)
+                                {
+                                    if let Orbs::Single(r) = excite.target {
+                                        // Compute whether single excitation actually exceeds eps!
+                                        if ham.ham_sing(&det.config, &d).abs() > local_eps {
+                                            out.push(Det {
+                                                config: d,
+                                                coeff: 0.0,
+                                                diag: Some(det.new_diag_sing(ham, i, r, *is_alpha)),
+                                            });
                                         }
                                     }
-                                    None => {}
                                 }
                             }
                         }
@@ -1565,11 +1564,11 @@ impl VarWf {
 
 /// Initialize variational wf to the HF det (only needs to be called once)
 pub fn init_var_wf(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator) -> VarWf {
-    let mut wf: VarWf = VarWf::default();
-    wf.n_states = global.n_states;
-    wf.converged = false;
-    wf.wf.n = 1;
-    wf.update_n_stored_h(0); // No stored H yet
+    let mut var_wf: VarWf = VarWf::default();
+    var_wf.n_states = global.n_states;
+    var_wf.converged = false;
+    var_wf.wf.n = 1;
+    var_wf.update_n_stored_h(0); // No stored H yet
     let mut hf = Det {
         config: Config {
             up: ((1u128 << global.nup) - 1),
@@ -1580,10 +1579,10 @@ pub fn init_var_wf(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator) -> 
     };
     let h: f64 = ham.ham_diag(&hf.config);
     hf.diag = Some(h);
-    wf.wf.inds = HashMap::new();
-    wf.wf.inds.insert(hf.config, 0);
-    wf.wf.dets.push(hf);
-    wf.wf.energy = wf.wf.dets[0].diag.unwrap();
-    wf.eps_iter = init_eps(&wf.wf, global, excite_gen);
-    wf
+    var_wf.wf.inds = HashMap::new();
+    var_wf.wf.inds.insert(hf.config, 0);
+    var_wf.wf.dets.push(hf);
+    var_wf.wf.energy = var_wf.wf.dets[0].diag.unwrap();
+    var_wf.eps_iter = init_eps(&var_wf.wf, global, excite_gen);
+    var_wf
 }
