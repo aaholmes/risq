@@ -1,6 +1,6 @@
 //! Display definitions for custom types
 
-use crate::excite::Orbs;
+use crate::excite::{Excite, Orbs};
 use crate::stoch::DetOrbSample;
 use crate::wf::det::{Config, Det};
 use crate::wf::VarWf;
@@ -29,9 +29,9 @@ impl fmt::Display for Det {
             self.config,
             self.coeff,
             if let Some(_diag) = self.diag {
-                stringify!(self.diag)
+                self.diag.unwrap().to_string()
             } else {
-                "N/A"
+                "N/A".to_string()
             }
         )
     }
@@ -46,6 +46,31 @@ impl fmt::Display for Orbs {
             Orbs::Single(p) => {
                 write!(f, "{}", p)
             }
+        }
+    }
+}
+
+impl fmt::Display for Excite {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if let Some(a) = self.is_alpha {
+            match self.init {
+                Orbs::Double(_) => {
+                    if a {
+                        write!(f, "Double, Up: {} -> {}, |H| = {}", self.init, self.target, self.abs_h)
+                    } else {
+                        write!(f, "Double, Down: {} -> {}, |H| = {}", self.init, self.target, self.abs_h)
+                    }
+                }
+                Orbs::Single(_) => {
+                    if a {
+                        write!(f, "Single, Up: {} -> {}, |H| = {}", self.init, self.target, self.abs_h)
+                    } else {
+                        write!(f, "Single, Down: {} -> {}, |H| = {}", self.init, self.target, self.abs_h)
+                    }
+                }
+            }
+        } else {
+            write!(f, "Double, Opp: {} -> {}, |H| = {}", self.init, self.target, self.abs_h)
         }
     }
 }

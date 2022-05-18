@@ -31,66 +31,66 @@ where
     }
 }
 
-#[cfg(test)]
-pub fn gen_doubles(
-    wf: &Wf,
-    excite_gen: &ExciteGenerator,
-) -> HashMap<(i32, i32, Option<bool>), Vec<(Config, usize)>> {
-    // Output data structure:
-    // key: orb1, orb2, is_alpha
-    // value: vector of (config with orb1/2 removed, index of this config in wf) tuples, sorted by
-    // the first element in the tuple
-
-    // To find all pq->rs excites:
-    // Look up the pq and rs vectors
-    // Loop over the overlap in linear time
-    // Each tuple in intersection contains the indices of this matrix element
-    // This algorithm takes anywhere from O(N^4 N_det) time to O(N^6/M^2 N_det) time
-
-    let mut doub = HashMap::default();
-
-    for (det_ind, det) in wf.dets.iter().enumerate() {
-        // Opposite spin
-        for i in bits(excite_gen.valence & det.config.up) {
-            for j in bits(excite_gen.valence & det.config.dn) {
-                let det_r2 = Config {
-                    up: ibclr(det.config.up, i),
-                    dn: ibclr(det.config.dn, j),
-                };
-                let key = (i, j, None);
-                insert_into_hashmap_of_vectors(&mut doub, key, (det_r2, det_ind))
-            }
-        }
-
-        // Same spin
-        for (config, is_alpha) in &[(det.config.up, true), (det.config.dn, false)] {
-            for (i, j) in bit_pairs(excite_gen.valence & *config) {
-                let det_r2 = {
-                    if *is_alpha {
-                        Config {
-                            up: ibclr(ibclr(det.config.up, i), j),
-                            dn: det.config.dn,
-                        }
-                    } else {
-                        Config {
-                            up: det.config.up,
-                            dn: ibclr(ibclr(det.config.dn, i), j),
-                        }
-                    }
-                };
-                let key = (i, j, Some(*is_alpha));
-                insert_into_hashmap_of_vectors(&mut doub, key, (det_r2, det_ind))
-            }
-        }
-    }
-
-    // Sort each vector in place by det_r2
-    for vec in doub.values_mut() {
-        vec.sort_by_key(|(det, _)| (det.up, det.dn));
-    }
-
-    doub
-}
+// #[cfg(test)]
+// pub fn gen_doubles(
+//     wf: &Wf,
+//     excite_gen: &ExciteGenerator,
+// ) -> HashMap<(i32, i32, Option<bool>), Vec<(Config, usize)>> {
+//     // Output data structure:
+//     // key: orb1, orb2, is_alpha
+//     // value: vector of (config with orb1/2 removed, index of this config in wf) tuples, sorted by
+//     // the first element in the tuple
+//
+//     // To find all pq->rs excites:
+//     // Look up the pq and rs vectors
+//     // Loop over the overlap in linear time
+//     // Each tuple in intersection contains the indices of this matrix element
+//     // This algorithm takes anywhere from O(N^4 N_det) time to O(N^6/M^2 N_det) time
+//
+//     let mut doub = HashMap::default();
+//
+//     for (det_ind, det) in wf.dets.iter().enumerate() {
+//         // Opposite spin
+//         for i in bits(excite_gen.valence & det.config.up) {
+//             for j in bits(excite_gen.valence & det.config.dn) {
+//                 let det_r2 = Config {
+//                     up: ibclr(det.config.up, i),
+//                     dn: ibclr(det.config.dn, j),
+//                 };
+//                 let key = (i, j, None);
+//                 insert_into_hashmap_of_vectors(&mut doub, key, (det_r2, det_ind))
+//             }
+//         }
+//
+//         // Same spin
+//         for (config, is_alpha) in &[(det.config.up, true), (det.config.dn, false)] {
+//             for (i, j) in bit_pairs(excite_gen.valence & *config) {
+//                 let det_r2 = {
+//                     if *is_alpha {
+//                         Config {
+//                             up: ibclr(ibclr(det.config.up, i), j),
+//                             dn: det.config.dn,
+//                         }
+//                     } else {
+//                         Config {
+//                             up: det.config.up,
+//                             dn: ibclr(ibclr(det.config.dn, i), j),
+//                         }
+//                     }
+//                 };
+//                 let key = (i, j, Some(*is_alpha));
+//                 insert_into_hashmap_of_vectors(&mut doub, key, (det_r2, det_ind))
+//             }
+//         }
+//     }
+//
+//     // Sort each vector in place by det_r2
+//     for vec in doub.values_mut() {
+//         vec.sort_by_key(|(det, _)| (det.up, det.dn));
+//     }
+//
+//     doub
+// }
 
 pub fn gen_sparse_ham_fast(
     global: &Global,

@@ -42,7 +42,7 @@ pub fn perturbative(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, wf
 pub fn dtm_pt(wf: &Wf, excite_gen: &ExciteGenerator, ham: &Ham, eps: f64) -> f64 {
     println!("Start of deterministic PT");
     let mut h_psi: Wf = Wf::default();
-    let mut n: i16 = 0;
+    let mut n: usize = 0;
     let mut old_var_det: Config = wf.dets[0].config;
     for (var_det, excite, pt_config) in dets_excites_and_excited_dets(wf, excite_gen, eps) {
         if var_det.config != old_var_det {

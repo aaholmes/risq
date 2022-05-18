@@ -1,11 +1,16 @@
 //! Generate excitations as an iterator
 
-use crate::excite::init::ExciteGenerator;
+use crate::ham::Ham;
+use crate::ham::read_ints::read_ints;
+use crate::utils::read_input::{read_input, Global};
+use crate::excite::init::{init_excite_generator, ExciteGenerator};
 use crate::excite::{Excite, Orbs, StoredExcite};
 use crate::utils::bits::valence_elecs_and_epairs;
 use crate::wf::det::{Config, Det};
-use crate::wf::Wf;
+use crate::wf::{init_var_wf, VarWf, Wf};
 use std::iter::repeat;
+use std::time::Instant;
+use crate::var::variational;
 
 /// Iterate over all dets and their single and double excitations that are at least as large in magnitude as eps,
 /// returns (exciting det, excitation, excited config)
@@ -50,6 +55,34 @@ pub fn dets_excites_and_excited_dets<'a>(
                 excited_det,
             ) // Convert StoredExcite to Excite
         })
+}
+
+pub fn test_dets_excites_and_excited_dets(wf: &Wf, excite_gen: &ExciteGenerator) {
+    // println!("Reading input file");
+    // lazy_static! {
+    //     static ref GLOBAL: Global = read_input("in.json").unwrap();
+    // }
+    //
+    // println!("Reading integrals");
+    // lazy_static! {
+    //     static ref HAM: Ham = read_ints(&GLOBAL, "FCIDUMP");
+    // }
+    //
+    // println!("Initializing excitation generator");
+    // lazy_static! {
+    //     static ref EXCITE_GEN: ExciteGenerator = init_excite_generator(&GLOBAL, &HAM);
+    // }
+    //
+    // println!("Initializing wavefunction");
+    // let mut wf: VarWf = init_var_wf(&GLOBAL, &HAM, &EXCITE_GEN);
+    // wf.print();
+
+    for (n, (det, excite, excited_det)) in dets_excites_and_excited_dets(wf, excite_gen, 1e-9).enumerate() {
+        println!("{}: Det: {}", n, det);
+        println!("Excite: {}", excite);
+        println!("Excited det: {}\n", excited_det);
+    }
+
 }
 
 /// Iterate over all variational dets and their corresponding excitable orbs (along with is_alpha)
