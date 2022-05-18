@@ -1,0 +1,16 @@
+{
+    "norb": 9,
+    "norb_core": 1,
+    "nup": 2,
+    "ndn": 2,
+    "n_states": 1,
+    "eps_var": 5e-4,
+    "eps_pt_dtm": 1e-6,
+    "opp_algo": 1,
+    "same_algo": 1,
+    "target_uncertainty": 1e-4,
+    "n_samples_per_batch": 1000,
+    "n_batches": 100,
+    "n_cross_term_samples": 0,
+    "use_new_semistoch": true
+}
