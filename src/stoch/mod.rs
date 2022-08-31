@@ -108,6 +108,8 @@ pub fn generate_screened_sampler(det_orbs: Vec<DetOrbSample>) -> ScreenedSampler
         }
     }
 
+    println!("Done generating screened sampler of size {}", det_orbs.len());
+
     ScreenedSampler {
         elements: det_orbs_nonzero,
         det_orb_sampler_abs_hc: Alias::new(probs_abs_hc),

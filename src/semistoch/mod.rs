@@ -6,7 +6,7 @@ use crate::excite::init::ExciteGenerator;
 use crate::excite::iterator::{dets_and_excitable_orbs, excites_from_det_and_orbs};
 use crate::excite::{Excite, Orbs};
 use crate::ham::Ham;
-use crate::pt::{pt, PtSamples};
+use crate::pt::{pt, pt_off_diag, PtSamples};
 use crate::rng::Rand;
 use crate::semistoch::utils::diag::sample_diag_update_welford;
 use crate::semistoch::utils::off_diag::sample_off_diag_update_welford;
@@ -233,6 +233,7 @@ pub fn new_semistoch_enpt2_dtm_diag_singles(
     let mut h_ai_c_i: f64;
     let mut diag: f64;
     let mut h_psi: Wf = Wf::default();
+    let mut h_psi_sq: Wf = Wf::default();
     let mut e: f64;
     let mut e_pt_diag_doubles: f64 = 0.0;
     let mut e_pt_diag_singles: f64 = 0.0;
@@ -297,11 +298,17 @@ pub fn new_semistoch_enpt2_dtm_diag_singles(
                 if let Some(ind) = h_psi.inds.get_mut(&pt_config) {
                     diag = h_psi.dets[*ind].diag.unwrap();
                     h_psi.dets[*ind].coeff += h_ai_c_i;
+                    h_psi_sq.dets[*ind].coeff += h_ai_c_i * h_ai_c_i;
                 } else {
                     diag = var_det.new_diag(ham, &excite);
-                    h_psi.dets.push(Det {
+                    h_psi.push(Det {
                         config: pt_config,
                         coeff: h_ai_c_i,
+                        diag: Some(diag),
+                    });
+                    h_psi_sq.push(Det {
+                        config: pt_config,
+                        coeff: h_ai_c_i * h_ai_c_i,
                         diag: Some(diag),
                     });
                 }
@@ -319,7 +326,7 @@ pub fn new_semistoch_enpt2_dtm_diag_singles(
         }
     }
 
-    let e_pt_off_diag = pt(&h_psi, input_wf.energy);
+    let e_pt_off_diag = pt_off_diag(&h_psi, &h_psi_sq, input_wf.energy);
     let e_pt_dtm: f64 = e_pt_diag_doubles + e_pt_diag_singles + e_pt_off_diag;
 
     println!("\nDeterministic component of PT energy:");

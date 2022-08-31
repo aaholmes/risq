@@ -24,6 +24,7 @@ impl Alias {
     /// Generate new Alias struct given a vector of relative probabilities (not necessarily normalized)
     pub fn new(rel_probs: Vec<f64>) -> Alias {
         let size = rel_probs.len();
+        println!("New Alias with size = {}", size);
 
         // Normalize input probabilities
         let mut sum = 0.0;

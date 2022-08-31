@@ -11,6 +11,7 @@ use crate::wf::det::{Config, Det};
 use crate::wf::Wf;
 use itertools::enumerate;
 use std::collections::HashMap;
+use crate::utils::bits::valence_elecs_and_epairs;
 
 /// Perform the perturbative stage (Epstein-Nesbet perturbation theory, that is)
 pub fn perturbative(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, wf: &Wf) {
@@ -79,13 +80,18 @@ pub fn dtm_pt(wf: &Wf, excite_gen: &ExciteGenerator, ham: &Ham, eps: f64) -> f64
     pt(&h_psi, wf.energy)
 }
 
-pub fn dtm_pt_basic(wf: &Wf, ham: &Ham, eps: f64) -> f64 {
-    todo!()
-    // let mut h_psi: Wf = Wf::default();
-    // for det in &wf.dets {
-    //
-    // }
-}
+// pub fn dtm_pt_basic(wf: &Wf, ham: &Ham, excite_gen: &ExciteGenerator, eps: f64) -> f64 {
+//     let mut h_psi: Wf = Wf::default();
+//     for det in &wf.dets {
+//         for e in valence_elecs_and_epairs(&det.config, excite_gen) {
+//             for excite {
+//                 // Apply excite
+//                 // If det not in wf, add to h_psi
+//             }
+//         }
+//     }
+//     pt(&h_psi, wf.energy)
+// }
 
 /// Deterministic PT in batches (on average one excite per variational det per batch)
 // pub fn dtm_pt_batches(wf: &Wf, excite_gen: &ExciteGenerator, ham: &Ham, e0: f64, eps: f64) -> f64 {
@@ -121,10 +127,24 @@ pub fn dtm_pt_basic(wf: &Wf, ham: &Ham, eps: f64) -> f64 {
 // }
 
 /// Evaluate the PT expression given H * Psi and E0
+/// i.e., \sum_a (H * Psi)_a ** 2 / (E0 - E_a)
 pub fn pt(h_psi: &Wf, e0: f64) -> f64 {
     h_psi.dets.iter().fold(0.0f64, |e_pt, det| {
         e_pt + det.coeff * det.coeff / (e0 - det.diag.unwrap())
     })
+}
+
+/// Evaluate off-diagonal component of the PT expression given H * Psi, sum_sq, and E0
+/// i.e., \sum_a ( (H * Psi)_a ** 2 - sum_sq_a ) / (E0 - E_a)
+pub fn pt_off_diag(h_psi: &Wf, sum_sq: &Wf, e0: f64) -> f64 {
+    // h_psi.dets.iter().zip(sum_sq.dets.iter()).fold(0.0f64, |e_pt, (sum_hc, sum_hc_sq)| {
+    //     e_pt + (sum_hc.coeff * sum_hc.coeff - sum_hc_sq.coeff) / (e0 - sum_hc.diag.unwrap())
+    // })
+    let mut out: f64 = 0.0;
+    for (sum_hc, sum_hc_sq) in h_psi.dets.iter().zip(sum_sq.dets.iter()) {
+        out += (sum_hc.coeff * sum_hc.coeff - sum_hc_sq.coeff) / (e0 - sum_hc.diag.unwrap());
+    }
+    out
 }
 
 /// Sampled contributions to the ENPT2 correction

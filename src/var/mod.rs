@@ -13,13 +13,14 @@ use crate::utils::read_input::Global;
 use crate::var::davidson::sparse_optimize;
 use crate::wf::VarWf;
 use std::time::Instant;
+use crate::excite::iterator::test_dets_excites_and_excited_dets;
 
 /// Perform variational selected CI
 pub fn variational(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, var_wf: &mut VarWf) {
     let mut iter: i32 = 0;
 
     println!(
-        "Start of variational stage: Wavefunction has {} det with energy {:.4}",
+        "Start of variational stage: Wavefunction has {} det with energy {:.14}",
         var_wf.wf.n, var_wf.wf.energy
     );
 
@@ -59,7 +60,7 @@ pub fn variational(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, var
             start_optimize_coeffs.elapsed()
         );
 
-        println!("End of iteration {} (eps = {:.1e}): Wavefunction has {} determinants with energy {:.6}", iter, var_wf.eps, var_wf.wf.n, var_wf.wf.energy);
+        println!("End of iteration {} (eps = {:.1e}): Wavefunction has {} determinants with energy {:.14}", iter, var_wf.eps, var_wf.wf.n, var_wf.wf.energy);
         if var_wf.wf.n <= 10 {
             var_wf.print();
         } else {

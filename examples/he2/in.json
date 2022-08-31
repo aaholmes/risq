@@ -4,7 +4,7 @@
     "nup": 2,
     "ndn": 2,
     "n_states": 1,
-    "eps_var": 5e-4,
+    "eps_var": 1.3e-1,
     "eps_pt_dtm": 1e-6,
     "opp_algo": 1,
     "same_algo": 1,
