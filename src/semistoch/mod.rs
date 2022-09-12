@@ -233,8 +233,8 @@ pub fn new_semistoch_enpt2_dtm_diag_singles(
     let mut h_ai_c_i: f64;
     let mut diag: f64;
     let mut h_psi: Wf = Wf::default();
-    let mut h_psi_sq: Wf = Wf::default();
-    let mut e: f64;
+    // let mut h_psi_sq: Wf = Wf::default();
+    // let mut e: f64;
     let mut e_pt_diag_doubles: f64 = 0.0;
     let mut e_pt_diag_singles: f64 = 0.0;
 
@@ -249,9 +249,12 @@ pub fn new_semistoch_enpt2_dtm_diag_singles(
         {
             // Filters out excitations into variational wf
             // For doubles, check whether exceeds eps
-            if matches!(init, Orbs::Double(_))
-                && stored_excite.abs_h * var_det.coeff.abs() < global.eps_pt_dtm
-            {
+            // Edit: do this for singles too! This introduces a bias in its current implementation,
+            // but dramatically accelerates dtm component
+            // if matches!(init, Orbs::Double(_))
+            //     && stored_excite.abs_h * var_det.coeff.abs() < global.eps_pt_dtm
+            // {
+            if stored_excite.abs_h * var_det.coeff.abs() < global.eps_pt_dtm {
                 // Threshold reached: set up sampler and go to next det/excitable orb
                 det_orbs.push(DetOrbSample {
                     det: var_det,
@@ -298,7 +301,7 @@ pub fn new_semistoch_enpt2_dtm_diag_singles(
                 if let Some(ind) = h_psi.inds.get_mut(&pt_config) {
                     diag = h_psi.dets[*ind].diag.unwrap();
                     h_psi.dets[*ind].coeff += h_ai_c_i;
-                    h_psi_sq.dets[*ind].coeff += h_ai_c_i * h_ai_c_i;
+                    // h_psi_sq.dets[*ind].coeff += h_ai_c_i * h_ai_c_i;
                 } else {
                     diag = var_det.new_diag(ham, &excite);
                     h_psi.push(Det {
@@ -306,46 +309,47 @@ pub fn new_semistoch_enpt2_dtm_diag_singles(
                         coeff: h_ai_c_i,
                         diag: Some(diag),
                     });
-                    h_psi_sq.push(Det {
-                        config: pt_config,
-                        coeff: h_ai_c_i * h_ai_c_i,
-                        diag: Some(diag),
-                    });
+                    // h_psi_sq.push(Det {
+                    //     config: pt_config,
+                    //     coeff: h_ai_c_i * h_ai_c_i,
+                    //     diag: Some(diag),
+                    // });
                 }
             }
 
             // Diagonal term
-            e = h_ai_c_i * h_ai_c_i / (input_wf.energy - diag);
-            if let Orbs::Double(_) = excite.init {
-                // Double excite, exceeds eps_pt_dtm
-                e_pt_diag_doubles += e;
-            } else {
-                // Single excite
-                e_pt_diag_singles += e;
-            }
+            // e = h_ai_c_i * h_ai_c_i / (input_wf.energy - diag);
+            // if let Orbs::Double(_) = excite.init {
+            //     // Double excite, exceeds eps_pt_dtm
+            //     e_pt_diag_doubles += e;
+            // } else {
+            //     // Single excite
+            //     e_pt_diag_singles += e;
+            // }
         }
     }
 
-    let e_pt_off_diag = pt_off_diag(&h_psi, &h_psi_sq, input_wf.energy);
-    let e_pt_dtm: f64 = e_pt_diag_doubles + e_pt_diag_singles + e_pt_off_diag;
+    // let e_pt_off_diag = pt_off_diag(&h_psi, &h_psi_sq, input_wf.energy);
+    // let e_pt_dtm: f64 = e_pt_diag_doubles + e_pt_diag_singles + e_pt_off_diag;
+    let e_pt_dtm: f64 = pt(&h_psi, input_wf.energy);
 
-    println!("\nDeterministic component of PT energy:");
-    println!(
-        "  Diagonal Doubles: {:.6} ({:.1}%)",
-        e_pt_diag_doubles,
-        100.0 * e_pt_diag_doubles / e_pt_dtm
-    );
-    println!(
-        "  Diagonal Singles: {:.6} ({:.1}%)",
-        e_pt_diag_singles,
-        100.0 * e_pt_diag_singles / e_pt_dtm
-    );
-    println!(
-        "  Off-diagonal:     {:.6} ({:.1}%)",
-        e_pt_off_diag,
-        100.0 * e_pt_off_diag / e_pt_dtm
-    );
-    println!("  Total:            {:.6}\n", e_pt_dtm);
+    // println!("\nDeterministic component of PT energy:");
+    // println!(
+    //     "  Diagonal Doubles: {:.6} ({:.1}%)",
+    //     e_pt_diag_doubles,
+    //     100.0 * e_pt_diag_doubles / e_pt_dtm
+    // );
+    // println!(
+    //     "  Diagonal Singles: {:.6} ({:.1}%)",
+    //     e_pt_diag_singles,
+    //     100.0 * e_pt_diag_singles / e_pt_dtm
+    // );
+    // println!(
+    //     "  Off-diagonal:     {:.6} ({:.1}%)",
+    //     e_pt_off_diag,
+    //     100.0 * e_pt_off_diag / e_pt_dtm
+    // );
+    // println!("  Total:            {:.6}\n", e_pt_dtm);
 
     println!(
         "Time for deterministic component: {:?}",
