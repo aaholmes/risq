@@ -17,6 +17,7 @@ pub struct Global {
     pub norb_core: i32, // freezes the norb_core orbs with lowest diagonal fock elements
     pub nup: i32,
     pub ndn: i32,
+    pub z_sym: i32, // +1 for singlets, -1 for triplets
     pub n_states: i32, // n_states > 1 not yet implemented
     pub eps_var: f64,
     pub eps_pt_dtm: f64, // division between deterministic and stochastic components of semistochastic PT
@@ -43,6 +44,7 @@ pub fn read_input<P: AsRef<Path>>(path: P) -> Result<Global> {
     println!("  norb_core: {}", global.norb_core);
     println!("  nup: {}", global.nup);
     println!("  ndn: {}", global.ndn);
+    println!("  z_sym: {}", global.z_sym);
     println!("  n_states: {}", global.n_states);
     println!("  eps_var: {}", global.eps_var);
     println!("  eps_pt_dtm: {}", global.eps_pt_dtm);

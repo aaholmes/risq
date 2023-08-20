@@ -53,6 +53,26 @@ impl Wf {
         }
     }
 
+    /// Add new det and its spin-flipped counterpart to the wf
+    pub fn push_and_spin_flipped(&mut self, d: Det) {
+        if d.config.up == d.config.dn {
+            self.push(d);
+        } else {
+            let spin_flipped = d.config.flip();
+            if let std::collections::hash_map::Entry::Vacant(e) = self.inds.entry(spin_flipped) {
+                e.insert(self.n);
+                self.n += 1;
+                let mut d_spin_flipped = d.clone();
+                d_spin_flipped.config = spin_flipped;
+                self.dets.push(d_spin_flipped);
+                self.push(d); // Pushes if doesn't already exist
+            } else {
+                // Just push original if doesn't already exist
+                self.push(d); // Pushes if doesn't already exist
+            }
+        }
+    }
+
     pub fn push_config(&mut self, config: Config) {
         self.push(Det {
             config,
@@ -1317,10 +1337,20 @@ impl VarWf {
 
         println!("Getting new dets with epsilon = {:.1e}", self.eps);
         let new_dets: Wf = self.iterate_excites(global, ham, excite_gen, false);
+        println!("After getting new dets: size of new_dets= {}", new_dets.n);
 
-        // Add all new dets to the wf
-        for det in new_dets.dets {
-            self.wf.push(det);
+        if global.z_sym == 1 {
+            // Add all new dets to the wf
+            for det in new_dets.dets {
+                self.wf.push_and_spin_flipped(det);
+            }
+        } else {
+            // Only add dets that are not symmetric
+            for det in new_dets.dets {
+                if det.config.up != det.config.dn {
+                    self.wf.push_and_spin_flipped(det);
+                }
+            }
         }
 
         new_dets.n == 0
@@ -1526,6 +1556,7 @@ impl VarWf {
     /// Create new sparse Hamiltonian, set the diagonal elements to the ones already stored in wf
     /// Don't update self.n_stored_h yet, because we haven't computed the off-diagonal elements yet
     pub fn new_sparse_ham(&mut self) {
+        println!("New sparse Ham");
         self.sparse_ham = SparseMatUpperTri {
             n: self.wf.n,
             diag: vec![0.0; self.wf.n],
@@ -1534,7 +1565,9 @@ impl VarWf {
         };
         for i in 0..self.wf.n {
             self.sparse_ham.diag[i] = self.wf.dets[i].diag.unwrap();
+            println!("Diag({}) = {}", i, self.sparse_ham.diag[i]);
         }
+        println!("Done with new sparse Ham");
     }
 
     /// Just create empty rows to fill up the dimension to new size wf.n
@@ -1565,10 +1598,12 @@ impl VarWf {
 /// Initialize variational wf to the HF det (only needs to be called once)
 pub fn init_var_wf(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator) -> VarWf {
     let mut var_wf: VarWf = VarWf::default();
-    var_wf.n_states = global.n_states;
-    var_wf.converged = false;
-    var_wf.wf.n = 1;
-    var_wf.update_n_stored_h(0); // No stored H yet
+    let mut tmp_wf: VarWf = VarWf::default();
+    tmp_wf.n_states = global.n_states;
+    tmp_wf.converged = false;
+    tmp_wf.update_n_stored_h(0); // No stored H yet
+    // Start with HF det
+    tmp_wf.wf.n = 1;
     let mut hf = Det {
         config: Config {
             up: ((1u128 << global.nup) - 1),
@@ -1579,10 +1614,39 @@ pub fn init_var_wf(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator) -> 
     };
     let h: f64 = ham.ham_diag(&hf.config);
     hf.diag = Some(h);
-    var_wf.wf.inds = HashMap::new();
-    var_wf.wf.inds.insert(hf.config, 0);
-    var_wf.wf.dets.push(hf);
-    var_wf.wf.energy = var_wf.wf.dets[0].diag.unwrap();
-    var_wf.eps_iter = init_eps(&var_wf.wf, global, excite_gen);
+    tmp_wf.wf.inds = HashMap::new();
+    tmp_wf.wf.inds.insert(hf.config, 0);
+    tmp_wf.wf.dets.push(hf);
+    tmp_wf.wf.energy = tmp_wf.wf.dets[0].diag.unwrap();
+    tmp_wf.eps_iter = init_eps(&tmp_wf.wf, global, excite_gen);
+    if global.z_sym == 1 {
+        var_wf = tmp_wf;
+    } else {
+        // Start with antisymmetric lin combo of two dets
+        var_wf.n_states = global.n_states;
+        var_wf.converged = false;
+        var_wf.update_n_stored_h(0); // No stored H yet
+        var_wf.eps_iter = init_eps(&tmp_wf.wf, global, excite_gen);
+        tmp_wf.find_new_dets(global, ham, excite_gen);
+        println!("Found new tmp dets; wf is now:");
+        var_wf.wf.inds = HashMap::new();
+        for mut det in tmp_wf.wf.dets {
+            if det.config.up != det.config.dn {
+                // Also check that it's connected to its spin-flipped counterpart
+                if det.config.is_connected(&det.config.flip()) {
+                    det.coeff = (i32::pow(-1, var_wf.wf.n as u32) as f64) / f64::sqrt(2.);
+                    var_wf.wf.push(det)
+                }
+            }
+        }
+        println!("Finished initializing asymmetrical wf; wf is now:");
+        for i in var_wf.wf.dets.iter() {
+            println!("{} {} {} {}", i.config.up, i.config.dn, i.coeff, i.diag.unwrap());
+        }
+        // Energy is diagonal energy minus off-diagonal element connecting the two states
+        var_wf.wf.energy = var_wf.wf.dets[0].diag.unwrap() - ham.ham_doub(&var_wf.wf.dets[0].config, &var_wf.wf.dets[1].config);
+        println!("Finished computing initial wf energy: {}", var_wf.wf.energy);
+
+    }
     var_wf
 }

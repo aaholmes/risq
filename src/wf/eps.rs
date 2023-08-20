@@ -12,7 +12,7 @@ use crate::wf::Wf;
 /// Variational epsilon iterator
 #[derive(Clone, Copy)]
 pub struct Eps {
-    next: f64,
+    next_one: f64,
     target: f64,
 }
 
@@ -20,14 +20,10 @@ impl Iterator for Eps {
     type Item = f64;
 
     fn next(&mut self) -> Option<f64> {
-        let curr: f64 = self.next;
-        self.next = if self.next / 2.0 > self.target {
-            self.next / 2.0
-        } else {
-            self.target
-        };
-        self.next = if self.next * 0.5 > self.target {
-            self.next * 0.5
+        let curr: f64 = self.next_one;
+        let new_next_one: f64 = self.next_one * 0.1;
+        self.next_one = if new_next_one > self.target {
+            new_next_one
         } else {
             self.target
         };
@@ -38,7 +34,7 @@ impl Iterator for Eps {
 impl Default for Eps {
     fn default() -> Eps {
         Eps {
-            next: 0.0,
+            next_one: 0.0,
             target: 0.0,
         }
     }
@@ -53,6 +49,7 @@ impl Default for Eps {
 pub fn init_eps(wf: &Wf, global: &Global, excite_gen: &ExciteGenerator) -> Eps {
     let mut max_sym: f64 = global.eps_var;
     let mut max_asym: f64 = global.eps_var;
+    let mut max_asym_connectable_to_spin_flipped: f64 = global.eps_var; // Asymmetrical excitation that is connected to its spin-flipped counterpart, i.e., up: i->j, dn: i->k, or up: i->k, dn: j->k
     let mut this_doub: f64;
     for det in &wf.dets {
         // Opposite spin
@@ -79,6 +76,12 @@ pub fn init_eps(wf: &Wf, global: &Global, excite_gen: &ExciteGenerator) -> Eps {
                                 found_asym = true;
                                 if this_doub > max_asym {
                                     max_asym = this_doub;
+                                }
+                                if i == j || t.0 == t.1 {
+                                    // Asymmetric and connected to spin-flipped counterpart
+                                    if this_doub > max_asym_connectable_to_spin_flipped {
+                                        max_asym_connectable_to_spin_flipped = this_doub;
+                                    }
                                 }
                             }
                             if found_sym && found_asym {
@@ -113,17 +116,24 @@ pub fn init_eps(wf: &Wf, global: &Global, excite_gen: &ExciteGenerator) -> Eps {
 
     println!("\nFrom HF det: Largest magnitude symmetric double excite magnitude: {:.4}", max_sym);
     println!("             Largest magnitude asymmetric double excite magnitude: {:.4}", max_asym);
+    println!("             Largest magnitude asymmetric (connected to spin-flipped counterpart) double excite magnitude: {:.4}", max_asym_connectable_to_spin_flipped);
 
     let max_doub = {
-        if max_sym < max_asym {
-            max_sym
+        if global.z_sym == 1 {
+            // If targeting a symmetric state, just need at least one double excite of any kind
+            if max_sym > max_asym {
+                max_sym
+            } else {
+                max_asym
+            }
         } else {
-            max_asym
+            // If targeting an anti-symmetric state, need at least one asymmetric pair that are connected to each other
+            max_asym_connectable_to_spin_flipped
         }
     };
     println!("Setting initial eps_var = {:.4}", max_doub);
     Eps {
-        next: &max_doub - 1e-9, // Slightly less than max_doub in case there are two or more elements that are off by machine precision
+        next_one: &max_doub - 1e-9, // Slightly less than max_doub in case there are two or more elements that are off by machine precision
         target: global.eps_var, //{if global.eps_var < &max_doub - 1e-9 {global.eps_var} else {&max_doub - 1e-9}},
     }
 }

@@ -66,6 +66,9 @@ pub fn add_el_and_spin_flipped(wf: &mut VarWf, ham: &Ham, i: usize, j: usize) {
     if i == j {
         return;
     }
+    // println!("add_el_and_spin_flipped called with i,j= {}, {}", i, j);
+    // println!("i det: {}, {}", wf.wf.dets[i].config.up, wf.wf.dets[i].config.dn);
+    // println!("j det: {}, {}", wf.wf.dets[j].config.up, wf.wf.dets[j].config.dn);
     let elem = ham.ham_off_diag_no_excite(&wf.wf.dets[i].config, &wf.wf.dets[j].config);
     if elem != 0.0 {
         // Element

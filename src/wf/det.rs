@@ -2,6 +2,7 @@
 //! Includes functions to generate an excited det, and compute its diagonal element
 //! quickly from the initial det's diagonal element
 
+use std::detect::__is_feature_detected::popcnt;
 use crate::excite::init::ExciteGenerator;
 use crate::excite::{Excite, Orbs, StoredExcite};
 use crate::ham::Ham;
@@ -44,6 +45,32 @@ impl Hash for Det {
 // Public functions
 
 impl Config {
+    // Return spin-flipped counterpart
+    pub fn flip(&self) -> Config {
+        Config{
+            up: self.dn,
+            dn: self.up
+        }
+    }
+
+    // Return whether connected to another config by up to a double excitation
+    pub fn is_connected(&self, other: &Config) -> bool {
+        let mut diff = 0;
+        for i in bits(self.up & !other.up) {
+            diff += 1;
+            if diff > 2 {
+                return false;
+            }
+        }
+        for i in bits(self.up & !other.up) {
+            diff += 1;
+            if diff > 2 {
+                return false;
+            }
+        }
+        true
+    }
+
     pub fn is_valid_stored(&self, is_alpha: &Option<bool>, excite: &StoredExcite) -> bool {
         match excite.target {
             Orbs::Double((r, s)) => match is_alpha {

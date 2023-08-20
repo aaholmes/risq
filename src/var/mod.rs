@@ -30,6 +30,11 @@ pub fn variational(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, var
     while !var_wf.converged {
         iter += 1;
 
+        if iter > 20 {
+            println!("Too many iterations! Stopping");
+            break;
+        }
+
         let start_find_new_dets: Instant = Instant::now();
         if (var_wf.eps == global.eps_var) & var_wf.find_new_dets(global, ham, excite_gen) {
             println!("No new dets added; wf converged");
@@ -40,8 +45,8 @@ pub fn variational(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, var
 
         last_energy = Some(var_wf.wf.energy);
 
-        let coeff_eps: f64 = 1e-3; // Davidson convergence epsilon for coefficients
-        let energy_eps: f64 = 1e-6; // Davidson convergence epsilon for energy
+        let coeff_eps: f64 = 1e-4; // Davidson convergence epsilon for coefficients
+        let energy_eps: f64 = 1e-8; // Davidson convergence epsilon for energy
 
         println!("\nOptimizing coefficients of wf with {} dets", var_wf.wf.n);
         let start_optimize_coeffs: Instant = Instant::now();
