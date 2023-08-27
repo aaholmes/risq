@@ -1,5 +1,4 @@
 # Rust Implementation of Semistochastic Quantum chemistry (RISQ)
-[![Build Status](https://app.travis-ci.com/aaholmes/risq.svg?token=bBbFNau8Nd1xwi7f2Ehx&branch=main)](https://app.travis-ci.com/aaholmes/risq)
 
 Rust implementation of the following electronic structure algorithms:
 1. Heat-bath Configuration Interaction (HCI) - an efficient, deterministic, variational active space solver
