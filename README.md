@@ -2,7 +2,7 @@
 
 ![RISQ Logo](risq_logo.png)
 
-**Note:** This is research code developed during PhD and postdoctoral work, primarily focused on implementing and testing specific electronic structure methods. It may lack the polish, flexibility, and extensive testing of production software.
+**Note:** This is research code developed during PhD and postdoctoral work, primarily focused on implementing and testing specific electronic structure methods. It may lack the polish, flexibility, and extensive testing (especially automated test coverage) of production software.
 
 ## Overview
 
@@ -49,7 +49,6 @@ RISQ runs as a command-line application, reading parameters from `in.json` and m
         *   `eps_pt`: Perturbative screening threshold (e.g., `1.0e-6`). Determines which determinants contribute to the PT2 correction.
         *   `max_iter_var`: Maximum iterations for the variational stage.
         *   `max_iter_pt`: Maximum iterations or samples for the PT stage.
-        *   *(Other parameters specific to DS-FCIQMC or different PT variants might exist)*
 
     Refer to the `examples/` directory for sample `in.json` files.
 
