@@ -1,5 +1,7 @@
 # Rust Implementation of Semistochastic Quantum chemistry (RISQ)
 
+![RISQ Logo](risq_logo.png)
+
 **Note:** This is research code developed during PhD and postdoctoral work, primarily focused on implementing and testing specific electronic structure methods. It may lack the polish, flexibility, and extensive testing of production software.
 
 ## Overview
@@ -100,4 +102,4 @@ If you use this code or the methods implemented, please consider citing the rele
 
 ## License
 
-This project is licensed under the **MIT License**. See the `LICENSE` file in the root directory. (You should copy `docs/LICENSE-MIT.txt` to `LICENSE` in the project root).
+This project is licensed under the **MIT License**. See the `LICENSE` file in the root directory.
