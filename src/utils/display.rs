@@ -196,7 +196,6 @@ impl VarWf {
 /// A wrapper around a `Det` reference that implements `Ord` and `PartialOrd`
 /// based on the absolute value of the determinant's coefficient.
 /// Used by `print_largest` to sort determinants by coefficient magnitude using a heap.
-#[derive(Eq)] // Eq can be derived because PartialEq is implemented
 pub struct DetByCoeff<'a> {
     /// Reference to the determinant.
     pub(crate) det: &'a Det,
