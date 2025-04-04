@@ -1,6 +1,20 @@
-//! Variational wavefunction data structure
-//! Includes both the variational wf and the variational H
-//! Includes functions for initializing, printing, and adding new determinants
+//! # Wavefunction Module (`wf`)
+//!
+//! This module defines the core data structures for representing electronic wavefunctions,
+//! primarily as linear combinations of Slater determinants.
+//!
+//! ## Key Components:
+//! *   `det`: Submodule defining the `Det` (determinant with coefficient and diagonal energy)
+//!     and `Config` (determinant bitstring representation) structs.
+//! *   `eps`: Submodule defining an iterator for the variational screening threshold (`epsilon`).
+//! *   `Wf`: A general wavefunction structure holding a collection of determinants (`Det`),
+//!     their coefficients, and associated lookup tables.
+//! *   `VarWf`: A specialized structure for the variational wavefunction used in HCI. It
+//!     contains a `Wf` and also manages the sparse variational Hamiltonian matrix and
+//!     convergence parameters.
+//! *   `approx_matmul_*` methods: Functions implementing approximate Hamiltonian-vector
+//!     products (`H*psi`), crucial for perturbative steps and potentially QMC propagation.
+//!     Different versions implement different screening or sampling strategies.
 
 pub mod det;
 mod eps;
@@ -21,30 +35,53 @@ use itertools::enumerate;
 use nalgebra::{Const, Dynamic, Matrix, VecStorage};
 use rolling_stats::Stats;
 
-/// Wavefunction data structure
-#[derive(Default)]
+/// Represents a general wavefunction as a collection of determinants.
+///
+/// Stores determinants (`Det`) along with mechanisms for efficient lookup.
+#[derive(Default, Debug)]
 pub struct Wf {
-    pub n: usize,                     // number of dets
-    pub inds: HashMap<Config, usize>, // hashtable : det -> usize for looking up index by det
-    pub dets: Vec<Det>,               // for looking up det by index
-    pub energy: f64,                  // variational energy
+    /// The number of determinants currently stored in the wavefunction.
+    pub n: usize,
+    /// A map from determinant configuration (`Config`) to its index in the `dets` vector.
+    /// Allows for O(1) average time lookup of whether a determinant exists and its index.
+    pub inds: HashMap<Config, usize>,
+    /// A vector storing the actual `Det` objects (configuration, coefficient, diagonal energy).
+    /// The index corresponds to the value stored in `inds`.
+    pub dets: Vec<Det>,
+    /// The energy associated with this wavefunction (e.g., variational energy after diagonalization).
+    pub energy: f64,
 }
 
-/// Variational wavefunction data structure:
-/// contains both the wavefunction and the variational Hamiltonian
+/// Represents the variational wavefunction and associated data for HCI calculations.
+///
+/// Encapsulates the core wavefunction (`Wf`) along with state needed for the
+/// iterative HCI procedure, including the sparse Hamiltonian matrix, convergence
+/// status, and screening thresholds.
 #[derive(Default)]
 pub struct VarWf {
-    pub wf: Wf,                        // the variational wf
-    pub n_states: i32, // number of states - same as in input file, but want it attached to the wf
-    pub converged: bool, // whether variational wf is converged. Update at end of each HCI iteration
-    pub eps_iter: Eps, // iterator that produces the variational epsilon for each HCI iteration
-    pub eps: f64,      // current eps value
-    n_stored_h: usize, // n for which the variational H has already been stored
-    pub sparse_ham: SparseMatUpperTri, // store the sparse variational H off-diagonal elements here
+    /// The core wavefunction data (determinants, coefficients, lookup tables).
+    pub wf: Wf,
+    /// The number of electronic states being targeted (usually 1 for ground state).
+    pub n_states: i32,
+    /// Flag indicating if the variational calculation has converged.
+    pub converged: bool,
+    /// Iterator providing the variational screening threshold (`epsilon_1`) for each HCI iteration.
+    pub eps_iter: Eps,
+    /// The current variational screening threshold (`epsilon_1`) being used.
+    pub eps: f64,
+    /// The number of determinants for which the sparse Hamiltonian has been built and stored.
+    n_stored_h: usize,
+    /// The sparse representation of the variational Hamiltonian matrix (H_ij = <D_i|H|D_j>)
+    /// for determinants D_i, D_j within the current variational space. Stored in upper
+    /// triangular format.
+    pub sparse_ham: SparseMatUpperTri,
 }
 
 impl Wf {
-    /// Just adds a new det to the wf
+    /// Adds a determinant `d` to the wavefunction if it's not already present.
+    ///
+    /// Updates the count `n`, the `inds` map, and the `dets` vector.
+    /// If the determinant configuration (`d.config`) already exists, this function does nothing.
     pub fn push(&mut self, d: Det) {
         if let std::collections::hash_map::Entry::Vacant(e) = self.inds.entry(d.config) {
             e.insert(self.n);
@@ -53,7 +90,10 @@ impl Wf {
         }
     }
 
-    /// Add new det and its spin-flipped counterpart to the wf
+    /// Adds a determinant `d` and its spin-flipped counterpart (if different) to the wavefunction.
+    ///
+    /// Ensures that both spin configurations are added if they are distinct and not already present.
+    /// Useful for maintaining spin symmetry or exploring different spin states.
     pub fn push_and_spin_flipped(&mut self, d: Det) {
         if d.config.up == d.config.dn {
             self.push(d);
@@ -73,6 +113,10 @@ impl Wf {
         }
     }
 
+    /// Adds a determinant configuration `config` to the wavefunction with a zero coefficient.
+    ///
+    /// Useful for initializing the wavefunction space before coefficients are known.
+    /// The `diag` field of the added `Det` will be `None`.
     pub fn push_config(&mut self, config: Config) {
         self.push(Det {
             config,
@@ -81,9 +125,20 @@ impl Wf {
         });
     }
 
-    /// Add det with its coefficient
-    /// If det already exists in wf, add its coefficient to that det
-    /// Also, computes diagonal element if necessary (that's what exciting_det, ham and excite are needed for)
+    /// Adds a contribution `coeff` to the coefficient of a determinant `new_det`.
+    ///
+    /// If `new_det` is already present in the wavefunction, its existing coefficient is incremented by `coeff`.
+    /// If `new_det` is not present, it is added to the wavefunction with the given `coeff`.
+    /// When adding a new determinant, its diagonal Hamiltonian element H_kk = <new_det|H|new_det>
+    /// is computed efficiently using information from the `exciting_det` (the determinant from
+    /// which `new_det` was generated via `excite`) and stored.
+    ///
+    /// # Arguments
+    /// * `exciting_det`: The source determinant from which `new_det` was generated.
+    /// * `ham`: The Hamiltonian operator.
+    /// * `excite`: The excitation connecting `exciting_det` to `new_det`.
+    /// * `new_det`: The configuration of the determinant to add/update.
+    /// * `coeff`: The coefficient contribution to add.
     pub fn add_det_with_coeff(
         &mut self,
         exciting_det: &Det,
@@ -107,6 +162,15 @@ impl Wf {
         }
     }
 
+    /// Computes H*|psi> contribution to the external space using deterministic screening.
+    ///
+    /// Applies the Hamiltonian to each determinant in `self`. If an excitation `e`
+    /// generates a new determinant `D_k` (not in `self`) such that the estimated
+    /// contribution `|H_ke * c_e|` is greater than `eps` (where `c_e` is the coefficient
+    /// of the source determinant), `D_k` is added to the output wavefunction `out_wf`
+    /// with its coefficient contribution.
+    /// Returns the resulting external wavefunction component and sums of remaining squared
+    /// Hamiltonian elements for sampling purposes (used in older SHCI algorithm).
     pub fn approx_matmul_external_dtm_only(
         &self,
         ham: &Ham,
@@ -262,6 +326,12 @@ impl Wf {
         (out_wf, out_sum_remaining)
     }
 
+    /// Computes H*|psi> contribution to the external space with separate handling for singles/doubles.
+    ///
+    /// Similar to `approx_matmul_external_dtm_only`, but potentially uses different screening
+    /// logic or thresholds for single and double excitations. Contributions below the threshold
+    /// are not discarded but are instead used to build a `ScreenedSampler` object, which allows
+    /// for stochastically sampling these remaining contributions later (e.g., in semistochastic PT).
     pub fn approx_matmul_external_separate_doubles_and_singles(
         &self,
         ham: &Ham,
@@ -451,6 +521,11 @@ impl Wf {
         (out_wf, generate_screened_sampler(det_orbs))
     }
 
+    /// Computes H*|psi> contribution to the external space, skipping single excitations entirely.
+    ///
+    /// Used for debugging or specific algorithmic variants where single excitations
+    /// are handled differently or ignored in the perturbative step. Returns the deterministically
+    /// treated doubles contribution and a `ScreenedSampler` for the remaining doubles below `eps`.
     pub fn approx_matmul_external_skip_singles(
         &self,
         ham: &Ham,
@@ -624,6 +699,12 @@ impl Wf {
         (out_wf, generate_screened_sampler(det_orbs))
     }
 
+    /// Computes H*|psi> contribution to the external space using semistochastic treatment for singles.
+    ///
+    /// This version treats double excitations deterministically above `eps` (adding to `out_wf`)
+    /// and prepares a `ScreenedSampler` for doubles below `eps`. Single excitations might be
+    /// handled differently, possibly all included in the `ScreenedSampler` regardless of `eps`,
+    /// reflecting a strategy where singles are always sampled stochastically in the PT step.
     pub fn approx_matmul_external_semistoch_singles(
         &self,
         ham: &Ham,
@@ -945,6 +1026,11 @@ impl Wf {
         (out_wf, generate_screened_sampler(det_orbs))
     }
 
+    /// Computes H*|psi> contribution to the external space, explicitly excluding singles.
+    ///
+    /// Similar to `approx_matmul_external_skip_singles`, focusing only on double excitations.
+    /// Deterministically adds doubles contributions above `eps` to `out_wf` and prepares
+    /// a `ScreenedSampler` for doubles below `eps`.
     pub fn approx_matmul_external_no_singles(
         &self,
         ham: &Ham,

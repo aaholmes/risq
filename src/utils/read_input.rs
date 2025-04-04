@@ -1,4 +1,8 @@
-//! Read input file into Global variable data structure
+//! # Input File Reading (`utils::read_input`)
+//!
+//! This module defines the `Global` struct which holds all calculation parameters
+//! read from the input file (typically `in.json`), and the `read_input` function
+//! which performs the file reading and deserialization using `serde_json`.
 
 extern crate serde;
 extern crate serde_json;
@@ -10,29 +14,53 @@ use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
 
-/// Holds the global variables. Read from the input file `in.json`
+/// Holds global configuration parameters read from the input file (e.g., `in.json`).
+/// Uses `serde` to deserialize from JSON.
 #[derive(Deserialize, Debug)]
 pub struct Global {
+    /// Total number of spatial orbitals.
     pub norb: i32,
-    pub norb_core: i32, // freezes the norb_core orbs with lowest diagonal fock elements
+    /// Number of core orbitals to freeze (lowest energy based on h_ii).
+    pub norb_core: i32,
+    /// Number of alpha electrons.
     pub nup: i32,
+    /// Number of beta electrons.
     pub ndn: i32,
-    pub z_sym: i32, // +1 for singlets, -1 for triplets
-    pub n_states: i32, // n_states > 1 not yet implemented
+    /// Target spin symmetry (+1 for singlet, -1 for triplet, etc. - affects initial epsilon).
+    pub z_sym: i32,
+    /// Number of electronic states to target
+    pub n_states: i32,
+    /// Variational screening threshold (epsilon_1) for HCI.
     pub eps_var: f64,
-    pub eps_pt_dtm: f64, // division between deterministic and stochastic components of semistochastic PT
-    // Variational algorithms:
-    pub opp_algo: i32, // 1-5 for which of the opposite-spin algorithms to use (currently use 1)
-    pub same_algo: i32, // 1-2 for which of the same-spin algorithms to use (currently use 1)
-    // Perturbative sample size:
+    /// Screening threshold dividing deterministic and stochastic parts in semistochastic PT.
+    pub eps_pt_dtm: f64,
+    /// Selector for opposite-spin algorithm variant (internal use).
+    pub opp_algo: i32,
+    /// Selector for same-spin algorithm variant (internal use).
+    pub same_algo: i32,
+    /// Target standard error for the stochastic PT energy component.
     pub target_uncertainty: f64,
+    /// Number of stochastic samples to collect in each PT batch.
     pub n_samples_per_batch: i32,
+    /// Maximum number of batches for stochastic PT (may terminate early if uncertainty target met).
     pub n_batches: i32,
-    pub n_cross_term_samples: i32, // 0 for old semistochastic method; >0 for new
+    /// Number of samples for cross terms
+    pub n_cross_term_samples: i32,
+    /// Flag to select between different semistochastic PT implementations.
     pub use_new_semistoch: bool,
 }
 
-/// Read input from in.json, put it into Global struct
+/// Reads calculation parameters from a JSON file into a `Global` struct.
+///
+/// # Arguments
+/// * `path`: The path to the JSON input file (e.g., "in.json").
+///
+/// # Returns
+/// A `serde_json::Result<Global>` which is `Ok(Global)` on successful parsing,
+/// or `Err` if the file cannot be opened or the JSON is malformed/doesn't match
+/// the `Global` struct definition.
+///
+/// Also prints the parsed parameters to standard output.
 pub fn read_input<P: AsRef<Path>>(path: P) -> Result<Global> {
     let file = File::open(path).unwrap();
     let reader = BufReader::new(file);
@@ -57,15 +85,7 @@ pub fn read_input<P: AsRef<Path>>(path: P) -> Result<Global> {
     println!("  use_new_semistoch: {}", global.use_new_semistoch);
     println!("\n");
 
-    // if n_states != 1 {
-    //     Err("n_states > 1 not yet implemented!")
-    // }
-    // if !(opp_algo >=1 && opp_algo <= 3) {
-    //     Err("opp_algo must be 1, 2, or 3!")
-    // }
-    // if !(same_algo >=1 && same_algo <= 2) {
-    //     return Err("same_algo must be 1 or 2!");
-    // }
+    // Removed commented-out validation checks. Consider re-adding if needed.
 
     Ok(global)
 }

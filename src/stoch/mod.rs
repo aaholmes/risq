@@ -1,4 +1,21 @@
-//! General stochastic functions
+//! # Stochastic Sampling Utilities (`stoch`)
+//!
+//! This module provides general utilities and data structures for performing
+//! stochastic sampling, particularly importance sampling, as required by
+//! semistochastic methods.
+//!
+//! ## Key Components:
+//! *   `alias`: Submodule implementing Alias sampling for efficient O(1) sampling from
+//!     discrete distributions.
+//! *   `utils`: Submodule containing other sampling helpers like CDF sampling.
+//! *   `ImpSampleDist`: Enum to specify the desired importance sampling distribution
+//!     (e.g., proportional to |Hc| or (Hc)^2).
+//! *   `DetOrbSample`: Represents a potential starting point for sampling an excitation
+//!     (a specific determinant and initial orbital(s)).
+//! *   `ScreenedSampler`: A structure holding pre-computed Alias tables for efficiently
+//!     sampling `DetOrbSample` instances according to different distributions.
+//! *   `matmul_sample_remaining`: Function to perform a full importance sampling step,
+//!     first sampling a `DetOrbSample` and then sampling a target excitation.
 
 use crate::excite::init::ExciteGenerator;
 use crate::excite::{Excite, Orbs, StoredExcite};
@@ -12,10 +29,12 @@ pub(crate) mod utils;
 use crate::rng::Rand;
 use alias::Alias;
 
-/// Importance sampling distribution: proportional to either |Hc| or (Hc)^2
-#[derive(Clone, Copy)]
+/// Specifies the desired probability distribution for importance sampling.
+#[derive(Clone, Copy, Debug)] // Added Debug
 pub enum ImpSampleDist {
+    /// Sample with probability proportional to `|H_ai * c_i|`.
     AbsHc,
+    /// Sample with probability proportional to `(H_ai * c_i)^2`.
     HcSquared,
 }
 
@@ -38,33 +57,64 @@ pub enum ImpSampleDist {
 /// relative prob
 
 /// Also, contains elements, the list of elements being sampled (e.g. det/orb pairs)
+/// Facilitates efficient importance sampling of determinant/initial-orbital pairs.
+///
+/// This structure is generated from a list of `DetOrbSample` instances, which represent
+/// all possible starting points (determinant `i` and initial orbitals `init`) for excitations
+/// that fall below the deterministic screening threshold (`eps_pt_dtm`).
+///
+/// It pre-computes Alias tables (`det_orb_sampler_*`) allowing for O(1) sampling of a
+/// `DetOrbSample` according to either the `|H_ai * c_i|` or `(H_ai * c_i)^2` distribution
+/// (summed over potential targets `a`).
 pub struct ScreenedSampler<'a> {
-    // pub uniform_singles: bool,
+    /// Vector storing the actual `DetOrbSample` elements that can be sampled.
+    /// The index corresponds to the sample returned by the Alias samplers.
     pub elements: Vec<DetOrbSample<'a>>,
+    /// Alias sampler for drawing samples with probability proportional to `sum_a |H_ai * c_i|`.
     pub det_orb_sampler_abs_hc: Alias,
+    /// Alias sampler for drawing samples with probability proportional to `sum_a (H_ai * c_i)^2`.
     pub det_orb_sampler_hc_squared: Alias,
+    /// The global sum of `sum_abs_hc` over all elements, used for normalization or total estimates.
     pub sum_abs_hc_all_dets_orbs: f64,
+    /// The global sum of `sum_hc_squared` over all elements, used for normalization or total estimates.
     pub sum_hc_squared_all_dets_orbs: f64,
-    // pub single_excitable_dets: Vec<&'a Det>, // Dets that can have single excites sampled
-    // pub single_excitable_det_sampler: Alias, // Alias sampler for selecting dets to perform single excites on
 }
 
-/// Individual sample of a det and an electron or electron pair to excite from
+/// Represents a potential starting point for sampling an excitation.
+///
+/// Contains a reference to a source determinant (`det`) and the specific initial
+/// orbital(s) (`init`) and spin (`is_alpha`) from which an excitation originates.
+/// It also stores pre-calculated sums of Hamiltonian estimates (`sum_*_h`) and
+/// wavefunction-weighted estimates (`sum_*_hc`) over all possible *target* excitations
+/// originating from this specific `det`/`init`/`is_alpha` combination that fall *below*
+/// the deterministic threshold (`eps_pt_dtm`). These sums are used to build the
+/// `ScreenedSampler`'s Alias tables.
 #[derive(Clone, Copy, Debug)]
 pub struct DetOrbSample<'a> {
-    pub det: &'a Det, // just the pointers to the wf's dets because we don't want to copy them; hence the lifetime parameter
+    /// Reference to the source determinant (`i`). Lifetime `'a` ensures it lives as long as the source `Wf`.
+    pub det: &'a Det,
+    /// The initial orbital(s) the excitation originates from.
     pub init: Orbs,
+    /// The spin channel of the excitation (None for opposite-spin doubles).
     pub is_alpha: Option<bool>,
+    /// Sum of `|H_ai|` over all target excitations `a` originating from this `det`/`init`/`is_alpha`
+    /// that were screened out (i.e., below `eps_pt_dtm`).
     pub sum_abs_h: f64,
+    /// Sum of `H_ai^2` over all target excitations `a` originating from this `det`/`init`/`is_alpha`
+    /// that were screened out.
     pub sum_h_squared: f64,
+    /// Sum of `|H_ai * c_i|` over all target excitations `a` originating from this `det`/`init`/`is_alpha`
+    /// that were screened out. Used for `AbsHc` importance sampling distribution.
     pub sum_abs_hc: f64,
+    /// Sum of `(H_ai * c_i)^2` over all target excitations `a` originating from this `det`/`init`/`is_alpha`
+    /// that were screened out. Used for `HcSquared` importance sampling distribution.
     pub sum_hc_squared: f64,
 }
 
 impl PartialEq for DetOrbSample<'_> {
+    /// Equality based on determinant configuration, initial orbitals, and spin channel.
     fn eq(&self, other: &Self) -> bool {
-        self.det.config.up == other.det.config.up
-            && self.det.config.dn == other.det.config.dn
+        self.det.config == other.det.config // Use Config's PartialEq
             && self.init == other.init
             && self.is_alpha == other.is_alpha
     }
@@ -72,7 +122,7 @@ impl PartialEq for DetOrbSample<'_> {
 impl Eq for DetOrbSample<'_> {}
 
 impl Hash for DetOrbSample<'_> {
-    // Hash using only the config, orbs, and is_alpha
+    /// Hashes based on determinant configuration, initial orbitals, and spin channel. Consistent with `PartialEq`.
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.det.config.hash(state);
         self.init.hash(state);
@@ -80,9 +130,17 @@ impl Hash for DetOrbSample<'_> {
     }
 }
 
-/// Generate a screened sampler object for sampling (det, orbs) pairs using Alias sampling
-/// The input det_orbs will contain the information needed for CDF-searching as a separate step
-/// (sum_abs_hc, sum_hc_squared are the sums of remaining terms to be sampled)
+/// Creates a `ScreenedSampler` from a vector of `DetOrbSample` instances.
+///
+/// Calculates the total sums (`sum_*_all_dets_orbs`) and constructs the Alias tables
+/// (`det_orb_sampler_*`) based on the normalized `sum_abs_hc` and `sum_hc_squared` values
+/// from the input `det_orbs`. Filters out any `DetOrbSample` with zero probability (`sum_abs_h == 0.0`).
+///
+/// # Arguments
+/// * `det_orbs`: A vector containing all `DetOrbSample` instances representing the space to be sampled.
+///
+/// # Returns
+/// An initialized `ScreenedSampler` ready for O(1) sampling.
 pub fn generate_screened_sampler(det_orbs: Vec<DetOrbSample>) -> ScreenedSampler {
     // pub fn generate_screened_sampler<'a>(eps: f64, det_orbs: &'a Vec<DetOrbSample>) -> ScreenedSampler<'a> {
 
@@ -119,9 +177,33 @@ pub fn generate_screened_sampler(det_orbs: Vec<DetOrbSample>) -> ScreenedSampler
     }
 }
 
-/// Importance-sample the remaining component of a screened matmul using the given epsilon
-/// Returns tuple containing (option(exciting det, excitation, and sampled determinant (with coeff attached)), and probability of that sample
-/// O(log M) time
+/// Performs one full importance sampling step for the screened (stochastic) part of H*psi.
+///
+/// This function combines two sampling steps:
+/// 1. **Sample Source:** Samples a `DetOrbSample` (representing source determinant `i` and
+///    initial orbitals `init`) from the `screened_sampler` using Alias sampling according
+///    to the specified `imp_sample_dist` (`|Hc|` or `(Hc)^2`). This gives `det_orb_sample`
+///    and its sampling probability `det_orb_prob`.
+/// 2. **Sample Target:** Samples a specific target excitation (`StoredExcite`) from the list
+///    associated with the chosen `det_orb_sample` (using `excite_gen`). This step uses
+///    CDF sampling (`sample_cdf`) weighted by the same `imp_sample_dist`. This gives
+///    `sampled_excite` and its conditional probability `sampled_excite_prob`.
+///
+/// It then reconstructs the full `Excite` object, applies it to the source determinant's
+/// configuration, calculates the resulting determinant's coefficient (`H_ai * c_i`), and
+/// returns the source `Det`, the `Excite`, the resulting `Det` (with coefficient but `diag=None`),
+/// and the total probability (`det_orb_prob * sampled_excite_prob`).
+/// Returns `None` for the `Det` tuple if the sampled excitation was invalid (e.g., target occupied).
+///
+/// # Arguments
+/// * `screened_sampler`: The pre-computed sampler for source det/orb pairs.
+/// * `imp_sample_dist`: The importance sampling distribution to use for both steps.
+/// * `excite_gen`: Contains the lists of target excitations.
+/// * `ham`: The Hamiltonian operator (needed to compute the final coefficient).
+/// * `rand`: Mutable random number generator state.
+///
+/// # Returns
+/// A tuple `(Option<(source_det, excitation, target_det)>, total_probability)`.
 pub fn matmul_sample_remaining(
     screened_sampler: &ScreenedSampler,
     imp_sample_dist: ImpSampleDist,

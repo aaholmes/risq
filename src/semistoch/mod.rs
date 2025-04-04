@@ -1,4 +1,9 @@
-//! Semistochastic methods - for now, just includes Epstein-Nesbet perturbation theory
+//! # Semistochastic Methods (`semistoch`)
+//!
+//! This module implements semistochastic approaches, primarily focusing on
+//! Epstein-Nesbet perturbation theory (ENPT2) combined with stochastic sampling.
+//! The goal is to capture the bulk of the PT2 correction deterministically while
+//! efficiently estimating the remaining contributions via sampling.
 
 mod utils;
 
@@ -19,7 +24,23 @@ use crate::wf::Wf;
 use rolling_stats::Stats;
 use std::time::Instant;
 
-/// Importance sampled semistochastic ENPT2
+/// Implements an importance-sampled semistochastic ENPT2 calculation.
+///
+/// This variant appears to:
+/// 1. Compute a deterministic PT2 contribution (`dtm_enpt2`) using a threshold `global.eps_pt_dtm`.
+/// 2. Stochastically sample the remaining contributions (those below `eps_pt_dtm` but above `eps_var`)
+///    using importance sampling, weighted by `(H_ai * c_i)^2`.
+/// 3. Combine the deterministic and stochastic estimates to get the final PT2 energy and uncertainty.
+///
+/// # Arguments
+/// * `input_wf`: The converged variational wavefunction.
+/// * `global`: Global calculation parameters.
+/// * `ham`: The Hamiltonian operator.
+/// * `excite_gen`: Pre-computed excitation generator.
+/// * `rand`: Mutable random number generator state.
+///
+/// # Returns
+/// A tuple `(pt2_energy, pt2_std_dev)` containing the estimated PT2 energy and its standard deviation.
 pub fn importance_sampled_semistoch_enpt2(
     input_wf: &Wf,
     global: &Global,
@@ -197,10 +218,6 @@ fn std_err(stats: &Stats<f64>) -> f64 {
     stats.std_dev / (stats.count as f64).sqrt()
 }
 
-/// WIP:  Like classic semistoch algo, except:
-/// 1. Diag and off-diag contributions separated
-/// 2. For diag, singles are deterministic, doubles importance-sampled semistochastic
-/// 3. For off-diag, usual algorithm except sample variational dets with new probability
 pub fn new_semistoch_enpt2_dtm_diag_singles(
     input_wf: &Wf,
     global: &Global,
@@ -514,6 +531,22 @@ pub fn new_semistoch_enpt2_dtm_diag_singles(
     )
 }
 
+/// Implements a purely stochastic ENPT2 calculation
+///
+/// This function seems to skip any deterministic component and directly samples contributions
+/// using the `PtSamples` structure and the `pt_estimator` function, which implements the
+/// unbiased estimator from the SHCI papers. It samples excitations originating from variational
+/// determinants (`i`) selected with probability proportional to `|c_i|`.
+///
+/// # Arguments
+/// * `input_wf`: The converged variational wavefunction.
+/// * `global`: Global calculation parameters.
+/// * `ham`: The Hamiltonian operator.
+/// * `excite_gen`: Pre-computed excitation generator.
+/// * `rand`: Mutable random number generator state.
+///
+/// # Returns
+/// A tuple `(pt2_energy, pt2_std_dev)` containing the estimated PT2 energy and its standard deviation.
 pub fn fast_stoch_enpt2(
     input_wf: &Wf,
     global: &Global,

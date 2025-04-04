@@ -1,27 +1,62 @@
-//! Alias sampling
-// Borrows heavily from vose-alias crate, but with some improvements:
-// - Use vectors of indices to avoid all hash tables
-// - Don't discretize probabilities to multiples of 1%
+//! # Alias Method Sampling (`stoch::alias`)
+//!
+//! Implements Vose's Alias Method for efficient O(1) sampling from a discrete
+//! probability distribution.
+//!
+//! This method pre-computes two tables (`alias` and `alias_prob`) based on the input
+//! probability distribution. Sampling then involves:
+//! 1. Rolling a fair die (selecting a random index `i` uniformly).
+//! 2. Flipping a biased coin (comparing a uniform random number `r` in [0,1) to `alias_prob[i]`).
+//! 3. If `r < alias_prob[i]`, return `i`. Otherwise, return `alias[i]`.
+//!
+//! This implementation is based on the description at [https://www.keithschwarz.com/darts-dice-coins/](https://www.keithschwarz.com/darts-dice-coins/)
+//! and inspired by the `vose-alias` crate, but uses vectors directly.
 
 use rand::Rng;
 use std::fmt::Debug;
-// use rand::rngs::ThreadRng;
 use crate::rng::Rand;
 use rand::distributions::Uniform;
 
-/// Alias sampling data structure
+/// Data structure for Vose's Alias Method.
+///
+/// Contains the pre-computed tables needed for O(1) sampling.
 #[derive(Debug, Clone)]
 pub struct Alias {
-    // Probability of sampling each element
+    /// The original normalized probability of sampling each element `i`. Stored for reference.
     pub sample_prob: Vec<f64>,
-    // Internal components of sampling process
+    /// The alias table. `alias[i]` stores the index of the alternative element
+    /// that might be chosen when column `i` is selected.
     alias: Vec<usize>,
+    /// The probability table. `alias_prob[i]` stores the probability of choosing
+    /// index `i` (rather than `alias[i]`) when column `i` is selected.
     alias_prob: Vec<f64>,
+    /// A distribution for sampling column indices uniformly from `0..size`.
     uniform: Uniform<usize>,
 }
 
 impl Alias {
-    /// Generate new Alias struct given a vector of relative probabilities (not necessarily normalized)
+    /// Creates a new `Alias` instance from a vector of relative probabilities.
+    ///
+    /// # Arguments
+    /// * `rel_probs`: A vector where `rel_probs[i]` is proportional to the desired
+    ///   probability of sampling index `i`. These probabilities do not need to be normalized.
+    ///
+    /// # Returns
+    /// An `Alias` struct initialized with the pre-computed tables.
+    ///
+    /// # Algorithm
+    /// Implements Vose's algorithm:
+    /// 1. Normalizes the input probabilities (`rel_probs`).
+    /// 2. Scales probabilities by `size` (number of elements).
+    /// 3. Initializes `small` and `large` worklists containing indices with scaled probabilities
+    ///    less than 1.0 and greater than or equal to 1.0, respectively.
+    /// 4. Iteratively processes pairs from `small` and `large`:
+    ///    - Sets `alias_prob[l]` for the small index `l`.
+    ///    - Sets `alias[l]` to the large index `g`.
+    ///    - Updates the remaining probability "mass" for the large index `g`.
+    ///    - Re-categorizes `g` into `small` or `large` based on its updated probability.
+    /// 5. Handles any remaining elements in `large` or `small` (due to numerical precision)
+    ///    by setting their `alias_prob` to 1.0.
     pub fn new(rel_probs: Vec<f64>) -> Alias {
         let size = rel_probs.len();
         println!("New Alias with size = {}", size);
@@ -103,26 +138,43 @@ impl Alias {
         }
     }
 
-    /// Sample an element from the Alias struct in O(1) time
-    pub fn sample(&mut self, rand: &mut Rand) -> usize {
+    /// Samples an index from the distribution in O(1) time.
+    ///
+    /// # Arguments
+    /// * `rand`: A mutable reference to the `Rand` struct containing the RNG state.
+    ///
+    /// # Returns
+    /// The index (`usize`) of the sampled element.
+    pub fn sample(&self, rand: &mut Rand) -> usize { // Made immutable self
         let (i, r) = self.roll_die_and_flip_coin(rand);
         return self.select_element(i, r);
     }
 
-    /// Sample an element and also return its sample probability
+    /// Samples an index and returns it along with its true probability from the original distribution.
+    /// O(1) time complexity.
+    ///
+    /// # Arguments
+    /// * `rand`: A mutable reference to the `Rand` struct containing the RNG state.
+    ///
+    /// # Returns
+    /// A tuple `(index, probability)`, where `index` is the sampled index and `probability`
+    /// is its corresponding value from the original normalized distribution (`self.sample_prob`).
     pub fn sample_with_prob(&self, rand: &mut Rand) -> (usize, f64) {
         let (i, r) = self.roll_die_and_flip_coin(rand);
         return self.select_element_and_prob(i, r);
     }
 
-    // This function 'rolls the unweighted die' (selects an element uniformly) and 'flips the weighted coin' (selects a uniform real between 0 and 1 for comparing to the probability of using the alias)
+    /// Performs the two random steps of the Alias method: selecting a uniform column index
+    /// and generating a uniform random float for comparison.
+    /// Internal helper function.
     fn roll_die_and_flip_coin(&self, rand: &mut Rand) -> (usize, f64) {
         let i: usize = rand.rng.sample(self.uniform);
         let r: f64 = rand.rng.gen();
         return (i, r);
     }
 
-    // This function selects an element from the VoseAlias table given a die (a column) and a coin (the element or its alias). This function has been separated from the `sample` function to allow unit testing, but should never be called by itself.
+    /// Selects the final element based on the die roll and coin flip.
+    /// Internal helper function.
     fn select_element(&self, die: usize, coin: f64) -> usize {
         // choose randomly an element from the element vector
         return if coin < self.alias_prob[die] {
@@ -132,7 +184,8 @@ impl Alias {
         };
     }
 
-    // This function selects an element from the VoseAlias table given a die (a column) and a coin (the element or its alias). This function has been separated from the `sample` function to allow unit testing, but should never be called by itself.
+    /// Selects the final element and retrieves its original probability.
+    /// Internal helper function.
     fn select_element_and_prob(&self, die: usize, coin: f64) -> (usize, f64) {
         // choose randomly an element from the element vector
         return if coin < self.alias_prob[die] {
@@ -143,7 +196,9 @@ impl Alias {
         };
     }
 
-    pub fn test(&mut self, n_samples: i32, rand: &mut Rand) {
+    /// Tests the sampler by drawing many samples and comparing frequencies to target probabilities.
+    /// Prints the comparison to standard output.
+    pub fn test(&self, n_samples: i32, rand: &mut Rand) { // Made immutable self
         // Take n_samples samples, show frequency of samples vs probability for full distribution
         let n = self.alias.len();
         let mut freq: Vec<i32> = vec![0; n];

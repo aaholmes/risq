@@ -1,7 +1,12 @@
-//! Variational epsilon iterator (to attach to variational wf)
-//! Epsilon starts at the largest value that allows at least one double excitation from the initial
-//! wf, then drops by a factor of 2 every iteration until it reaches the target value set in the
-//! input file
+//! # Variational Epsilon Iterator (`wf::eps`)
+//!
+//! This module provides an iterator (`Eps`) that controls the variational screening
+//! threshold (epsilon_1 or `eps_var`) used during the Heat-bath Configuration Interaction (HCI)
+//! iterations.
+//!
+//! The typical strategy is to start with a relatively large epsilon and gradually decrease
+//! it over iterations until a target value (specified in the input) is reached. This allows
+//! the wavefunction to grow progressively while managing computational cost.
 
 use crate::excite::init::ExciteGenerator;
 use crate::excite::Orbs;
@@ -9,24 +14,41 @@ use crate::utils::bits::{bit_pairs, bits, btest};
 use crate::utils::read_input::Global;
 use crate::wf::Wf;
 
-/// Variational epsilon iterator
-#[derive(Clone, Copy)]
+/// An iterator that yields the variational screening threshold (`epsilon_1`) for each HCI iteration.
+///
+/// Stores the next epsilon value to be yielded (`next_one`) and the final target
+/// epsilon (`target`) specified by the user.
+#[derive(Clone, Copy, Debug)]
 pub struct Eps {
+    /// The epsilon value that will be returned by the next call to `next()`.
     next_one: f64,
+    /// The final target value for epsilon, read from the input file (`global.eps_var`).
     target: f64,
 }
 
 impl Iterator for Eps {
     type Item = f64;
 
+    /// Returns the current epsilon value and updates the next value for the subsequent iteration.
+    ///
+    /// The update strategy implemented here decreases epsilon by a factor of 10 (`* 0.1`)
+    /// in each step, until the `target` value is reached or passed. Once the target is
+    /// reached, subsequent calls will keep returning the `target` value.
+    ///
+    /// Note: The original comment mentioned a factor of 2 decrease, but the code uses 0.1.
+    /// This implementation always returns `Some(value)`, effectively creating an infinite
+    /// iterator once the target is reached.
     fn next(&mut self) -> Option<f64> {
-        let curr: f64 = self.next_one;
-        let new_next_one: f64 = self.next_one * 0.1;
-        self.next_one = if new_next_one > self.target {
-            new_next_one
+        let curr = self.next_one;
+        // Calculate the proposed next epsilon (decrease by factor of 10)
+        let proposed_next = self.next_one * 0.1;
+        // Set the actual next epsilon: either the proposed value or the target, whichever is larger.
+        self.next_one = if proposed_next > self.target {
+            proposed_next
         } else {
             self.target
         };
+        // Return the current epsilon value for this iteration.
         Some(curr)
     }
 }
@@ -40,12 +62,23 @@ impl Default for Eps {
     }
 }
 
-/// Initialize epsilon iterator
-/// max_doub is the min of the largest symmetrical and largest asymmetrical double excitation magnitudes coming from the wavefunction
-/// Can't just use excite_gen.max_(same/opp)_spin_doub because we want to only consider
-/// excitations coming from initial wf (usually HF det)
-/// We use this initial eps so that when we do excited states, there will be at least two closed
-/// shell and at least two open shell determinants
+/// Initializes the `Eps` iterator.
+///
+/// Determines the starting epsilon value based on the largest magnitude double excitations
+/// originating from the initial reference wavefunction (`wf`, typically Hartree-Fock).
+/// The goal is to set an initial `eps_var` that is just large enough to include at least
+/// one significant double excitation, ensuring the variational space grows meaningfully
+/// in the first iteration. Special consideration is given based on whether a symmetric
+/// (`global.z_sym == 1`) or anti-symmetric state is targeted, influencing which type
+/// of double excitation magnitude determines the starting point.
+///
+/// # Arguments
+/// * `wf`: The initial reference wavefunction (often just the HF determinant).
+/// * `global`: Global calculation parameters, including the target `eps_var`.
+/// * `excite_gen`: The pre-computed excitation generator data.
+///
+/// # Returns
+/// An `Eps` iterator initialized with the calculated starting epsilon and the target epsilon.
 pub fn init_eps(wf: &Wf, global: &Global, excite_gen: &ExciteGenerator) -> Eps {
     let mut max_sym: f64 = global.eps_var;
     let mut max_asym: f64 = global.eps_var;

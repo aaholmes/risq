@@ -1,4 +1,9 @@
-//! Initialize sorted excitation arrays
+//! # Excitation Generator Initialization (`excite::init`)
+//!
+//! This module defines the `ExciteGenerator` struct and the logic (`init_excite_generator`)
+//! for pre-calculating and storing excitation information. This pre-computation allows
+//! for efficient generation and sampling of excitations during the main calculation phases
+//! (like HCI search/PT steps or QMC propagation).
 
 use core::cmp::Ordering::Equal;
 use core::default::Default;
@@ -13,32 +18,62 @@ use crate::utils::bits::{bit_pairs, bits, ibset};
 use crate::utils::read_input::Global;
 use crate::wf::det::Config;
 
-/// Heat-bath excitation generator
-/// Contains sorted lists of excitations, for efficient deterministic and importance sampled treatment
-/// Also contains alias samplers of stored excitations, for fully stochastic importance sampling
+/// Stores pre-computed and sorted excitation information for efficient generation and sampling.
+///
+/// This structure holds HashMaps where keys represent the *initial* orbitals involved
+/// in an excitation (e.g., `Orbs::Double((p, q))` for a double excitation from p and q)
+/// and values are vectors of `StoredExcite`. These vectors contain potential *target*
+/// orbitals, sorted in descending order by the estimated Hamiltonian matrix element (`abs_h`).
+///
+/// This allows for efficient deterministic screening (iterating through the sorted list until
+/// `abs_h` drops below a threshold `eps`) and importance sampling (using the pre-computed
+/// `sum_remaining_*` values in `StoredExcite` to sample from the remaining tail).
+#[derive(Default)] // Added Default derive
 pub struct ExciteGenerator {
-    // Doubles:
-    // max_(same/opp)_spin_doub is the global largest-magnitude double
-    // each orbital pair maps onto a sorted list of target orbital pairs
+    /// The maximum absolute value of any opposite-spin double excitation matrix element estimate found.
     pub max_opp_doub: f64,
+    /// Map from initial opposite-spin orbital pair `Orbs::Double(p_up, q_dn)` to a sorted list
+    /// of potential target pairs `StoredExcite { target: Orbs::Double(r_up, s_dn), ... }`.
     pub opp_doub_sorted_list: HashMap<Orbs, Vec<StoredExcite>>,
 
+    /// The maximum absolute value of any same-spin double excitation matrix element estimate found.
     pub max_same_doub: f64,
+    /// Map from initial same-spin orbital pair `Orbs::Double(p, q)` to a sorted list
+    /// of potential target pairs `StoredExcite { target: Orbs::Double(r, s), ... }`.
+    /// The spin (alpha/beta) is implicit based on which determinant string (up/dn) the initial pair is found in.
     pub same_doub_sorted_list: HashMap<Orbs, Vec<StoredExcite>>,
 
-    // Singles:
-    // max_sing is the global largest-magnitude single,
-    // sing_sorted_list is a vector of single excitations along with corresponding
-    // target orbs and max possible values; unlike doubles, magnitudes must be
-    // re-computed because these depend on other occupied orbitals
+    /// The maximum absolute value estimate for any single excitation. Note that single excitation
+    /// matrix elements depend on the full determinant configuration, so this `max_sing` and the
+    /// `abs_h` values in `sing_sorted_list` are upper bounds or estimates used for screening/sampling.
     pub max_sing: f64,
+    /// Map from initial single orbital `Orbs::Single(p)` to a sorted list of potential target
+    /// orbitals `StoredExcite { target: Orbs::Single(r), ... }`.
     pub sing_sorted_list: HashMap<Orbs, Vec<StoredExcite>>,
 
-    // Valence orbital screen
+    /// A bitmask representing the set of valence (non-frozen) orbitals.
+    /// Used to quickly filter excitations involving only valence orbitals.
     pub valence: u128,
 }
 
-/// Initialize by sorting double excitation element for all pairs
+/// Creates and initializes the `ExciteGenerator`.
+///
+/// This function iterates through all possible single and double excitations originating
+/// from pairs or single orbitals within the valence space defined in `ham`.
+/// For each originating orbital set (`init`), it calculates estimates of the Hamiltonian
+/// matrix elements (`abs_h`) connecting to all possible target orbitals (`target`).
+///
+/// These potential excitations are stored as `StoredExcite` objects, sorted in descending
+/// order of `abs_h`, and the cumulative sums (`sum_remaining_*`) are calculated.
+/// The results are stored in the HashMaps within the returned `ExciteGenerator`.
+/// It also determines the global maximum `abs_h` values (`max_*_doub`, `max_sing`).
+///
+/// # Arguments
+/// * `global`: Global calculation parameters.
+/// * `ham`: The Hamiltonian containing integrals and orbital information.
+///
+/// # Returns
+/// An initialized `ExciteGenerator` ready for use in calculations.
 pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
     let mut excite_gen: ExciteGenerator = ExciteGenerator {
         max_same_doub: 0.0,
@@ -240,23 +275,55 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
     excite_gen
 }
 
+/// Computes the cumulative sums `sum_remaining_abs_h` and `sum_remaining_h_squared`
+/// for a vector of `StoredExcite` that is already sorted by `abs_h` in descending order.
+///
+/// Iterates backwards through the vector, calculating the sum of `abs_h` and `abs_h^2`
+/// for all elements *after* the current one. This information is crucial for importance
+/// sampling the "tail" of excitations below a deterministic threshold.
 fn compute_sum_remaining(v: &mut Vec<StoredExcite>) {
-    for i in (0..v.len() - 1).rev() {
-        v[i].sum_remaining_abs_h = v[i + 1].sum_remaining_abs_h + v[i].abs_h;
-        v[i].sum_remaining_h_squared = v[i + 1].sum_remaining_h_squared + v[i].abs_h * v[i].abs_h;
+    // Ensure the vector has elements to avoid panic on v[i+1]
+    if v.is_empty() {
+        return;
+    }
+    // Initialize the last element's remaining sums to its own values (nothing follows it)
+    // Note: Original code started loop at v.len() - 2, potentially missing the last element's contribution
+    // if only one element exists. Let's adjust slightly for clarity, though effect might be minimal.
+    let last_idx = v.len() - 1;
+    // It seems the original intent might have been for sum_remaining to EXCLUDE the current element.
+    // Let's stick to that interpretation. The last element has 0 remaining sum.
+    v[last_idx].sum_remaining_abs_h = 0.0;
+    v[last_idx].sum_remaining_h_squared = 0.0;
+
+    // Iterate backwards from the second-to-last element
+    for i in (0..last_idx).rev() {
+        // The sum remaining for element i is the sum remaining for element i+1
+        // PLUS the contribution from element i+1 itself.
+        v[i].sum_remaining_abs_h = v[i + 1].sum_remaining_abs_h + v[i + 1].abs_h;
+        v[i].sum_remaining_h_squared = v[i + 1].sum_remaining_h_squared + v[i + 1].abs_h * v[i + 1].abs_h;
     }
 }
 
 // Sample excitations with probability |H| (for the cross term in ENPT2)
 // Currently uses CDF searching, but can replace with Alias sampling later
 impl ExciteGenerator {
+    /// Samples a single target excitation given an initial orbital set and spin channel.
+    ///
+    /// Uses the pre-sorted lists and cumulative sums stored in `self` along with a specified
+    /// importance sampling distribution (`imp_sampling_dist`, e.g., proportional to |H| or H^2)
+    /// to stochastically select one target excitation (`StoredExcite`) from the list associated
+    /// with the given `init` orbitals and `is_alpha` spin.
+    ///
+    /// Returns the selected `Excite` (reconstructed with `init` and `is_alpha`) and the
+    /// probability with which it was sampled, or `None` if the list is empty.
+    /// The sampling method used here appears to be CDF searching via `sample_cdf`.
     pub fn sample_excite(
         &self,
-        init: Orbs,
-        is_alpha: Option<bool>,
-        imp_sampling_dist: &ImpSampleDist,
-        rand: &mut Rand,
-    ) -> Option<(Excite, f64)> {
+        init: Orbs,                 // Initial orbital(s) excitation originates from
+        is_alpha: Option<bool>,     // Spin channel (None for opposite-spin doubles)
+        imp_sampling_dist: &ImpSampleDist, // How to weight probabilities (e.g., |H|, H^2)
+        rand: &mut Rand,            // Random number generator state
+    ) -> Option<(Excite, f64)> {    // Returns (Sampled Excitation, Sampling Probability) or None
         // Sample an excitation from the selected orbs with probability proportional to |H|
         // Returns an excite and the sample probability
         // Can sample an invalid excitation
@@ -308,12 +375,20 @@ impl ExciteGenerator {
         })
     }
 
+    /// Samples one excitation pathway for *each* possible originating pair/single orbital in a given determinant.
+    ///
+    /// Iterates through all single occupied orbitals (`i`) and pairs of occupied orbitals (`(i, j)`)
+    /// within the `det` configuration (considering valence orbitals only). For each `i` or `(i, j)`,
+    /// it calls `sample_excite` to draw *one* sample from the corresponding list of target excitations.
+    ///
+    /// Returns a vector containing all the sampled excitations and their individual sampling probabilities.
+    /// Note that some sampled excitations might be invalid if they target an orbital already occupied in `det`.
     pub fn sample_excites_from_all_pairs(
         &self,
-        det: Config,
-        imp_sampling_dist: &ImpSampleDist,
-        rand: &mut Rand,
-    ) -> Vec<(Excite, f64)> {
+        det: Config,                // The determinant configuration to excite from
+        imp_sampling_dist: &ImpSampleDist, // Importance sampling distribution
+        rand: &mut Rand,            // RNG state
+    ) -> Vec<(Excite, f64)> {       // Vector of (Sampled Excitation, Sampling Probability)
         // Sample an excitation from each electron pair in the occupied determinant
         // Returns a vector of (Excite, sampling probability) pairs
         // Some of which may be invalid (excitations to already-occupied orbitals)

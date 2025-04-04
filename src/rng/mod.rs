@@ -1,19 +1,29 @@
-//! Contains the random number generator and its seed
+//! # Random Number Generation (`rng`)
+//!
+//! This module provides a simple wrapper around a seeded random number generator (RNG)
+//! for use in stochastic parts of the calculations. Using a seeded RNG ensures
+//! reproducibility of stochastic results.
 
 use rand::rngs::StdRng;
 use rand::SeedableRng;
-// use rand::prelude::ThreadRng;
 
-/// Contains the seeded random number generator.  Must be used each time a random number is generated
+/// Wrapper struct holding the seeded random number generator instance.
+///
+/// This struct encapsulates the `StdRng` from the `rand` crate, initialized with a fixed seed.
+/// An instance of `Rand` should be passed to functions requiring random numbers.
+#[derive(Debug)] // Added Debug derive
 pub struct Rand {
-    // pub rng: ThreadRng, // thread-safe random number generator
-    pub rng: StdRng, // seeded rng
+    /// The seeded standard random number generator instance.
+    pub rng: StdRng,
 }
 
-/// Initialize the random number generator + seed
+/// Initializes and returns a new `Rand` struct.
+///
+/// Creates a `StdRng` instance seeded with a fixed value (currently `1312`).
+/// This ensures that sequences of random numbers generated using the returned `Rand`
+/// instance are reproducible across runs.
 pub fn init_rand() -> Rand {
     Rand {
-        // rng: rand::thread_rng(),
-        rng: StdRng::seed_from_u64(1312),
+        rng: StdRng::seed_from_u64(1312), // Seeded for reproducibility
     }
 }

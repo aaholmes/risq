@@ -1,14 +1,28 @@
 #![crate_name = "risq"]
 #![crate_type = "bin"]
 #![doc(html_root_url = "https://aaholmes.github.io/risq/")]
-#![doc(
-    html_logo_url = "https://wherethewindsblow.com/wp-content/uploads/2020/11/crab_dice_red_white.jpg"
-)]
 
-//! Rust Implementation of Semistochastic Quantum chemistry (`risq`) implements an efficient selected
-//! configuration interaction algorithm called Semistochastic Heat-bath Configuration Interaction
-//! (SHCI).
-
+//! # Rust Implementation of Semistochastic Quantum chemistry (RISQ)
+//!
+//! This crate provides a command-line application for performing electronic structure
+//! calculations using methods like Heat-bath Configuration Interaction (HCI) and
+//! Semistochastic HCI (SHCI), which combines HCI with Epstein-Nesbet perturbation theory.
+//!
+//! ## Architecture Notes
+//!
+//! *   **Binary Crate:** This is structured as a binary (`bin`) crate, meaning it compiles
+//!     to an executable (`risq`) rather than a reusable library.
+//! *   **Fixed Workflow:** The `main` function executes a predetermined sequence:
+//!     1.  Setup (Read input, integrals, initialize structures)
+//!     2.  Variational HCI stage
+//!     3.  Perturbative correction stage (Epstein-Nesbet PT2)
+//! *   **Global State & Hardcoded Files:** Core data structures (`GLOBAL` parameters,
+//!     `HAM` Hamiltonian, `EXCITE_GEN` excitation generator) are initialized once using
+//!     `lazy_static!` and read from hardcoded filenames (`in.json`, `FCIDUMP`) in the
+//!     current working directory. This simplifies the current execution flow but makes
+//!     the application inflexible for running different calculations sequentially or
+//!     using it as a library. A refactor to pass configuration explicitly would be needed
+//!     for greater flexibility.
 #[macro_use]
 extern crate lazy_static;
 extern crate alloc;
@@ -40,36 +54,51 @@ fn main() {
     println!("\\\\                        Adam A Holmes, 2021                         //");
     println!(" \\\\==================================================================//");
 
+    // --- Setup Stage ---
     println!("\n\n=====\nSetup\n=====\n");
     let start_setup: Instant = Instant::now();
 
-    println!("Reading input file");
+    // Read global parameters from hardcoded 'in.json' using lazy_static.
+    // Panics if 'in.json' is not found or invalid.
+    println!("Reading input file (in.json)");
     lazy_static! {
         static ref GLOBAL: Global = read_input("in.json").unwrap();
     }
 
-    println!("Reading integrals");
+    // Read integrals from hardcoded 'FCIDUMP' using lazy_static.
+    // Depends on GLOBAL being initialized first. Panics if 'FCIDUMP' is not found or invalid.
+    println!("Reading integrals (FCIDUMP)");
     lazy_static! {
         static ref HAM: Ham = read_ints(&GLOBAL, "FCIDUMP");
     }
 
+    // Initialize the excitation generator using lazy_static.
+    // Depends on GLOBAL and HAM being initialized.
     println!("Initializing excitation generator");
     lazy_static! {
         static ref EXCITE_GEN: ExciteGenerator = init_excite_generator(&GLOBAL, &HAM);
     }
 
+    // Initialize the variational wavefunction structure.
     println!("Initializing wavefunction");
     let mut wf: VarWf = init_var_wf(&GLOBAL, &HAM, &EXCITE_GEN);
-    wf.print();
+    wf.print(); // Print initial state (likely just the reference determinant)
     println!("Time for setup: {:?}", start_setup.elapsed());
 
+    // --- Variational Stage (HCI) ---
     println!("\n\n=================\nVariational stage\n=================\n");
     let start_var: Instant = Instant::now();
+    // Perform the Heat-bath Configuration Interaction calculation.
+    // This iteratively selects important determinants and solves the CI eigenvalue problem.
+    // Modifies `wf` in place.
     variational(&GLOBAL, &HAM, &EXCITE_GEN, &mut wf);
     println!("Time for variational stage: {:?}", start_var.elapsed());
 
+    // --- Perturbative Stage (Epstein-Nesbet PT2) ---
     println!("\n\n==================\nPerturbative stage\n==================\n");
     let start_enpt2: Instant = Instant::now();
+    // Calculate the second-order Epstein-Nesbet perturbative correction
+    // using the variational wavefunction `wf` as the reference.
     perturbative(&GLOBAL, &HAM, &EXCITE_GEN, &wf.wf);
     println!("Time for perturbative stage: {:?}", start_enpt2.elapsed());
 

@@ -13,7 +13,7 @@ use crate::utils::read_input::Global;
 use crate::var::davidson::sparse_optimize;
 use crate::wf::VarWf;
 use std::time::Instant;
-use crate::excite::iterator::test_dets_excites_and_excited_dets;
+use crate::excite::iterator::dets_excites_and_excited_dets;
 
 /// Perform variational selected CI
 pub fn variational(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, var_wf: &mut VarWf) {

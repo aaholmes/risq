@@ -1,4 +1,10 @@
-//! Sparse matrix datatype that works with eigenvalues module
+//! # Custom Sparse Matrix Representations (`var::sparse`)
+//!
+//! This module defines custom data structures for representing the sparse Hamiltonian matrix
+//! used in the variational HCI calculation. It provides implementations of the
+//! `MatrixOperations` trait required by the Davidson eigenvalue solver.
+//!
+//! Different structures might represent different storage strategies or optimizations.
 
 extern crate nalgebra;
 extern crate sprs;
@@ -6,8 +12,7 @@ use nalgebra::base::{DMatrixSlice, DVector, DVectorSlice};
 use nalgebra::DMatrix;
 use sprs::CsMat;
 use std::collections::HashMap;
-// use rayon::prelude::into_par_iter;
-// use rayon::iter::IntoParallelIterator;
+// Removed commented-out Rayon imports
 
 use crate::ham::Ham;
 use crate::var::eigenvalues::matrix_operations::MatrixOperations;
@@ -15,17 +20,34 @@ use crate::var::utils::intersection;
 use crate::wf::det::Config;
 use crate::wf::Wf;
 
-/// Upper triangular sparse matrix
-/// nonzero off-diagonal elements are at (ind1, ind2) where ind1 < ind2
-#[derive(Default)]
+/// Represents a symmetric sparse matrix storing only the upper triangle.
+///
+/// This structure stores the diagonal elements explicitly and the off-diagonal
+/// elements as a vector of vectors (adjacency list format). `off_diag[i]` contains
+/// a list of tuples `(j, H_ij)` where `j > i`.
+/// This format allows for efficient addition of elements during Hamiltonian generation,
+/// as sorting is only needed once before diagonalization.
+#[derive(Default, Debug)] // Added Debug derive
 pub struct SparseMatUpperTri {
+    /// Dimension of the square matrix (N x N).
     pub(crate) n: usize,
+    /// Vector storing the diagonal elements `H_ii`.
     pub(crate) diag: Vec<f64>,
-    pub(crate) nnz: Vec<usize>, // Number of nonzero off-diagonal elements in each row
-    pub off_diag: Vec<Vec<(usize, f64)>>, // Make our own CsMat because we need it to be temporarily unsorted
+    /// Tracks the number of non-zero off-diagonal elements currently stored *per row*
+    /// *before* deduplication. Used internally during construction.
+    pub(crate) nnz: Vec<usize>,
+    /// Stores the non-zero upper triangular off-diagonal elements.
+    /// `off_diag[i]` is a `Vec<(usize, f64)>` containing pairs `(j, H_ij)` where `j > i`.
+    /// Elements might be unsorted or contain duplicates during construction.
+    pub off_diag: Vec<Vec<(usize, f64)>>,
 }
 
 impl SparseMatUpperTri {
+    /// Sorts the off-diagonal elements for each row by column index and removes duplicates.
+    ///
+    /// This should be called after generating all Hamiltonian elements and before using
+    /// the matrix in operations like matrix-vector products (e.g., within Davidson).
+    /// Updates the internal `nnz` count after deduplication.
     pub fn sort_remove_duplicates(&mut self) {
         let mut n_upper_t = 0;
         for (i, v) in self.off_diag.iter_mut().enumerate() {
@@ -42,6 +64,10 @@ impl SparseMatUpperTri {
 }
 
 impl MatrixOperations for SparseMatUpperTri {
+    /// Computes the matrix-vector product `y = A*x` where `A` is `self` and `x` is `vs`.
+    /// Exploits the symmetry and upper triangular storage:
+    /// `y_i = A_ii*x_i + sum_{j>i} A_ij*x_j + sum_{j<i} A_ji*x_j`
+    /// where `A_ji = A_ij` is retrieved from `self.off_diag[j]`.
     fn matrix_vector_prod(&self, vs: DVectorSlice<'_, f64>) -> DVector<f64> {
         let mut res: DVector<f64> = DVector::from(vec![0.0; self.n]);
 
@@ -58,6 +84,8 @@ impl MatrixOperations for SparseMatUpperTri {
         res
     }
 
+    /// Computes the matrix-matrix product `C = A*B` where `A` is `self` and `B` is `mtx`.
+    /// Performs the product column by column using `matrix_vector_prod`.
     fn matrix_matrix_prod(&self, mtx: DMatrixSlice<'_, f64>) -> DMatrix<f64> {
         let mut res: DMatrix<f64> = mtx.clone().into();
         for (in_col, mut out_col) in mtx.column_iter().zip(res.column_iter_mut()) {
@@ -66,34 +94,47 @@ impl MatrixOperations for SparseMatUpperTri {
         res
     }
 
+    /// Returns a copy of the diagonal elements as a `DVector`.
     fn diagonal(&self) -> DVector<f64> {
         DVector::from(self.diag.clone())
     }
 
+    /// Sets the diagonal elements from a `DVector`.
     fn set_diagonal(&mut self, diag: &DVector<f64>) {
         for i in 0..self.n {
             self.diag[i] = diag[i];
         }
     }
 
+    /// Returns the number of columns (matrix dimension).
     fn ncols(&self) -> usize {
         self.n
     }
 
+    /// Returns the number of rows (matrix dimension).
     fn nrows(&self) -> usize {
         self.n
     }
 }
 
+/// Represents a sparse matrix using `sprs::CsMat` for off-diagonal elements.
+///
+/// This structure stores the diagonal separately and uses the Compressed Sparse Row (CSR)
+/// format from the `sprs` crate for the off-diagonal part. Likely used for testing or
+/// comparison, as `SparseMatUpperTri` seems to be the primary format for HCI.
+#[derive(Debug)] // Added Debug derive
 pub struct SparseMat {
+    /// Dimension of the square matrix (N x N).
     pub n: usize,
+    /// Vector storing the diagonal elements `H_ii`.
     pub diag: DVector<f64>,
+    /// Off-diagonal elements stored in Compressed Sparse Row format.
     pub off_diag: CsMat<f64>,
 }
 
 impl SparseMat {
-    /// Convert a dense matrix to a sparse matrix
-    /// (for testing only)
+    /// Creates a `SparseMat` from a dense `nalgebra::DMatrix`.
+    /// Primarily intended for testing purposes.
     #[cfg(test)]
     pub fn from_dense(mtx: DMatrix<f64>) -> Self {
         let n = mtx.ncols();
@@ -136,6 +177,9 @@ impl SparseMat {
 }
 
 impl MatrixOperations for SparseMat {
+    /// Computes the matrix-vector product `y = A*x`.
+    /// Combines the diagonal contribution and the off-diagonal contribution computed
+    /// using the `sprs::CsMat` multiplication.
     fn matrix_vector_prod(&self, vs: DVectorSlice<'_, f64>) -> DVector<f64> {
         let mut res: DVector<f64> = vs.clone().into();
         let mut dprod: f64;
@@ -154,6 +198,8 @@ impl MatrixOperations for SparseMat {
         res
     }
 
+    /// Computes the matrix-matrix product `C = A*B`.
+    /// Performs the product column by column using `matrix_vector_prod`.
     fn matrix_matrix_prod(&self, mtx: DMatrixSlice<'_, f64>) -> DMatrix<f64> {
         let mut res: DMatrix<f64> = mtx.clone().into();
         for (in_col, mut out_col) in mtx.column_iter().zip(res.column_iter_mut()) {
@@ -162,34 +208,62 @@ impl MatrixOperations for SparseMat {
         res
     }
 
+    /// Returns a copy of the diagonal elements.
     fn diagonal(&self) -> DVector<f64> {
         self.diag.clone()
     }
 
+    /// Sets the diagonal elements.
     fn set_diagonal(&mut self, diag: &DVector<f64>) {
         self.diag = diag.clone();
     }
 
+    /// Returns the number of columns.
     fn ncols(&self) -> usize {
         self.n
     }
 
+    /// Returns the number of rows.
     fn nrows(&self) -> usize {
         self.n
     }
 }
 
+/// Represents a sparse matrix where single and double excitations are handled differently.
+///
+/// This structure seems designed for specific algorithms (perhaps related to `ham_gen` variants)
+/// where single excitation contributions are stored explicitly in a `CsMat`, but double
+/// excitation contributions are computed on-the-fly during matrix-vector products using
+/// pre-computed lookup tables (`doubles`) and the `Ham` object.
+/// This might be an optimization if the number of double excitation *types* is much smaller
+/// than the number of actual non-zero double excitation matrix elements.
+#[derive(Debug)] // Added Debug derive
 pub struct SparseMatDoubles<'a> {
-    // Sparse mat with doubles stored as a lookup data structure that is smaller than the actual H
+    /// Matrix dimension.
     pub n: usize,
+    /// Diagonal elements.
     pub diag: DVector<f64>,
+    /// Off-diagonal elements arising from *single* excitations, stored in CSR format.
     pub singles: CsMat<f64>,
+    /// Lookup table for double excitations. Maps an initial orbital pair `(p, q)` and spin `is_alpha`
+    /// to a list of `(Config, index)` tuples representing determinants that can be formed by
+    /// removing `p` and `q` from some determinant in the basis. Used to find connected pairs for doubles.
     pub doubles: HashMap<(i32, i32, Option<bool>), Vec<(Config, usize)>>,
-    pub ham: &'a Ham, // point to ham, so we can compute matrix elements as needed
-    pub wf: &'a Wf,   // point to wf, so we can look up configs as needed
+    /// Reference to the Hamiltonian to compute double excitation matrix elements on the fly.
+    pub ham: &'a Ham,
+    /// Reference to the wavefunction to look up determinant configurations by index.
+    pub wf: &'a Wf,
 }
 
 impl MatrixOperations for SparseMatDoubles<'_> {
+    /// Computes the matrix-vector product `y = A*x`.
+    ///
+    /// Calculates contributions from:
+    /// 1. Diagonal elements (`self.diag`).
+    /// 2. Single excitations (using `self.singles` CSR matrix).
+    /// 3. Double excitations: Iterates through the `doubles` lookup table, finds connected
+    ///    pairs `(i, j)` using the `intersection` utility, computes `H_ij` using `self.ham.ham_doub`,
+    ///    and adds the contributions `H_ij * x_j` to `y_i` and `H_ij * x_i` to `y_j`.
     fn matrix_vector_prod(&self, vs: DVectorSlice<'_, f64>) -> DVector<f64> {
         let mut res: DVector<f64> = vs.clone().into();
         let mut dprod: f64;
@@ -260,6 +334,7 @@ impl MatrixOperations for SparseMatDoubles<'_> {
         res
     }
 
+    /// Computes the matrix-matrix product `C = A*B`.
     fn matrix_matrix_prod(&self, mtx: DMatrixSlice<'_, f64>) -> DMatrix<f64> {
         let mut res: DMatrix<f64> = mtx.clone().into();
         for (in_col, mut out_col) in mtx.column_iter().zip(res.column_iter_mut()) {
@@ -268,59 +343,25 @@ impl MatrixOperations for SparseMatDoubles<'_> {
         res
     }
 
+    /// Returns a copy of the diagonal elements.
     fn diagonal(&self) -> DVector<f64> {
         self.diag.clone()
     }
 
+    /// Sets the diagonal elements.
     fn set_diagonal(&mut self, diag: &DVector<f64>) {
         self.diag = diag.clone();
     }
 
+    /// Returns the number of columns.
     fn ncols(&self) -> usize {
         self.n
     }
 
+    /// Returns the number of rows.
     fn nrows(&self) -> usize {
         self.n
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use eigenvalues::davidson::Davidson;
-//     use eigenvalues::{DavidsonCorrection, SpectrumTarget};
-//     use super::*;
-//
-//     #[test]
-//     fn test_sparse_davidson() {
-//         let sparse_ham: DMatrix<f64> = eigenvalues::utils::generate_diagonal_dominant(20, 0.005);
-//
-//         let tolerance = 1e-4;
-//
-//         // Compute the first 2 lowest eigenvalues/eigenvectors using the DPR method
-//         let eig = Davidson::new(sparse_ham, 2, DavidsonCorrection::DPR, SpectrumTarget::Lowest, tolerance).unwrap();
-//         println!("eigenvalues:{}", eig.eigenvalues[0]);
-//         println!("eigenvectors:{}", eig.eigenvectors);
-//         assert_eq!(1, 1);
-//     }
-//
-//     #[test]
-//     fn test_sparse_ham_davidson() {
-//         let sparse_ham = SparseMat { ham: CsMat::new((3, 3),
-//                         vec![0, 2, 4, 5],
-//                         vec![0, 1, 0, 2, 2],
-//                         vec![1., 2., 3., 4., 5.])};
-// //        let mut sparse_ham = SparseMat { ham: CsMat::eye(2)};
-//
-// //        sparse_ham.ham.set(0, 1, 0.005);
-// //        sparse_ham.ham.set(1, 0, 0.005);
-//
-//         let tolerance = 1e-9;
-//
-//         // Compute the first 2 lowest eigenvalues/eigenvectors using the DPR method
-//         let eig = Davidson::new(sparse_ham, 1, DavidsonCorrection::DPR, SpectrumTarget::Lowest, tolerance).unwrap();
-//         println!("eigenvalues:{}", eig.eigenvalues[0]);
-//         println!("eigenvectors:{}", eig.eigenvectors);
-//         assert_eq!(1, 1);
-//     }
-// }
+// Removed commented-out test module `tests`

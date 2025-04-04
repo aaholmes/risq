@@ -1,4 +1,12 @@
-//! Variational Hamiltonian generation algorithms
+//! # Variational Hamiltonian Generation (`var::ham_gen`)
+//!
+//! This module implements algorithms for constructing the sparse Hamiltonian matrix
+//! within the variational space used in HCI. It appears to contain several different
+//! strategies (`opp_algo`, `same_algo` parameters in `Global`) developed over time
+//! to optimize the generation of off-diagonal matrix elements, particularly for
+//! opposite-spin and same-spin double excitations.
+//!
+//! The core function `gen_sparse_ham_fast` orchestrates this process.
 
 use crate::excite::init::ExciteGenerator;
 use crate::ham::Ham;
@@ -11,12 +19,11 @@ use std::cmp::Ordering::Equal;
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 use std::time::Instant;
-// extern crate threads_pool;
-// use threads_pool::ThreadPool;
-// use std::thread;
-// use std::time::Duration;
+// Removed commented-out thread pool imports
 
-/// Insert a (key, value) pair into a hashmap of vectors, i.e., append value to hashmap(key)
+/// Helper function to insert a value into a vector stored within a HashMap.
+/// If the key exists, appends the value to the existing vector.
+/// If the key does not exist, creates a new vector with the value and inserts it.
 fn insert_into_hashmap_of_vectors<T, U>(hashmap: &mut HashMap<T, Vec<U>>, key: T, value: U)
 where
     T: Eq + Hash,
@@ -31,67 +38,25 @@ where
     }
 }
 
-// #[cfg(test)]
-// pub fn gen_doubles(
-//     wf: &Wf,
-//     excite_gen: &ExciteGenerator,
-// ) -> HashMap<(i32, i32, Option<bool>), Vec<(Config, usize)>> {
-//     // Output data structure:
-//     // key: orb1, orb2, is_alpha
-//     // value: vector of (config with orb1/2 removed, index of this config in wf) tuples, sorted by
-//     // the first element in the tuple
-//
-//     // To find all pq->rs excites:
-//     // Look up the pq and rs vectors
-//     // Loop over the overlap in linear time
-//     // Each tuple in intersection contains the indices of this matrix element
-//     // This algorithm takes anywhere from O(N^4 N_det) time to O(N^6/M^2 N_det) time
-//
-//     let mut doub = HashMap::default();
-//
-//     for (det_ind, det) in wf.dets.iter().enumerate() {
-//         // Opposite spin
-//         for i in bits(excite_gen.valence & det.config.up) {
-//             for j in bits(excite_gen.valence & det.config.dn) {
-//                 let det_r2 = Config {
-//                     up: ibclr(det.config.up, i),
-//                     dn: ibclr(det.config.dn, j),
-//                 };
-//                 let key = (i, j, None);
-//                 insert_into_hashmap_of_vectors(&mut doub, key, (det_r2, det_ind))
-//             }
-//         }
-//
-//         // Same spin
-//         for (config, is_alpha) in &[(det.config.up, true), (det.config.dn, false)] {
-//             for (i, j) in bit_pairs(excite_gen.valence & *config) {
-//                 let det_r2 = {
-//                     if *is_alpha {
-//                         Config {
-//                             up: ibclr(ibclr(det.config.up, i), j),
-//                             dn: det.config.dn,
-//                         }
-//                     } else {
-//                         Config {
-//                             up: det.config.up,
-//                             dn: ibclr(ibclr(det.config.dn, i), j),
-//                         }
-//                     }
-//                 };
-//                 let key = (i, j, Some(*is_alpha));
-//                 insert_into_hashmap_of_vectors(&mut doub, key, (det_r2, det_ind))
-//             }
-//         }
-//     }
-//
-//     // Sort each vector in place by det_r2
-//     for vec in doub.values_mut() {
-//         vec.sort_by_key(|(det, _)| (det.up, det.dn));
-//     }
-//
-//     doub
-// }
+// Removed commented-out function `gen_doubles`
 
+/// Generates the off-diagonal elements of the sparse variational Hamiltonian matrix.
+///
+/// This function implements potentially complex algorithms (selected by `global.opp_algo`
+/// and `global.same_algo`) to efficiently find pairs of determinants (i, j) within the
+/// current variational space (`wf.wf`) that are connected by single or double excitations
+/// and computes the corresponding Hamiltonian matrix element H_ij.
+///
+/// It updates the `wf.sparse_ham` structure by adding the newly computed elements.
+/// It focuses on generating elements involving *new* determinants added since the last
+/// iteration (those with index >= `wf.n_stored_h()`), connecting them to all other
+/// determinants in the space.
+///
+/// # Arguments
+/// * `global`: Global calculation parameters, including algorithm selectors.
+/// * `wf`: Mutable reference to the variational wavefunction structure. `wf.sparse_ham` is updated.
+/// * `ham`: The Hamiltonian operator.
+/// * `excite_gen`: Pre-computed excitation generator 
 pub fn gen_sparse_ham_fast(
     global: &Global,
     wf: &mut VarWf,
@@ -284,10 +249,9 @@ pub fn gen_sparse_ham_fast(
         wf.expand_sparse_ham_rows();
     }
 
-    // Thread pool
-    // let mut pool = ThreadPool::new(4);
-    // pool.execute(|| {
-    //     println!("Initiating threadpool");
+    // Removed commented-out thread pool code
+    // Parameter for choosing which of the two same-spin algorithms to use
+    // let max_n_dets_double_loop = global.ndn as usize; // ((global.ndn * (global.ndn - 1)) / 2) as usize;
     // });
 
     // Parameter for choosing which of the two same-spin algorithms to use
@@ -327,17 +291,20 @@ pub fn gen_sparse_ham_fast(
     wf.update_n_stored_h(wf.wf.n);
 }
 
+/// Orchestrates the calculation of opposite-spin double excitation contributions to the sparse Hamiltonian.
+/// Iterates through new unique alpha-spin strings and calls `opposite_spin_excites`.
+/// Internal helper function for `gen_sparse_ham_fast`.
 fn all_opposite_spin_excites(
     global: &Global,
     wf: &mut VarWf,
     ham: &Ham,
-    excite_gen: &ExciteGenerator,
-    unique_up_dict: &HashMap<u128, Vec<(usize, u128)>>,
-    new_unique_up_dict: &HashMap<u128, Vec<(usize, u128)>>,
-    new_unique_ups_sorted: &Vec<Unique>,
-    up_singles: &HashMap<u128, Vec<u128>>,
-    dn_singles: &HashMap<u128, Vec<u128>>,
-    dn_single_constructor: &HashMap<Config, Vec<(usize, u128)>>,
+    excite_gen: &ExciteGenerator, // Passed down, potentially unused
+    unique_up_dict: &HashMap<u128, Vec<(usize, u128)>>, // Map: up_string -> [(det_idx, dn_string)]
+    new_unique_up_dict: &HashMap<u128, Vec<(usize, u128)>>, // Map for *new* dets
+    new_unique_ups_sorted: &Vec<Unique>, // Sorted list of new unique up_strings + counts
+    up_singles: &HashMap<u128, Vec<u128>>, // Map: up_string -> [connected_up_strings_via_single]
+    dn_singles: &HashMap<u128, Vec<u128>>, // Map: dn_string -> [connected_dn_strings_via_single]
+    dn_single_constructor: &HashMap<Config, Vec<(usize, u128)>>, // Map: (up, dn_r1) -> [(idx, dn)]
 ) {
     // Loop over new dets only
     for unique in new_unique_ups_sorted {
@@ -357,14 +324,17 @@ fn all_opposite_spin_excites(
     }
 }
 
+/// Orchestrates the calculation of same-spin double excitation contributions to the sparse Hamiltonian.
+/// Iterates through all unique alpha-spin strings and calls `same_spin_excites`.
+/// Internal helper function for `gen_sparse_ham_fast`.
 fn all_same_spin_excites(
     global: &Global,
     wf: &mut VarWf,
     ham: &Ham,
     unique_up_dict: &HashMap<u128, Vec<(usize, u128)>>,
     new_unique_up_dict: &HashMap<u128, Vec<(usize, u128)>>,
-    unique_ups_sorted: &mut Vec<Unique>,
-    // max_n_dets_double_loop: usize,
+    unique_ups_sorted: &Vec<Unique>, // Changed to immutable borrow
+    // max_n_dets_double_loop: usize, // Parameter seems unused now
 ) {
     for unique in unique_ups_sorted {
         // Same-spin excitations
@@ -380,17 +350,32 @@ fn all_same_spin_excites(
     }
 }
 
-pub struct Unique {
+/// Helper struct used in sorting unique alpha-spin strings.
+#[derive(Debug)] // Added Debug derive
+struct Unique {
+    /// The unique alpha-spin bitstring.
     up: u128,
+    /// The number of determinants in the wavefunction sharing this `up` string.
     n_dets: usize,
+    /// The cumulative number of determinants associated with `up` strings *after* this one
+    /// in a sorted list (used for algorithmic choices).
     n_dets_remaining: usize,
 }
 
-pub fn opposite_spin_excites(
+/// Calculates and adds opposite-spin double excitation matrix elements involving a specific `unique` up-string.
+///
+/// This function implements several different algorithms (selected by `global.opp_algo`)
+/// for finding pairs of determinants `(i, j)` where `i` has the `unique.up` alpha string
+/// and `j` has an alpha string connected to `unique.up` by a single excitation, AND
+/// where the beta strings of `i` and `j` are also connected by a single excitation.
+/// For each such pair `(i, j)`, it computes `H_ij` and adds it to `wf.sparse_ham`.
+/// Focuses on connections where at least one determinant index is new (`>= wf.n_stored_h()`).
+/// Internal helper function.
+fn opposite_spin_excites( // Made private
     global: &Global,
     wf: &mut VarWf,
     ham: &Ham,
-    excite_gen: &ExciteGenerator,
+    excite_gen: &ExciteGenerator, // Potentially unused
     unique_up_dict: &HashMap<u128, Vec<(usize, u128)>>,
     new_unique_up_dict: &HashMap<u128, Vec<(usize, u128)>>,
     up_singles: &HashMap<u128, Vec<u128>>,
@@ -615,13 +600,22 @@ pub fn opposite_spin_excites(
     // println!("Time for opposite-spin excites for up config {}: {:?}", unique.up, start_this_opp.elapsed());
 }
 
-pub fn same_spin_excites(
+/// Calculates and adds same-spin double excitation matrix elements involving a specific `unique` up-string.
+///
+/// Finds pairs of determinants `(i, j)` that share the same `unique.up` alpha string,
+/// but whose beta strings (`dn_i`, `dn_j`) differ by a double excitation. It also handles
+/// the symmetric case where alpha strings differ by a double excitation and beta strings are identical.
+/// Computes `H_ij` for these pairs and adds them to `wf.sparse_ham`.
+/// Focuses on connections where at least one determinant index is new (`>= wf.n_stored_h()`).
+/// Contains different algorithmic approaches selected by `global.same_algo`.
+/// Internal helper function.
+fn same_spin_excites( // Made private
     global: &Global,
     wf: &mut VarWf,
     ham: &Ham,
     unique_up_dict: &HashMap<u128, Vec<(usize, u128)>>,
     new_unique_up_dict: &HashMap<u128, Vec<(usize, u128)>>,
-    // max_n_dets_double_loop: usize,
+    // max_n_dets_double_loop: usize, // Parameter seems unused now
     unique: &Unique,
 ) {
     if global.same_algo == 1 {

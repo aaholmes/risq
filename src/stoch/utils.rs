@@ -1,4 +1,6 @@
-//! Misc sampling utilities
+//! # Miscellaneous Stochastic Utilities (`stoch::utils`)
+//!
+//! This module contains helper functions for stochastic sampling procedures.
 
 extern crate rand;
 
@@ -9,18 +11,42 @@ use crate::rng::Rand;
 use crate::stoch::ImpSampleDist;
 // use std::intrinsics::offset;
 
-/// Sample a CDF (in decreasing order) by sampling a uniform random number up to max_cdf and binary searching the CDF
-/// cdf is a vector of StoredExcites, and we access their stored cumulative sums depending on imp_sample_dist
-/// max_cdf is chosen such that CDF(elem) = max_cdf.unwrap() for the first elem that is a valid sample
-/// (max_cdf = None samples the whole distribution)
-/// Returns the sampled excite and the probability of the sample
-/// O(log M)
+/// Samples an element from a discrete distribution represented by a pre-sorted list
+/// using the inverse transform sampling method via binary search on the cumulative sums.
+///
+/// This function assumes `cdf` is a slice of `StoredExcite` sorted in descending order
+/// by `abs_h`. It uses the pre-computed `sum_remaining_*` fields, which act as a
+/// cumulative distribution function (CDF) but in reverse order (sum of probabilities
+/// *after* the current element).
+///
+/// # Arguments
+/// * `cdf`: A slice of `StoredExcite`, sorted descending by `abs_h`. Contains the
+///   cumulative sums needed for sampling.
+/// * `imp_sample_dist`: Specifies whether to use `sum_remaining_abs_h` (for sampling ~|H|)
+///   or `sum_remaining_h_squared` (for sampling ~H^2).
+/// * `max_cdf`: An optional upper bound for the sampling range. If `Some(m)`, samples
+///   uniformly from `[0, m)`. If `None`, samples uniformly from `[0, total_sum)`, where
+///   `total_sum` is the sum corresponding to the first element (representing the sum over
+///   the entire distribution).
+/// * `rand`: Mutable random number generator state.
+///
+/// # Returns
+/// `Some((sampled_excite, sample_probability))` if successful, where `sampled_excite`
+/// is a reference to the chosen `StoredExcite` and `sample_probability` is the probability
+/// mass associated with that specific element according to the chosen distribution and range.
+/// Returns `None` if the total sum of the distribution is zero.
+///
+/// # Complexity
+/// O(log M), where M is the length of the `cdf` slice, due to the binary search (`partition_point`).
+///
+/// # Panics
+/// Panics if `cdf` is empty or if `max_cdf` is `Some(0.0)`.
 pub fn sample_cdf<'a>(
-    cdf: &'a [StoredExcite],
-    imp_sample_dist: &ImpSampleDist,
-    max_cdf: Option<f64>,
-    rand: &mut Rand,
-) -> Option<(&'a StoredExcite, f64)> {
+    cdf: &'a [StoredExcite],            // Pre-sorted slice with cumulative sums
+    imp_sample_dist: &ImpSampleDist,    // Distribution type (|H| or H^2)
+    max_cdf: Option<f64>,               // Optional upper bound for sampling range
+    rand: &mut Rand,                    // RNG state
+) -> Option<(&'a StoredExcite, f64)> { // Returns (Sampled element, Its probability) or None
     let n = cdf.len();
     // println!("CDF has size: {}", n);
 
@@ -96,49 +122,4 @@ pub fn sample_cdf<'a>(
     Some((&cdf[ind], sample_prob))
 }
 
-// #[cfg(test)]
-// use std::collections::HashMap;
-// #[test]
-// pub fn test_cdf(
-//     cdf: &Vec<StoredExcite>,
-//     imp_sample_dist: &ImpSampleDist,
-//     max_cdf: Option<f64>,
-//     rand: &mut Rand,
-//     n_samples: i32,
-// ) {
-//     // Test the sample_cdf routine by taking n_samples samples and showing frequency of samples vs probability for full distribution
-//     println!("Calling test_cdf");
-//     let n: usize = cdf.len();
-//     let mut expected: Vec<f64> = vec![];
-//     match imp_sample_dist {
-//         ImpSampleDist::AbsHc => {
-//             for i in 1..n {
-//                 expected.push(cdf[i - 1].sum_remaining_abs_h - cdf[i].sum_remaining_abs_h);
-//             }
-//             expected.push(cdf[n - 1].sum_remaining_abs_h);
-//         }
-//         ImpSampleDist::HcSquared => {
-//             for i in 1..n {
-//                 expected.push(cdf[i - 1].sum_remaining_h_squared - cdf[i].sum_remaining_h_squared);
-//             }
-//             expected.push(cdf[n - 1].sum_remaining_h_squared);
-//         }
-//     }
-//     let mut freq: HashMap<StoredExcite, i32> = HashMap::default();
-//     for i in cdf {
-//         freq.insert(*i, 0);
-//     }
-//     for _i_sample in 0..n_samples {
-//         let sample = sample_cdf(cdf, imp_sample_dist, max_cdf, rand).unwrap();
-//         *freq.get_mut(&sample.0).unwrap() += 1;
-//     }
-//     println!("Target prob, sampled prob");
-//     for (i, exc) in cdf.iter().enumerate() {
-//         println!(
-//             "{:.6},   {:.6},   {:.6}",
-//             expected[i],
-//             (freq[exc] as f64) / (n_samples as f64),
-//             (freq[exc] as f64) / (n_samples as f64) / expected[i]
-//         );
-//     }
-// }
+// Removed commented-out test function `test_cdf`

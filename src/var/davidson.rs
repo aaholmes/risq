@@ -1,5 +1,8 @@
-//! Davidson module
-//! For now, just use simple diagonal preconditioning
+//! # Davidson Diagonalization (`var::davidson`)
+//!
+//! This module orchestrates the Davidson diagonalization process for the sparse
+//! Hamiltonian matrix constructed within the variational space during HCI iterations.
+//! It uses the `Davidson` implementation from the `eigenvalues` submodule.
 
 use crate::excite::init::ExciteGenerator;
 use crate::ham::Ham;
@@ -11,9 +14,32 @@ use crate::wf::VarWf;
 use nalgebra::DMatrix;
 use std::time::Instant;
 
-/// Generate Ham as a sparse matrix, and optimize using Davidson
+/// Constructs the sparse Hamiltonian and solves the eigenvalue problem using Davidson.
+///
+/// This function is called within each iteration of the main `variational` loop.
+/// It performs two main steps:
+/// 1. **Build Sparse Hamiltonian:** Calls `gen_sparse_ham_fast` to compute and store
+///    the necessary off-diagonal elements of the Hamiltonian matrix within the current
+///    variational space (`wf.wf`) into `wf.sparse_ham`.
+/// 2. **Davidson Diagonalization:** Initializes and runs the `Davidson` algorithm
+///    using the constructed `wf.sparse_ham`. It targets the lowest eigenvalue
+///    (ground state) and uses diagonal preconditioning (DPR). An initial guess
+///    vector based on the previous iteration's coefficients can be provided via `init_last_iter`.
+///
+/// Upon successful convergence of the Davidson algorithm, it updates the variational
+/// energy (`wf.wf.energy`) and coefficients (`wf.wf.dets[*].coeff`) in the `VarWf` struct.
+///
+/// # Arguments
+/// * `global`: Global calculation parameters (unused here, but potentially needed by `gen_sparse_ham_fast`).
+/// * `ham`: The Hamiltonian operator.
+/// * `excite_gen`: Pre-computed excitation generator.
+/// * `wf`: Mutable reference to the variational wavefunction structure. The sparse Hamiltonian
+///   is built into `wf.sparse_ham`, and the resulting energy/coefficients are stored in `wf.wf`.
+/// * `coeff_eps`: Convergence threshold for the eigenvector residuals in Davidson.
+/// * `energy_eps`: Convergence threshold for the eigenvalue change in Davidson.
+/// * `init_last_iter`: If `true`, use the coefficients from the previous iteration as the initial guess for Davidson.
 pub fn sparse_optimize(
-    global: &Global,
+    global: &Global, // Potentially unused, passed to gen_sparse_ham_fast
     ham: &Ham,
     excite_gen: &ExciteGenerator,
     wf: &mut VarWf,

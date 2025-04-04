@@ -2,7 +2,8 @@
 //! Includes functions to generate an excited det, and compute its diagonal element
 //! quickly from the initial det's diagonal element
 
-use std::detect::__is_feature_detected::popcnt;
+// Using built-in std functionality instead of unstable feature detection
+// use std::detect::__is_feature_detected::popcnt;
 use crate::excite::init::ExciteGenerator;
 use crate::excite::{Excite, Orbs, StoredExcite};
 use crate::ham::Ham;
