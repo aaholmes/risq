@@ -95,10 +95,6 @@ If you use this code or the methods implemented, please consider citing the rele
     *   Sharma, S.; Holmes, A. A.; Jeanmairet, G.; Alavi, A.; Umrigar, C. J. *J. Chem. Theory Comput.* **2017**, *13*, 1595–1604. ([DOI: 10.1021/acs.jctc.6b01028](https://doi.org/10.1021/acs.jctc.6b01028))
 *   **Semistochastic HCI (Epstein-Nesbet PT):**
     *   Li, J.; Otten, M.; Holmes, A. A.; Sharma, S.; Umrigar, C. J. *J. Chem. Phys.* **2018**, *149*, 214105. ([DOI: 10.1063/1.5055390](https://doi.org/10.1063/1.5055390))
-*   **DS-FCIQMC:**
-    *   *(Please add relevant citation(s) if applicable)*
-*   **This Implementation:**
-    *   *(Consider adding a citation if this specific implementation was used in a publication)*
 
 ## License
 
