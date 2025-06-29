@@ -54,6 +54,11 @@ impl Ham {
         self.ints.two_body[combine_4(p, q, r, s)]
     }
 
+    /// Returns the nuclear repulsion energy.
+    pub fn nuclear_repulsion(&self) -> f64 {
+        self.ints.nuc
+    }
+
     /// Retrieves the one-electron integral h_pq = <p|h|q>.
     ///
     /// Expects 0-based orbital indices `p, q` and converts them to 1-based for lookup.
