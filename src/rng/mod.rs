@@ -4,6 +4,7 @@
 //! for use in stochastic parts of the calculations. Using a seeded RNG ensures
 //! reproducibility of stochastic results.
 
+use crate::error::{RisqError, RisqResult};
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 
@@ -22,8 +23,11 @@ pub struct Rand {
 /// Creates a `StdRng` instance seeded with a fixed value (currently `1312`).
 /// This ensures that sequences of random numbers generated using the returned `Rand`
 /// instance are reproducible across runs.
-pub fn init_rand() -> Rand {
-    Rand {
+///
+/// # Errors
+/// Currently never fails, but returns `RisqResult` for future extensibility.
+pub fn init_rand() -> RisqResult<Rand> {
+    Ok(Rand {
         rng: StdRng::seed_from_u64(1312), // Seeded for reproducibility
-    }
+    })
 }

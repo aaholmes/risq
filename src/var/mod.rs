@@ -78,7 +78,7 @@ pub fn variational(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, var
         // --- Search/Add Step ---
         // Find new determinants connected to the current space that are important
         // according to the current screening threshold `var_wf.eps`.
-        let no_new_dets_added = var_wf.find_new_dets(ham, excite_gen); // Modifies var_wf.wf
+        let no_new_dets_added = var_wf.find_new_dets(global, ham, excite_gen); // Modifies var_wf.wf
         println!("Time to find new dets: {:?}", start_find_new_dets.elapsed());
 
         // Check for convergence: If we are at the target epsilon and no new determinants were added.

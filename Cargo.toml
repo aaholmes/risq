@@ -10,7 +10,7 @@ edition = "2018"
 lexical = "^5.1"
 serde = { version = "1.0.117", features = ["derive"] }
 serde_json = "1.0"
-lazy_static = "1.4.0"
+lazy_static = "1.4.0"  # TODO: Remove after refactoring complete
 nalgebra = { version = "0.26", features = ["rand"] }
 sprs = "0.10.0"
 ndarray = "0.14.0"
@@ -19,6 +19,20 @@ rand = "0.8.3"
 rolling-stats = "0.4.0"
 threads_pool = "0.2.6"
 rayon = "1.5.1"
+thiserror = "1.0"
+
+[dev-dependencies]
+assert_approx_eq = "1.1"
+tempfile = "3.0"
+
+# Enable library crate
+[lib]
+name = "risq"
+path = "src/lib.rs"
+
+[[bin]]
+name = "risq"
+path = "src/main.rs"
 
 [profile.release]
 debug = true

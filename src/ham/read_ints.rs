@@ -21,9 +21,11 @@
 extern crate lexical;
 use lexical::parse;
 
+use crate::config::GlobalConfig;
+use crate::error::{RisqError, RisqResult};
 use crate::ham::Ham;
 use crate::utils::ints::{combine_2, combine_4, read_lines};
-use crate::utils::read_input::Global;
+use crate::{risq_bail, risq_ensure};
 use std::cmp::Ordering::Equal;
 
 /// Stores the raw integral values read from the FCIDUMP file.
@@ -63,80 +65,126 @@ pub struct Ints {
 ///    - Assigns the lowest `global.norb_core` orbitals (by energy) to `ham.core_orbs`
 ///      and the rest to `ham.valence_orbs`.
 ///
-/// # Panics
-/// Panics if the file cannot be read or if parsing fails (e.g., non-numeric values where
-/// numbers are expected). Header lines in FCIDUMP that do not start with a parsable float
-/// are skipped.
-pub fn read_ints(global: &Global, filename: &str) -> Ham {
+/// # Errors
+/// Returns `RisqError` if:
+/// - The file cannot be read or parsed
+/// - The file contains invalid FCIDUMP format
+/// - Integral values are inconsistent with the system size
+pub fn read_ints<P: AsRef<std::path::Path>>(config: &GlobalConfig, filename: P) -> RisqResult<Ham> {
+    let filename = filename.as_ref();
     let mut ham: Ham = Ham::default();
-    // ham.diag_computed = false;
-    ham.ints.one_body = vec![0.0; combine_2(global.norb + 1, global.norb + 1)];
-    ham.ints.two_body = vec![
-        0.0;
-        combine_4(
-            global.norb + 1,
-            global.norb + 1,
-            global.norb + 1,
-            global.norb + 1
-        )
-    ];
-    if let Ok(lines) = read_lines(filename) {
-        // Consumes the iterator, returns an (Optional) String
-        for line in lines {
-            if let Ok(read_str) = line {
-                let mut str_split = read_str.split_whitespace();
-                let i: f64;
-                match parse(str_split.next().unwrap()) {
-                    Ok(v) => i = v,
-                    Err(_) => continue, // Skip header lines that don't begin with a float
+    
+    // Initialize integral storage
+    let norb = config.n_orbs as i32;
+    ham.ints.one_body = vec![0.0; combine_2(norb + 1, norb + 1)];
+    ham.ints.two_body = vec![0.0; combine_4(norb + 1, norb + 1, norb + 1, norb + 1)];
+    
+    // Read FCIDUMP file
+    let lines = read_lines(filename)
+        .map_err(|e| RisqError::io_error(filename, e))?;
+    
+    let mut line_number = 0;
+    for line_result in lines {
+        line_number += 1;
+        let read_str = line_result
+            .map_err(|e| RisqError::io_error(filename, e))?;
+        
+        let mut str_split = read_str.split_whitespace();
+        
+        // Parse integral value (first field)
+        let integral_str = str_split.next().ok_or_else(|| {
+            RisqError::FcidumpParse {
+                message: "Missing integral value".to_string(),
+                line: line_number,
+            }
+        })?;
+        
+        let integral: f64 = match parse(integral_str) {
+            Ok(v) => v,
+            Err(_) => continue, // Skip header lines that don't begin with a float
+        };
+        
+        // Parse orbital indices
+        let parse_index = |field: Option<&str>, name: &str| -> RisqResult<i32> {
+            let field_str = field.ok_or_else(|| {
+                RisqError::FcidumpParse {
+                    message: format!("Missing {} index", name),
+                    line: line_number,
                 }
-                let p: i32 = parse(str_split.next().unwrap()).unwrap();
-                let q: i32 = parse(str_split.next().unwrap()).unwrap();
-                let r: i32 = parse(str_split.next().unwrap()).unwrap();
-                let s: i32 = parse(str_split.next().unwrap()).unwrap();
-                if p == 0 && q == 0 && r == 0 && s == 0 {
-                    ham.ints.nuc = i;
-                } else if r == 0 && s == 0 {
-                    ham.ints.one_body[combine_2(p, q)] = i;
-                } else {
-                    ham.ints.two_body[combine_4(p, q, r, s)] = i;
+            })?;
+            parse(field_str).map_err(|_| {
+                RisqError::FcidumpParse {
+                    message: format!("Invalid {} index: '{}'", name, field_str),
+                    line: line_number,
                 }
+            })
+        };
+        
+        let p = parse_index(str_split.next(), "p")?;
+        let q = parse_index(str_split.next(), "q")?;
+        let r = parse_index(str_split.next(), "r")?;
+        let s = parse_index(str_split.next(), "s")?;
+        
+        // Validate indices
+        let max_index = norb;
+        for (index, name) in [(p, "p"), (q, "q"), (r, "r"), (s, "s")] {
+            if index < 0 || index > max_index {
+                risq_bail!(FcidumpParse {
+                    message: format!("Index {} out of range [0, {}]: {}", name, max_index, index),
+                    line: line_number
+                });
             }
         }
-
-        // Determine core and valence orbs using the diagonal Fock elements
-        ham.core_orbs = Vec::with_capacity(global.norb as usize);
-        ham.valence_orbs = Vec::with_capacity(global.norb as usize);
-
-        // Sort diagonal elements in increasing order
-        let mut fock_diag: Vec<f64> = Vec::with_capacity(global.norb as usize);
-        let mut inds: Vec<i32> = Vec::with_capacity(global.norb as usize);
-        for i in 0..global.norb {
-            fock_diag.push(ham.one_body(i, i));
-            inds.push(i);
+        
+        // Store integral
+        if p == 0 && q == 0 && r == 0 && s == 0 {
+            ham.ints.nuc = integral;
+        } else if r == 0 && s == 0 {
+            let idx = combine_2(p, q);
+            risq_ensure!(idx < ham.ints.one_body.len(), IndexError {
+                index: idx,
+                size: ham.ints.one_body.len(),
+                operation: format!("one_body storage at line {}", line_number)
+            });
+            ham.ints.one_body[idx] = integral;
+        } else {
+            let idx = combine_4(p, q, r, s);
+            risq_ensure!(idx < ham.ints.two_body.len(), IndexError {
+                index: idx,
+                size: ham.ints.two_body.len(),
+                operation: format!("two_body storage at line {}", line_number)
+            });
+            ham.ints.two_body[idx] = integral;
         }
-        fock_diag
-            .iter()
-            .zip(&inds)
-            .collect::<Vec<_>>()
-            .sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(Equal));
-
-        for (i, (_, ind)) in fock_diag
-            .into_iter()
-            .zip(inds)
-            .collect::<Vec<_>>()
-            .iter()
-            .enumerate()
-        {
-            if i < global.norb_core as usize {
-                ham.core_orbs.push(*ind);
-            } else {
-                ham.valence_orbs.push(*ind);
-            }
-        }
-        println!("Core orbs: {:?}", ham.core_orbs);
-        println!("Valence orbs: {:?}", ham.valence_orbs);
     }
-    // Note: Commented-out code for pre-computing screening information was removed.
-    ham
+
+    // Determine core and valence orbs using the diagonal Fock elements
+    ham.core_orbs = Vec::with_capacity(config.n_orbs);
+    ham.valence_orbs = Vec::with_capacity(config.n_orbs);
+
+    // Sort diagonal elements in increasing order
+    let mut fock_diag: Vec<f64> = Vec::with_capacity(config.n_orbs);
+    let mut inds: Vec<i32> = Vec::with_capacity(config.n_orbs);
+    for i in 0..config.n_orbs {
+        fock_diag.push(ham.one_body(i as i32, i as i32));
+        inds.push(i as i32);
+    }
+    let mut sorted_pairs: Vec<(f64, i32)> = fock_diag
+        .into_iter()
+        .zip(inds)
+        .collect();
+    sorted_pairs.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(Equal));
+
+    for (i, (_, ind)) in sorted_pairs.iter().enumerate() {
+        if i < config.n_core {
+            ham.core_orbs.push(*ind);
+        } else {
+            ham.valence_orbs.push(*ind);
+        }
+    }
+    
+    println!("Core orbs: {:?}", ham.core_orbs);
+    println!("Valence orbs: {:?}", ham.valence_orbs);
+    
+    Ok(ham)
 }

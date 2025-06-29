@@ -9,14 +9,16 @@ use core::cmp::Ordering::Equal;
 use core::default::Default;
 use std::collections::HashMap;
 
+use crate::config::GlobalConfig;
+use crate::error::{RisqError, RisqResult};
 use crate::excite::{Excite, Orbs, StoredExcite};
 use crate::ham::Ham;
 use crate::rng::Rand;
 use crate::stoch::utils::sample_cdf;
 use crate::stoch::ImpSampleDist;
 use crate::utils::bits::{bit_pairs, bits, ibset};
-use crate::utils::read_input::Global;
 use crate::wf::det::Config;
+use crate::{risq_bail, risq_ensure};
 
 /// Stores pre-computed and sorted excitation information for efficient generation and sampling.
 ///
@@ -28,7 +30,7 @@ use crate::wf::det::Config;
 /// This allows for efficient deterministic screening (iterating through the sorted list until
 /// `abs_h` drops below a threshold `eps`) and importance sampling (using the pre-computed
 /// `sum_remaining_*` values in `StoredExcite` to sample from the remaining tail).
-#[derive(Default)] // Added Default derive
+#[derive(Debug, Default)] // Added Debug and Default derive
 pub struct ExciteGenerator {
     /// The maximum absolute value of any opposite-spin double excitation matrix element estimate found.
     pub max_opp_doub: f64,
@@ -69,12 +71,15 @@ pub struct ExciteGenerator {
 /// It also determines the global maximum `abs_h` values (`max_*_doub`, `max_sing`).
 ///
 /// # Arguments
-/// * `global`: Global calculation parameters.
+/// * `config`: Global calculation parameters.
 /// * `ham`: The Hamiltonian containing integrals and orbital information.
 ///
 /// # Returns
 /// An initialized `ExciteGenerator` ready for use in calculations.
-pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
+///
+/// # Errors
+/// Returns `RisqError` if there are issues with excitation generation.
+pub fn init_excite_generator(config: &GlobalConfig, ham: &Ham) -> RisqResult<ExciteGenerator> {
     let mut excite_gen: ExciteGenerator = ExciteGenerator {
         max_same_doub: 0.0,
         max_opp_doub: 0.0,
@@ -200,7 +205,7 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
             }
             v_same = vec![];
             v_opp = vec![];
-            for q in 0..global.norb {
+            for q in 0..config.n_orbs as i32 {
                 if *p == q || q == *r {
                     continue;
                 }
@@ -210,13 +215,13 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
             v_same.sort_by(|a, b| a.partial_cmp(b).unwrap_or(Equal));
             v_opp.sort_by(|a, b| a.partial_cmp(b).unwrap_or(Equal));
             max1 = ham.one_body(*p, *r)
-                + v_same[..(global.nup - 1) as usize].iter().sum::<f64>()
-                + v_opp[..global.ndn as usize].iter().sum::<f64>();
+                + v_same[..(config.n_up - 1)].iter().sum::<f64>()
+                + v_opp[..config.n_dn].iter().sum::<f64>();
             max2 = ham.one_body(*p, *r)
-                + v_same[v_same.len() - (global.nup - 1) as usize..]
+                + v_same[v_same.len() - (config.n_up - 1)..]
                     .iter()
                     .sum::<f64>()
-                + v_opp[v_same.len() - global.ndn as usize..]
+                + v_opp[v_same.len() - config.n_dn..]
                     .iter()
                     .sum::<f64>();
             // println!("One body = {}, max1 = {}, max2 = {}, max value = {}", ham.one_body(*p, *r), max1, max2, {if max1.abs() > max2.abs() { max1.abs() } else { max2.abs() } });
@@ -272,7 +277,7 @@ pub fn init_excite_generator(global: &Global, ham: &Ham) -> ExciteGenerator {
         excite_gen.max_same_doub
     );
 
-    excite_gen
+    Ok(excite_gen)
 }
 
 /// Computes the cumulative sums `sum_remaining_abs_h` and `sum_remaining_h_squared`

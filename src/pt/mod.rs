@@ -35,7 +35,7 @@ use crate::utils::bits::valence_elecs_and_epairs;
 /// * `wf`: The converged variational wavefunction (from HCI).
 pub fn perturbative(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, wf: &Wf) {
     // Initialize random number genrator
-    let mut rand: Rand = init_rand();
+    let mut rand: Rand = init_rand().unwrap(); // TODO: Pass this in context
 
     let e_pt2: f64;
     let std_dev: f64;
