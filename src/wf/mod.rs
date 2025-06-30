@@ -18,6 +18,9 @@
 
 pub mod det;
 mod eps;
+pub mod traits;
+pub mod operations;
+pub mod eigensolver;
 
 use std::collections::HashMap;
 

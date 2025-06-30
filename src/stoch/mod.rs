@@ -66,6 +66,7 @@ pub enum ImpSampleDist {
 /// It pre-computes Alias tables (`det_orb_sampler_*`) allowing for O(1) sampling of a
 /// `DetOrbSample` according to either the `|H_ai * c_i|` or `(H_ai * c_i)^2` distribution
 /// (summed over potential targets `a`).
+#[derive(Debug)]
 pub struct ScreenedSampler<'a> {
     /// Vector storing the actual `DetOrbSample` elements that can be sampled.
     /// The index corresponds to the sample returned by the Alias samplers.

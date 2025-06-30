@@ -9,7 +9,7 @@ pub mod lanczos;
 
 /// Option to compute the lowest, highest or somewhere in the middle part of the
 /// spectrum
-#[derive(Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum SpectrumTarget {
     Lowest,
     Highest,

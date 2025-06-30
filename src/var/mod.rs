@@ -28,6 +28,7 @@
 //! *   `utils`: Helper functions specific to the variational stage.
 
 mod davidson;
+pub mod davidson_unified;
 pub mod eigenvalues;
 mod ham_gen;
 pub mod off_diag;
