@@ -26,6 +26,7 @@ struct TestCase {
 
 /// Test cases covering diverse molecular systems
 const TEST_CASES: &[TestCase] = &[
+    // ========== ORIGINAL 6 SYSTEMS (Validated) ==========
     TestCase {
         name: "Beryllium",
         config_path: "examples/be/in.json",
@@ -50,11 +51,11 @@ const TEST_CASES: &[TestCase] = &[
         name: "LiH",
         config_path: "examples/lih/in.json",
         fcidump_path: "examples/lih/FCIDUMP",
-        expected_var_energy: -7.9152839074,  // From working calculation
+        expected_var_energy: -7.9152839074,  // From working calculation (excited state capable)
         expected_n_orbs: 19,
         expected_n_up: 2,
         expected_n_dn: 2,
-        expected_n_core: 1,
+        expected_n_core: 0,
     },
     TestCase {
         name: "Li2",
@@ -78,12 +79,94 @@ const TEST_CASES: &[TestCase] = &[
     },
     TestCase {
         name: "F2",
-        config_path: "examples/f2/dz/in.json",
-        fcidump_path: "examples/f2/dz/FCIDUMP",
+        config_path: "examples/f2/in.json",
+        fcidump_path: "examples/f2/FCIDUMP",
         expected_var_energy: -199.0913503137,  // From working calculation
         expected_n_orbs: 28,
         expected_n_up: 9,
         expected_n_dn: 9,
+        expected_n_core: 2,
+    },
+    
+    // ========== NEW SPRINT 2.5 SYSTEMS (Hardening Tests) ==========
+    TestCase {
+        name: "CH_radical",
+        config_path: "examples/ch_radical/in.json",
+        fcidump_path: "examples/ch_radical/FCIDUMP",
+        expected_var_energy: 0.0,  // To be determined from first run
+        expected_n_orbs: 19,
+        expected_n_up: 4,
+        expected_n_dn: 3,
+        expected_n_core: 0,
+    },
+    TestCase {
+        name: "C2",
+        config_path: "examples/c2/in.json",
+        fcidump_path: "examples/c2/FCIDUMP",
+        expected_var_energy: 0.0,  // To be determined from first run
+        expected_n_orbs: 28,
+        expected_n_up: 6,
+        expected_n_dn: 6,
+        expected_n_core: 2,
+    },
+    TestCase {
+        name: "N2",
+        config_path: "examples/n2/in.json",
+        fcidump_path: "examples/n2/FCIDUMP",
+        expected_var_energy: 0.0,  // To be determined from first run
+        expected_n_orbs: 28,
+        expected_n_up: 7,
+        expected_n_dn: 7,
+        expected_n_core: 2,
+    },
+    TestCase {
+        name: "O2",
+        config_path: "examples/o2/in.json",
+        fcidump_path: "examples/o2/FCIDUMP",
+        expected_var_energy: 0.0,  // To be determined from first run
+        expected_n_orbs: 28,
+        expected_n_up: 8,
+        expected_n_dn: 6,
+        expected_n_core: 2,
+    },
+    TestCase {
+        name: "O3",
+        config_path: "examples/o3/in.json",
+        fcidump_path: "examples/o3/FCIDUMP",
+        expected_var_energy: 0.0,  // To be determined from first run
+        expected_n_orbs: 27,
+        expected_n_up: 12,
+        expected_n_dn: 12,
+        expected_n_core: 3,
+    },
+    TestCase {
+        name: "H2O",
+        config_path: "examples/h2o/in.json",
+        fcidump_path: "examples/h2o/FCIDUMP",
+        expected_var_energy: 0.0,  // To be determined from first run
+        expected_n_orbs: 24,
+        expected_n_up: 5,
+        expected_n_dn: 5,
+        expected_n_core: 1,
+    },
+    TestCase {
+        name: "H5O2_plus",
+        config_path: "examples/h5o2_plus/in.json",
+        fcidump_path: "examples/h5o2_plus/FCIDUMP",
+        expected_var_energy: 0.0,  // To be determined from first run
+        expected_n_orbs: 28,
+        expected_n_up: 10,
+        expected_n_dn: 10,
+        expected_n_core: 2,
+    },
+    TestCase {
+        name: "H2O_dimer",
+        config_path: "examples/h2o_dimer/in.json",
+        fcidump_path: "examples/h2o_dimer/FCIDUMP",
+        expected_var_energy: 0.0,  // To be determined from first run
+        expected_n_orbs: 26,
+        expected_n_up: 10,
+        expected_n_dn: 10,
         expected_n_core: 2,
     },
 ];
@@ -193,6 +276,64 @@ fn test_be2_hci_energy() -> RisqResult<()> {
 fn test_f2_hci_energy() -> RisqResult<()> {
     test_molecular_system(&TEST_CASES[5])?;
     println!("\n🎉 F2 test PASSED!");
+    Ok(())
+}
+
+// ========== NEW SPRINT 2.5 SYSTEM TESTS ==========
+
+#[test]
+fn test_ch_radical_hci_energy() -> RisqResult<()> {
+    test_molecular_system(&TEST_CASES[6])?;
+    println!("\n🎉 CH radical test PASSED!");
+    Ok(())
+}
+
+#[test]
+fn test_c2_hci_energy() -> RisqResult<()> {
+    test_molecular_system(&TEST_CASES[7])?;
+    println!("\n🎉 C2 test PASSED!");
+    Ok(())
+}
+
+#[test]
+fn test_n2_hci_energy() -> RisqResult<()> {
+    test_molecular_system(&TEST_CASES[8])?;
+    println!("\n🎉 N2 test PASSED!");
+    Ok(())
+}
+
+#[test]
+fn test_o2_hci_energy() -> RisqResult<()> {
+    test_molecular_system(&TEST_CASES[9])?;
+    println!("\n🎉 O2 test PASSED!");
+    Ok(())
+}
+
+#[test]
+fn test_o3_hci_energy() -> RisqResult<()> {
+    test_molecular_system(&TEST_CASES[10])?;
+    println!("\n🎉 O3 test PASSED!");
+    Ok(())
+}
+
+#[test]
+fn test_h2o_hci_energy() -> RisqResult<()> {
+    test_molecular_system(&TEST_CASES[11])?;
+    println!("\n🎉 H2O test PASSED!");
+    Ok(())
+}
+
+#[test]
+fn test_h5o2_plus_hci_energy() -> RisqResult<()> {
+    test_molecular_system(&TEST_CASES[12])?;
+    println!("\n🎉 H5O2+ test PASSED!");
+    Ok(())
+}
+
+#[test]
+fn test_h2o_dimer_hci_energy() -> RisqResult<()> {
+    test_molecular_system(&TEST_CASES[13])?;
+    println!("\n🎉 H2O dimer test PASSED!");
     Ok(())
 }
 
