@@ -30,6 +30,9 @@
 mod davidson;
 pub mod davidson_unified;
 pub mod eigenvalues;
+pub mod fast_ham;
+mod fast_ham_tests;
+pub mod debug_fast_ham;
 mod ham_gen;
 pub mod off_diag;
 pub(crate) mod sparse;

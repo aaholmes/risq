@@ -10,6 +10,7 @@ use crate::utils::read_input::Global;
 use crate::var::eigenvalues::algorithms::davidson::{Davidson, DavidsonError};
 use crate::var::eigenvalues::algorithms::{DavidsonCorrection, SpectrumTarget};
 use crate::var::ham_gen::gen_sparse_ham_fast;
+use crate::var::fast_ham::gen_sparse_ham_fast_lookup;
 use crate::wf::VarWf;
 use nalgebra::DMatrix;
 use std::time::Instant;
@@ -18,9 +19,10 @@ use std::time::Instant;
 ///
 /// This function is called within each iteration of the main `variational` loop.
 /// It performs two main steps:
-/// 1. **Build Sparse Hamiltonian:** Calls `gen_sparse_ham_fast` to compute and store
-///    the necessary off-diagonal elements of the Hamiltonian matrix within the current
-///    variational space (`wf.wf`) into `wf.sparse_ham`.
+/// 1. **Build Sparse Hamiltonian:** Calls either `gen_sparse_ham_fast` (original) or
+///    `gen_sparse_ham_fast_lookup` (fast algorithm) to compute and store the necessary 
+///    off-diagonal elements of the Hamiltonian matrix within the current variational 
+///    space (`wf.wf`) into `wf.sparse_ham`.
 /// 2. **Davidson Diagonalization:** Initializes and runs the `Davidson` algorithm
 ///    using the constructed `wf.sparse_ham`. It targets the lowest eigenvalue
 ///    (ground state) and uses diagonal preconditioning (DPR). An initial guess
@@ -48,7 +50,16 @@ pub fn sparse_optimize(
     init_last_iter: bool,
 ) {
     let start_gen_sparse_ham: Instant = Instant::now();
-    gen_sparse_ham_fast(global, wf, ham, excite_gen);
+    
+    // Use fast algorithm for larger systems, original for smaller ones
+    if wf.wf.n > 100 {
+        println!("Using fast Hamiltonian construction (n={})...", wf.wf.n);
+        gen_sparse_ham_fast_lookup(global, wf, ham);
+    } else {
+        println!("Using original Hamiltonian construction for small system (n={})...", wf.wf.n);
+        gen_sparse_ham_fast(global, wf, ham, excite_gen);
+    }
+    
     println!(
         "Time to generate sparse H: {:?}",
         start_gen_sparse_ham.elapsed()
