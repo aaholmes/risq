@@ -1,5 +1,7 @@
 # Rust Implementation of Semistochastic Quantum chemistry (RISQ)
 
+[![CI](https://github.com/aaholmes/risq/actions/workflows/ci.yml/badge.svg)](https://github.com/aaholmes/risq/actions/workflows/ci.yml)
+
 ![RISQ Logo](risq_logo.png)
 
 **Note:** This is research code developed during PhD and postdoctoral work, primarily focused on implementing and testing specific electronic structure methods. It may lack the polish, flexibility, and extensive testing (especially automated test coverage) of production software.
