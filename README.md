@@ -10,6 +10,8 @@
 
 RISQ provides Rust implementations of several advanced electronic structure algorithms designed to tackle challenging molecular systems where electron correlation is strong. The primary focus is on selected Configuration Interaction (CI) methods and their combination with semistochastic techniques to achieve high accuracy efficiently.
 
+I co-developed the Heat-bath Configuration Interaction (HCI) and semistochastic HCI (SHCI) methods ([Holmes et al., *JCTC* 2016](https://doi.org/10.1021/acs.jctc.6b00407); [Sharma, Holmes et al., *JCTC* 2017](https://doi.org/10.1021/acs.jctc.6b01028)); RISQ is a from-scratch Rust reimplementation of them.
+
 Key methods implemented include:
 
 *   Heat-bath Configuration Interaction (HCI)
