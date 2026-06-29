@@ -11,7 +11,7 @@
 <a href=#11 id=11 data-nosnippet>11</a><span class="kw">use </span><span class="kw">crate</span>::excite::iterator::{dets_and_excitable_orbs, excites_from_det_and_orbs};
 <a href=#12 id=12 data-nosnippet>12</a><span class="kw">use </span><span class="kw">crate</span>::excite::{Excite, Orbs};
 <a href=#13 id=13 data-nosnippet>13</a><span class="kw">use </span><span class="kw">crate</span>::ham::Ham;
-<a href=#14 id=14 data-nosnippet>14</a><span class="kw">use </span><span class="kw">crate</span>::pt::{pt, pt_off_diag, PtSamples};
+<a href=#14 id=14 data-nosnippet>14</a><span class="kw">use </span><span class="kw">crate</span>::pt::{pt, PtSamples};
 <a href=#15 id=15 data-nosnippet>15</a><span class="kw">use </span><span class="kw">crate</span>::rng::Rand;
 <a href=#16 id=16 data-nosnippet>16</a><span class="kw">use </span><span class="kw">crate</span>::semistoch::utils::diag::sample_diag_update_welford;
 <a href=#17 id=17 data-nosnippet>17</a><span class="kw">use </span><span class="kw">crate</span>::semistoch::utils::off_diag::sample_off_diag_update_welford;
@@ -248,555 +248,539 @@
 <a href=#248 id=248 data-nosnippet>248</a>
 <a href=#249 id=249 data-nosnippet>249</a>    <span class="kw">let </span><span class="kw-2">mut </span>excite: Excite;
 <a href=#250 id=250 data-nosnippet>250</a>    <span class="kw">let </span><span class="kw-2">mut </span>h_ai_c_i: f64;
-<a href=#251 id=251 data-nosnippet>251</a>    <span class="kw">let </span><span class="kw-2">mut </span>diag: f64;
-<a href=#252 id=252 data-nosnippet>252</a>    <span class="kw">let </span><span class="kw-2">mut </span>h_psi: Wf = Wf::default();
-<a href=#253 id=253 data-nosnippet>253</a>    <span class="comment">// let mut h_psi_sq: Wf = Wf::default();
-<a href=#254 id=254 data-nosnippet>254</a>    // let mut e: f64;
-<a href=#255 id=255 data-nosnippet>255</a>    </span><span class="kw">let </span><span class="kw-2">mut </span>e_pt_diag_doubles: f64 = <span class="number">0.0</span>;
-<a href=#256 id=256 data-nosnippet>256</a>    <span class="kw">let </span><span class="kw-2">mut </span>e_pt_diag_singles: f64 = <span class="number">0.0</span>;
-<a href=#257 id=257 data-nosnippet>257</a>
-<a href=#258 id=258 data-nosnippet>258</a>    <span class="comment">// Loop over all doubles that exceed eps, and all singles
-<a href=#259 id=259 data-nosnippet>259</a>    // Separate out the iteration over var_dets and orbs from the iteration over excites leaving those orbs
-<a href=#260 id=260 data-nosnippet>260</a>    // so that we can set up the sampler object for the remaining excites
-<a href=#261 id=261 data-nosnippet>261</a>    // (i.e., don't use the iterator dets_excites_and_excited_dets here)
-<a href=#262 id=262 data-nosnippet>262</a>    //for (var_det, excite, pt_config) in dets_excites_and_excited_dets(input_wf, excite_gen, global.eps_pt_dtm) {
-<a href=#263 id=263 data-nosnippet>263</a>    </span><span class="kw">for </span>(i_det, var_det, is_alpha, init) <span class="kw">in </span>dets_and_excitable_orbs(input_wf, excite_gen) {
-<a href=#264 id=264 data-nosnippet>264</a>        <span class="kw">for </span>(stored_excite, pt_config) <span class="kw">in
-<a href=#265 id=265 data-nosnippet>265</a>            </span>excites_from_det_and_orbs(var_det, is_alpha, init, input_wf, excite_gen)
-<a href=#266 id=266 data-nosnippet>266</a>        {
-<a href=#267 id=267 data-nosnippet>267</a>            <span class="comment">// Filters out excitations into variational wf
-<a href=#268 id=268 data-nosnippet>268</a>            // For doubles, check whether exceeds eps
-<a href=#269 id=269 data-nosnippet>269</a>            // Edit: do this for singles too! This introduces a bias in its current implementation,
-<a href=#270 id=270 data-nosnippet>270</a>            // but dramatically accelerates dtm component
-<a href=#271 id=271 data-nosnippet>271</a>            // if matches!(init, Orbs::Double(_))
-<a href=#272 id=272 data-nosnippet>272</a>            //     &amp;&amp; stored_excite.abs_h * var_det.coeff.abs() &lt; global.eps_pt_dtm
-<a href=#273 id=273 data-nosnippet>273</a>            // {
-<a href=#274 id=274 data-nosnippet>274</a>            </span><span class="kw">if </span>stored_excite.abs_h * var_det.coeff.abs() &lt; global.eps_pt_dtm {
-<a href=#275 id=275 data-nosnippet>275</a>                <span class="comment">// Threshold reached: set up sampler and go to next det/excitable orb
-<a href=#276 id=276 data-nosnippet>276</a>                </span>det_orbs.push(DetOrbSample {
-<a href=#277 id=277 data-nosnippet>277</a>                    det: var_det,
-<a href=#278 id=278 data-nosnippet>278</a>                    init,
-<a href=#279 id=279 data-nosnippet>279</a>                    is_alpha,
-<a href=#280 id=280 data-nosnippet>280</a>                    sum_abs_h: stored_excite.sum_remaining_abs_h,
-<a href=#281 id=281 data-nosnippet>281</a>                    sum_h_squared: stored_excite.sum_remaining_h_squared,
-<a href=#282 id=282 data-nosnippet>282</a>                    sum_abs_hc: var_det.coeff.abs() * stored_excite.sum_remaining_abs_h,
-<a href=#283 id=283 data-nosnippet>283</a>                    sum_hc_squared: var_det.coeff
-<a href=#284 id=284 data-nosnippet>284</a>                        * var_det.coeff
-<a href=#285 id=285 data-nosnippet>285</a>                        * stored_excite.sum_remaining_h_squared,
-<a href=#286 id=286 data-nosnippet>286</a>                });
-<a href=#287 id=287 data-nosnippet>287</a>                <span class="kw">break</span>;
-<a href=#288 id=288 data-nosnippet>288</a>            }
-<a href=#289 id=289 data-nosnippet>289</a>
-<a href=#290 id=290 data-nosnippet>290</a>            <span class="comment">// Create excite to make calculation of off_diag and new diag elements easier
-<a href=#291 id=291 data-nosnippet>291</a>            </span>excite = Excite {
-<a href=#292 id=292 data-nosnippet>292</a>                is_alpha,
-<a href=#293 id=293 data-nosnippet>293</a>                init,
-<a href=#294 id=294 data-nosnippet>294</a>                target: stored_excite.target,
-<a href=#295 id=295 data-nosnippet>295</a>                abs_h: stored_excite.abs_h,
-<a href=#296 id=296 data-nosnippet>296</a>            };
-<a href=#297 id=297 data-nosnippet>297</a>
-<a href=#298 id=298 data-nosnippet>298</a>            <span class="comment">// Compute off-diagonal element times var_det.coeff
-<a href=#299 id=299 data-nosnippet>299</a>            </span>h_ai_c_i = ham.ham_off_diag(<span class="kw-2">&amp;</span>var_det.config, <span class="kw-2">&amp;</span>pt_config, <span class="kw-2">&amp;</span>excite) * var_det.coeff;
-<a href=#300 id=300 data-nosnippet>300</a>
-<a href=#301 id=301 data-nosnippet>301</a>            <span class="comment">// Update relative probabilities is this exceeds the previous |c_i| max_a |H_{ai}|
-<a href=#302 id=302 data-nosnippet>302</a>            </span><span class="kw">if </span>h_ai_c_i.abs() &gt; rel_probs[i_det] {
-<a href=#303 id=303 data-nosnippet>303</a>                rel_probs[i_det] = h_ai_c_i.abs();
-<a href=#304 id=304 data-nosnippet>304</a>            }
-<a href=#305 id=305 data-nosnippet>305</a>
-<a href=#306 id=306 data-nosnippet>306</a>            <span class="comment">// Off-diagonal term
-<a href=#307 id=307 data-nosnippet>307</a>            // Compute diagonal element in O(N) time only if necessary, store diag energy for next step
-<a href=#308 id=308 data-nosnippet>308</a>            // For single excitations: Check whether this excite actually exceeds eps
-<a href=#309 id=309 data-nosnippet>309</a>            </span><span class="kw">if </span><span class="macro">matches!</span>(init, Orbs::Single(<span class="kw">_</span>)) &amp;&amp; h_ai_c_i.abs() &lt; global.eps_pt_dtm {
-<a href=#310 id=310 data-nosnippet>310</a>                <span class="comment">// Compute or lookup diag term for later, but don't add to h_psi
-<a href=#311 id=311 data-nosnippet>311</a>                </span><span class="kw">if let </span><span class="prelude-val">Some</span>(ind) = h_psi.inds.get_mut(<span class="kw-2">&amp;</span>pt_config) {
-<a href=#312 id=312 data-nosnippet>312</a>                    diag = h_psi.dets[<span class="kw-2">*</span>ind].diag.unwrap();
-<a href=#313 id=313 data-nosnippet>313</a>                } <span class="kw">else </span>{
-<a href=#314 id=314 data-nosnippet>314</a>                    diag = var_det.new_diag(ham, <span class="kw-2">&amp;</span>excite);
-<a href=#315 id=315 data-nosnippet>315</a>                }
-<a href=#316 id=316 data-nosnippet>316</a>            } <span class="kw">else </span>{
-<a href=#317 id=317 data-nosnippet>317</a>                <span class="comment">// Compute or lookup diag term and add h_ai_c_i to h_psi
-<a href=#318 id=318 data-nosnippet>318</a>                </span><span class="kw">if let </span><span class="prelude-val">Some</span>(ind) = h_psi.inds.get_mut(<span class="kw-2">&amp;</span>pt_config) {
-<a href=#319 id=319 data-nosnippet>319</a>                    diag = h_psi.dets[<span class="kw-2">*</span>ind].diag.unwrap();
-<a href=#320 id=320 data-nosnippet>320</a>                    h_psi.dets[<span class="kw-2">*</span>ind].coeff += h_ai_c_i;
-<a href=#321 id=321 data-nosnippet>321</a>                    <span class="comment">// h_psi_sq.dets[*ind].coeff += h_ai_c_i * h_ai_c_i;
-<a href=#322 id=322 data-nosnippet>322</a>                </span>} <span class="kw">else </span>{
-<a href=#323 id=323 data-nosnippet>323</a>                    diag = var_det.new_diag(ham, <span class="kw-2">&amp;</span>excite);
-<a href=#324 id=324 data-nosnippet>324</a>                    h_psi.push(Det {
-<a href=#325 id=325 data-nosnippet>325</a>                        config: pt_config,
-<a href=#326 id=326 data-nosnippet>326</a>                        coeff: h_ai_c_i,
-<a href=#327 id=327 data-nosnippet>327</a>                        diag: <span class="prelude-val">Some</span>(diag),
-<a href=#328 id=328 data-nosnippet>328</a>                    });
-<a href=#329 id=329 data-nosnippet>329</a>                    <span class="comment">// h_psi_sq.push(Det {
-<a href=#330 id=330 data-nosnippet>330</a>                    //     config: pt_config,
-<a href=#331 id=331 data-nosnippet>331</a>                    //     coeff: h_ai_c_i * h_ai_c_i,
-<a href=#332 id=332 data-nosnippet>332</a>                    //     diag: Some(diag),
-<a href=#333 id=333 data-nosnippet>333</a>                    // });
-<a href=#334 id=334 data-nosnippet>334</a>                </span>}
-<a href=#335 id=335 data-nosnippet>335</a>            }
+<a href=#251 id=251 data-nosnippet>251</a>    <span class="kw">let </span><span class="kw-2">mut </span>h_psi: Wf = Wf::default();
+<a href=#252 id=252 data-nosnippet>252</a>    <span class="comment">// let mut h_psi_sq: Wf = Wf::default();
+<a href=#253 id=253 data-nosnippet>253</a>    // let mut e: f64;
+<a href=#254 id=254 data-nosnippet>254</a>    </span><span class="kw">let </span>_e_pt_diag_doubles: f64 = <span class="number">0.0</span>;
+<a href=#255 id=255 data-nosnippet>255</a>    <span class="kw">let </span>_e_pt_diag_singles: f64 = <span class="number">0.0</span>;
+<a href=#256 id=256 data-nosnippet>256</a>
+<a href=#257 id=257 data-nosnippet>257</a>    <span class="comment">// Loop over all doubles that exceed eps, and all singles
+<a href=#258 id=258 data-nosnippet>258</a>    // Separate out the iteration over var_dets and orbs from the iteration over excites leaving those orbs
+<a href=#259 id=259 data-nosnippet>259</a>    // so that we can set up the sampler object for the remaining excites
+<a href=#260 id=260 data-nosnippet>260</a>    // (i.e., don't use the iterator dets_excites_and_excited_dets here)
+<a href=#261 id=261 data-nosnippet>261</a>    //for (var_det, excite, pt_config) in dets_excites_and_excited_dets(input_wf, excite_gen, global.eps_pt_dtm) {
+<a href=#262 id=262 data-nosnippet>262</a>    </span><span class="kw">for </span>(i_det, var_det, is_alpha, init) <span class="kw">in </span>dets_and_excitable_orbs(input_wf, excite_gen) {
+<a href=#263 id=263 data-nosnippet>263</a>        <span class="kw">for </span>(stored_excite, pt_config) <span class="kw">in
+<a href=#264 id=264 data-nosnippet>264</a>            </span>excites_from_det_and_orbs(var_det, is_alpha, init, input_wf, excite_gen)
+<a href=#265 id=265 data-nosnippet>265</a>        {
+<a href=#266 id=266 data-nosnippet>266</a>            <span class="comment">// Filters out excitations into variational wf
+<a href=#267 id=267 data-nosnippet>267</a>            // For doubles, check whether exceeds eps
+<a href=#268 id=268 data-nosnippet>268</a>            // Edit: do this for singles too! This introduces a bias in its current implementation,
+<a href=#269 id=269 data-nosnippet>269</a>            // but dramatically accelerates dtm component
+<a href=#270 id=270 data-nosnippet>270</a>            // if matches!(init, Orbs::Double(_))
+<a href=#271 id=271 data-nosnippet>271</a>            //     &amp;&amp; stored_excite.abs_h * var_det.coeff.abs() &lt; global.eps_pt_dtm
+<a href=#272 id=272 data-nosnippet>272</a>            // {
+<a href=#273 id=273 data-nosnippet>273</a>            </span><span class="kw">if </span>stored_excite.abs_h * var_det.coeff.abs() &lt; global.eps_pt_dtm {
+<a href=#274 id=274 data-nosnippet>274</a>                <span class="comment">// Threshold reached: set up sampler and go to next det/excitable orb
+<a href=#275 id=275 data-nosnippet>275</a>                </span>det_orbs.push(DetOrbSample {
+<a href=#276 id=276 data-nosnippet>276</a>                    det: var_det,
+<a href=#277 id=277 data-nosnippet>277</a>                    init,
+<a href=#278 id=278 data-nosnippet>278</a>                    is_alpha,
+<a href=#279 id=279 data-nosnippet>279</a>                    sum_abs_h: stored_excite.sum_remaining_abs_h,
+<a href=#280 id=280 data-nosnippet>280</a>                    sum_h_squared: stored_excite.sum_remaining_h_squared,
+<a href=#281 id=281 data-nosnippet>281</a>                    sum_abs_hc: var_det.coeff.abs() * stored_excite.sum_remaining_abs_h,
+<a href=#282 id=282 data-nosnippet>282</a>                    sum_hc_squared: var_det.coeff
+<a href=#283 id=283 data-nosnippet>283</a>                        * var_det.coeff
+<a href=#284 id=284 data-nosnippet>284</a>                        * stored_excite.sum_remaining_h_squared,
+<a href=#285 id=285 data-nosnippet>285</a>                });
+<a href=#286 id=286 data-nosnippet>286</a>                <span class="kw">break</span>;
+<a href=#287 id=287 data-nosnippet>287</a>            }
+<a href=#288 id=288 data-nosnippet>288</a>
+<a href=#289 id=289 data-nosnippet>289</a>            <span class="comment">// Create excite to make calculation of off_diag and new diag elements easier
+<a href=#290 id=290 data-nosnippet>290</a>            </span>excite = Excite {
+<a href=#291 id=291 data-nosnippet>291</a>                is_alpha,
+<a href=#292 id=292 data-nosnippet>292</a>                init,
+<a href=#293 id=293 data-nosnippet>293</a>                target: stored_excite.target,
+<a href=#294 id=294 data-nosnippet>294</a>                abs_h: stored_excite.abs_h,
+<a href=#295 id=295 data-nosnippet>295</a>            };
+<a href=#296 id=296 data-nosnippet>296</a>
+<a href=#297 id=297 data-nosnippet>297</a>            <span class="comment">// Compute off-diagonal element times var_det.coeff
+<a href=#298 id=298 data-nosnippet>298</a>            </span>h_ai_c_i = ham.ham_off_diag(<span class="kw-2">&amp;</span>var_det.config, <span class="kw-2">&amp;</span>pt_config, <span class="kw-2">&amp;</span>excite) * var_det.coeff;
+<a href=#299 id=299 data-nosnippet>299</a>
+<a href=#300 id=300 data-nosnippet>300</a>            <span class="comment">// Update relative probabilities is this exceeds the previous |c_i| max_a |H_{ai}|
+<a href=#301 id=301 data-nosnippet>301</a>            </span><span class="kw">if </span>h_ai_c_i.abs() &gt; rel_probs[i_det] {
+<a href=#302 id=302 data-nosnippet>302</a>                rel_probs[i_det] = h_ai_c_i.abs();
+<a href=#303 id=303 data-nosnippet>303</a>            }
+<a href=#304 id=304 data-nosnippet>304</a>
+<a href=#305 id=305 data-nosnippet>305</a>            <span class="comment">// Off-diagonal term: add h_ai_c_i to h_psi, computing the diagonal
+<a href=#306 id=306 data-nosnippet>306</a>            // element in O(N) time only when a new PT determinant is created.
+<a href=#307 id=307 data-nosnippet>307</a>            // Single excitations below the deterministic threshold are skipped.
+<a href=#308 id=308 data-nosnippet>308</a>            </span><span class="kw">if </span>!(<span class="macro">matches!</span>(init, Orbs::Single(<span class="kw">_</span>)) &amp;&amp; h_ai_c_i.abs() &lt; global.eps_pt_dtm) {
+<a href=#309 id=309 data-nosnippet>309</a>                <span class="kw">if let </span><span class="prelude-val">Some</span>(ind) = h_psi.inds.get_mut(<span class="kw-2">&amp;</span>pt_config) {
+<a href=#310 id=310 data-nosnippet>310</a>                    h_psi.dets[<span class="kw-2">*</span>ind].coeff += h_ai_c_i;
+<a href=#311 id=311 data-nosnippet>311</a>                } <span class="kw">else </span>{
+<a href=#312 id=312 data-nosnippet>312</a>                    <span class="kw">let </span>diag = var_det.new_diag(ham, <span class="kw-2">&amp;</span>excite);
+<a href=#313 id=313 data-nosnippet>313</a>                    h_psi.push(Det {
+<a href=#314 id=314 data-nosnippet>314</a>                        config: pt_config,
+<a href=#315 id=315 data-nosnippet>315</a>                        coeff: h_ai_c_i,
+<a href=#316 id=316 data-nosnippet>316</a>                        diag: <span class="prelude-val">Some</span>(diag),
+<a href=#317 id=317 data-nosnippet>317</a>                    });
+<a href=#318 id=318 data-nosnippet>318</a>                }
+<a href=#319 id=319 data-nosnippet>319</a>            }
+<a href=#320 id=320 data-nosnippet>320</a>
+<a href=#321 id=321 data-nosnippet>321</a>            <span class="comment">// Diagonal term
+<a href=#322 id=322 data-nosnippet>322</a>            // e = h_ai_c_i * h_ai_c_i / (input_wf.energy - diag);
+<a href=#323 id=323 data-nosnippet>323</a>            // if let Orbs::Double(_) = excite.init {
+<a href=#324 id=324 data-nosnippet>324</a>            //     // Double excite, exceeds eps_pt_dtm
+<a href=#325 id=325 data-nosnippet>325</a>            //     e_pt_diag_doubles += e;
+<a href=#326 id=326 data-nosnippet>326</a>            // } else {
+<a href=#327 id=327 data-nosnippet>327</a>            //     // Single excite
+<a href=#328 id=328 data-nosnippet>328</a>            //     e_pt_diag_singles += e;
+<a href=#329 id=329 data-nosnippet>329</a>            // }
+<a href=#330 id=330 data-nosnippet>330</a>        </span>}
+<a href=#331 id=331 data-nosnippet>331</a>    }
+<a href=#332 id=332 data-nosnippet>332</a>
+<a href=#333 id=333 data-nosnippet>333</a>    <span class="comment">// let e_pt_off_diag = pt_off_diag(&amp;h_psi, &amp;h_psi_sq, input_wf.energy);
+<a href=#334 id=334 data-nosnippet>334</a>    // let e_pt_dtm: f64 = e_pt_diag_doubles + e_pt_diag_singles + e_pt_off_diag;
+<a href=#335 id=335 data-nosnippet>335</a>    </span><span class="kw">let </span>e_pt_dtm: f64 = pt(<span class="kw-2">&amp;</span>h_psi, input_wf.energy);
 <a href=#336 id=336 data-nosnippet>336</a>
-<a href=#337 id=337 data-nosnippet>337</a>            <span class="comment">// Diagonal term
-<a href=#338 id=338 data-nosnippet>338</a>            // e = h_ai_c_i * h_ai_c_i / (input_wf.energy - diag);
-<a href=#339 id=339 data-nosnippet>339</a>            // if let Orbs::Double(_) = excite.init {
-<a href=#340 id=340 data-nosnippet>340</a>            //     // Double excite, exceeds eps_pt_dtm
-<a href=#341 id=341 data-nosnippet>341</a>            //     e_pt_diag_doubles += e;
-<a href=#342 id=342 data-nosnippet>342</a>            // } else {
-<a href=#343 id=343 data-nosnippet>343</a>            //     // Single excite
-<a href=#344 id=344 data-nosnippet>344</a>            //     e_pt_diag_singles += e;
-<a href=#345 id=345 data-nosnippet>345</a>            // }
-<a href=#346 id=346 data-nosnippet>346</a>        </span>}
-<a href=#347 id=347 data-nosnippet>347</a>    }
-<a href=#348 id=348 data-nosnippet>348</a>
-<a href=#349 id=349 data-nosnippet>349</a>    <span class="comment">// let e_pt_off_diag = pt_off_diag(&amp;h_psi, &amp;h_psi_sq, input_wf.energy);
-<a href=#350 id=350 data-nosnippet>350</a>    // let e_pt_dtm: f64 = e_pt_diag_doubles + e_pt_diag_singles + e_pt_off_diag;
-<a href=#351 id=351 data-nosnippet>351</a>    </span><span class="kw">let </span>e_pt_dtm: f64 = pt(<span class="kw-2">&amp;</span>h_psi, input_wf.energy);
-<a href=#352 id=352 data-nosnippet>352</a>
-<a href=#353 id=353 data-nosnippet>353</a>    <span class="comment">// println!("\nDeterministic component of PT energy:");
-<a href=#354 id=354 data-nosnippet>354</a>    // println!(
-<a href=#355 id=355 data-nosnippet>355</a>    //     "  Diagonal Doubles: {:.6} ({:.1}%)",
-<a href=#356 id=356 data-nosnippet>356</a>    //     e_pt_diag_doubles,
-<a href=#357 id=357 data-nosnippet>357</a>    //     100.0 * e_pt_diag_doubles / e_pt_dtm
-<a href=#358 id=358 data-nosnippet>358</a>    // );
-<a href=#359 id=359 data-nosnippet>359</a>    // println!(
-<a href=#360 id=360 data-nosnippet>360</a>    //     "  Diagonal Singles: {:.6} ({:.1}%)",
-<a href=#361 id=361 data-nosnippet>361</a>    //     e_pt_diag_singles,
-<a href=#362 id=362 data-nosnippet>362</a>    //     100.0 * e_pt_diag_singles / e_pt_dtm
-<a href=#363 id=363 data-nosnippet>363</a>    // );
-<a href=#364 id=364 data-nosnippet>364</a>    // println!(
-<a href=#365 id=365 data-nosnippet>365</a>    //     "  Off-diagonal:     {:.6} ({:.1}%)",
-<a href=#366 id=366 data-nosnippet>366</a>    //     e_pt_off_diag,
-<a href=#367 id=367 data-nosnippet>367</a>    //     100.0 * e_pt_off_diag / e_pt_dtm
-<a href=#368 id=368 data-nosnippet>368</a>    // );
-<a href=#369 id=369 data-nosnippet>369</a>    // println!("  Total:            {:.6}\n", e_pt_dtm);
-<a href=#370 id=370 data-nosnippet>370</a>
-<a href=#371 id=371 data-nosnippet>371</a>    </span><span class="macro">println!</span>(
-<a href=#372 id=372 data-nosnippet>372</a>        <span class="string">"Time for deterministic component: {:?}"</span>,
-<a href=#373 id=373 data-nosnippet>373</a>        start_dtm.elapsed()
-<a href=#374 id=374 data-nosnippet>374</a>    );
-<a href=#375 id=375 data-nosnippet>375</a>
-<a href=#376 id=376 data-nosnippet>376</a>    <span class="comment">// Prepare stochastic component
-<a href=#377 id=377 data-nosnippet>377</a>
-<a href=#378 id=378 data-nosnippet>378</a>    // Diagonal part: for sampling (D_i, D_a) that are a double excite apart
-<a href=#379 id=379 data-nosnippet>379</a>    // (this sets up both importance sampling distributions:
-<a href=#380 id=380 data-nosnippet>380</a>    // |Hc| and (Hc)^2, but if this is time consuming we can only set up one)
-<a href=#381 id=381 data-nosnippet>381</a>    </span><span class="macro">println!</span>(<span class="string">"Setting up screened sampler"</span>);
-<a href=#382 id=382 data-nosnippet>382</a>    <span class="kw">let </span>start_setup_screened_sampler: Instant = Instant::now();
-<a href=#383 id=383 data-nosnippet>383</a>    <span class="kw">let </span>screened_sampler: ScreenedSampler = generate_screened_sampler(det_orbs);
-<a href=#384 id=384 data-nosnippet>384</a>    <span class="macro">println!</span>(
-<a href=#385 id=385 data-nosnippet>385</a>        <span class="string">"Time for sampling setup: {:?}"</span>,
-<a href=#386 id=386 data-nosnippet>386</a>        start_setup_screened_sampler.elapsed()
-<a href=#387 id=387 data-nosnippet>387</a>    );
-<a href=#388 id=388 data-nosnippet>388</a>
-<a href=#389 id=389 data-nosnippet>389</a>    <span class="comment">// Off-diagonal part: for sampling D_i with probability proportional to |c_i| max_a |H_{ai}|
-<a href=#390 id=390 data-nosnippet>390</a>    </span><span class="macro">println!</span>(<span class="string">"\ni, |c_i|, |c_i| max_a |H_ai| ="</span>);
-<a href=#391 id=391 data-nosnippet>391</a>    <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..<span class="number">10 </span>{
-<a href=#392 id=392 data-nosnippet>392</a>        <span class="macro">println!</span>(<span class="string">"{}  {}  {}"</span>, i, input_wf.dets[i].coeff.abs(), rel_probs[i]);
-<a href=#393 id=393 data-nosnippet>393</a>    }
-<a href=#394 id=394 data-nosnippet>394</a>    <span class="macro">println!</span>(<span class="string">"..."</span>);
-<a href=#395 id=395 data-nosnippet>395</a>    <span class="kw">for </span>i <span class="kw">in </span>input_wf.n - <span class="number">5</span>..input_wf.n {
-<a href=#396 id=396 data-nosnippet>396</a>        <span class="macro">println!</span>(<span class="string">"{}  {}  {}"</span>, i, input_wf.dets[i].coeff.abs(), rel_probs[i]);
-<a href=#397 id=397 data-nosnippet>397</a>    }
-<a href=#398 id=398 data-nosnippet>398</a>    <span class="kw">let </span>det_sampler: Alias = Alias::new(rel_probs);
+<a href=#337 id=337 data-nosnippet>337</a>    <span class="comment">// println!("\nDeterministic component of PT energy:");
+<a href=#338 id=338 data-nosnippet>338</a>    // println!(
+<a href=#339 id=339 data-nosnippet>339</a>    //     "  Diagonal Doubles: {:.6} ({:.1}%)",
+<a href=#340 id=340 data-nosnippet>340</a>    //     e_pt_diag_doubles,
+<a href=#341 id=341 data-nosnippet>341</a>    //     100.0 * e_pt_diag_doubles / e_pt_dtm
+<a href=#342 id=342 data-nosnippet>342</a>    // );
+<a href=#343 id=343 data-nosnippet>343</a>    // println!(
+<a href=#344 id=344 data-nosnippet>344</a>    //     "  Diagonal Singles: {:.6} ({:.1}%)",
+<a href=#345 id=345 data-nosnippet>345</a>    //     e_pt_diag_singles,
+<a href=#346 id=346 data-nosnippet>346</a>    //     100.0 * e_pt_diag_singles / e_pt_dtm
+<a href=#347 id=347 data-nosnippet>347</a>    // );
+<a href=#348 id=348 data-nosnippet>348</a>    // println!(
+<a href=#349 id=349 data-nosnippet>349</a>    //     "  Off-diagonal:     {:.6} ({:.1}%)",
+<a href=#350 id=350 data-nosnippet>350</a>    //     e_pt_off_diag,
+<a href=#351 id=351 data-nosnippet>351</a>    //     100.0 * e_pt_off_diag / e_pt_dtm
+<a href=#352 id=352 data-nosnippet>352</a>    // );
+<a href=#353 id=353 data-nosnippet>353</a>    // println!("  Total:            {:.6}\n", e_pt_dtm);
+<a href=#354 id=354 data-nosnippet>354</a>
+<a href=#355 id=355 data-nosnippet>355</a>    </span><span class="macro">println!</span>(
+<a href=#356 id=356 data-nosnippet>356</a>        <span class="string">"Time for deterministic component: {:?}"</span>,
+<a href=#357 id=357 data-nosnippet>357</a>        start_dtm.elapsed()
+<a href=#358 id=358 data-nosnippet>358</a>    );
+<a href=#359 id=359 data-nosnippet>359</a>
+<a href=#360 id=360 data-nosnippet>360</a>    <span class="comment">// Prepare stochastic component
+<a href=#361 id=361 data-nosnippet>361</a>
+<a href=#362 id=362 data-nosnippet>362</a>    // Diagonal part: for sampling (D_i, D_a) that are a double excite apart
+<a href=#363 id=363 data-nosnippet>363</a>    // (this sets up both importance sampling distributions:
+<a href=#364 id=364 data-nosnippet>364</a>    // |Hc| and (Hc)^2, but if this is time consuming we can only set up one)
+<a href=#365 id=365 data-nosnippet>365</a>    </span><span class="macro">println!</span>(<span class="string">"Setting up screened sampler"</span>);
+<a href=#366 id=366 data-nosnippet>366</a>    <span class="kw">let </span>start_setup_screened_sampler: Instant = Instant::now();
+<a href=#367 id=367 data-nosnippet>367</a>    <span class="kw">let </span>screened_sampler: ScreenedSampler = generate_screened_sampler(det_orbs);
+<a href=#368 id=368 data-nosnippet>368</a>    <span class="macro">println!</span>(
+<a href=#369 id=369 data-nosnippet>369</a>        <span class="string">"Time for sampling setup: {:?}"</span>,
+<a href=#370 id=370 data-nosnippet>370</a>        start_setup_screened_sampler.elapsed()
+<a href=#371 id=371 data-nosnippet>371</a>    );
+<a href=#372 id=372 data-nosnippet>372</a>
+<a href=#373 id=373 data-nosnippet>373</a>    <span class="comment">// Off-diagonal part: for sampling D_i with probability proportional to |c_i| max_a |H_{ai}|
+<a href=#374 id=374 data-nosnippet>374</a>    </span><span class="macro">println!</span>(<span class="string">"\ni, |c_i|, |c_i| max_a |H_ai| ="</span>);
+<a href=#375 id=375 data-nosnippet>375</a>    <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..<span class="number">10 </span>{
+<a href=#376 id=376 data-nosnippet>376</a>        <span class="macro">println!</span>(<span class="string">"{}  {}  {}"</span>, i, input_wf.dets[i].coeff.abs(), rel_probs[i]);
+<a href=#377 id=377 data-nosnippet>377</a>    }
+<a href=#378 id=378 data-nosnippet>378</a>    <span class="macro">println!</span>(<span class="string">"..."</span>);
+<a href=#379 id=379 data-nosnippet>379</a>    <span class="kw">for </span>i <span class="kw">in </span>input_wf.n - <span class="number">5</span>..input_wf.n {
+<a href=#380 id=380 data-nosnippet>380</a>        <span class="macro">println!</span>(<span class="string">"{}  {}  {}"</span>, i, input_wf.dets[i].coeff.abs(), rel_probs[i]);
+<a href=#381 id=381 data-nosnippet>381</a>    }
+<a href=#382 id=382 data-nosnippet>382</a>    <span class="kw">let </span>det_sampler: Alias = Alias::new(rel_probs);
+<a href=#383 id=383 data-nosnippet>383</a>
+<a href=#384 id=384 data-nosnippet>384</a>    <span class="comment">// Stochastic component
+<a href=#385 id=385 data-nosnippet>385</a>
+<a href=#386 id=386 data-nosnippet>386</a>    // Initially, take samples of several batches of each of the diagonal and off-diagonal components
+<a href=#387 id=387 data-nosnippet>387</a>    // Keep track of the uncertainties in the two components
+<a href=#388 id=388 data-nosnippet>388</a>    // While total uncertainty is too high, take a batch of the component that has the higher uncertainty
+<a href=#389 id=389 data-nosnippet>389</a>    // of the two
+<a href=#390 id=390 data-nosnippet>390</a>
+<a href=#391 id=391 data-nosnippet>391</a>    // Need functions: sample_diag, sample_off_diag
+<a href=#392 id=392 data-nosnippet>392</a>    // sample_diag is trivial: just sample one (a, i), compute E(a, i), and add it to the Welford struct
+<a href=#393 id=393 data-nosnippet>393</a>    // sample_off_diag is more complicated:
+<a href=#394 id=394 data-nosnippet>394</a>    // Loop over samples in the batch:
+<a href=#395 id=395 data-nosnippet>395</a>    // For each, add to the hash table {a: E_a, {i: w_i, H_{ai} c_i / q_i}}
+<a href=#396 id=396 data-nosnippet>396</a>    // Then, computing the energy is straightforward:
+<a href=#397 id=397 data-nosnippet>397</a>    // Loop over a:
+<a href=#398 id=398 data-nosnippet>398</a>    // For each, compute the two sums over that a's i values, and use that to update the energy
 <a href=#399 id=399 data-nosnippet>399</a>
-<a href=#400 id=400 data-nosnippet>400</a>    <span class="comment">// Stochastic component
+<a href=#400 id=400 data-nosnippet>400</a>    </span><span class="kw">let </span>start_pt: Instant = Instant::now();
 <a href=#401 id=401 data-nosnippet>401</a>
-<a href=#402 id=402 data-nosnippet>402</a>    // Initially, take samples of several batches of each of the diagonal and off-diagonal components
-<a href=#403 id=403 data-nosnippet>403</a>    // Keep track of the uncertainties in the two components
-<a href=#404 id=404 data-nosnippet>404</a>    // While total uncertainty is too high, take a batch of the component that has the higher uncertainty
-<a href=#405 id=405 data-nosnippet>405</a>    // of the two
-<a href=#406 id=406 data-nosnippet>406</a>
-<a href=#407 id=407 data-nosnippet>407</a>    // Need functions: sample_diag, sample_off_diag
-<a href=#408 id=408 data-nosnippet>408</a>    // sample_diag is trivial: just sample one (a, i), compute E(a, i), and add it to the Welford struct
-<a href=#409 id=409 data-nosnippet>409</a>    // sample_off_diag is more complicated:
-<a href=#410 id=410 data-nosnippet>410</a>    // Loop over samples in the batch:
-<a href=#411 id=411 data-nosnippet>411</a>    // For each, add to the hash table {a: E_a, {i: w_i, H_{ai} c_i / q_i}}
-<a href=#412 id=412 data-nosnippet>412</a>    // Then, computing the energy is straightforward:
-<a href=#413 id=413 data-nosnippet>413</a>    // Loop over a:
-<a href=#414 id=414 data-nosnippet>414</a>    // For each, compute the two sums over that a's i values, and use that to update the energy
-<a href=#415 id=415 data-nosnippet>415</a>
-<a href=#416 id=416 data-nosnippet>416</a>    </span><span class="kw">let </span>start_pt: Instant = Instant::now();
-<a href=#417 id=417 data-nosnippet>417</a>
-<a href=#418 id=418 data-nosnippet>418</a>    <span class="kw">let </span><span class="kw-2">mut </span>enpt2_diag: Stats&lt;f64&gt; = Stats::new();
-<a href=#419 id=419 data-nosnippet>419</a>    <span class="kw">let </span><span class="kw-2">mut </span>enpt2_off_diag: Stats&lt;f64&gt; = Stats::new();
-<a href=#420 id=420 data-nosnippet>420</a>
-<a href=#421 id=421 data-nosnippet>421</a>    <span class="kw">let </span>n_diag_init: i32 = <span class="number">100</span>;
-<a href=#422 id=422 data-nosnippet>422</a>    <span class="kw">let </span>n_off_diag_init: i32 = <span class="number">10</span>;
-<a href=#423 id=423 data-nosnippet>423</a>
-<a href=#424 id=424 data-nosnippet>424</a>    <span class="macro">println!</span>(
-<a href=#425 id=425 data-nosnippet>425</a>        <span class="string">"\nCollecting {} initial samples of the diagonal contribution to E_PT"</span>,
-<a href=#426 id=426 data-nosnippet>426</a>        n_diag_init
+<a href=#402 id=402 data-nosnippet>402</a>    <span class="kw">let </span><span class="kw-2">mut </span>enpt2_diag: Stats&lt;f64&gt; = Stats::new();
+<a href=#403 id=403 data-nosnippet>403</a>    <span class="kw">let </span><span class="kw-2">mut </span>enpt2_off_diag: Stats&lt;f64&gt; = Stats::new();
+<a href=#404 id=404 data-nosnippet>404</a>
+<a href=#405 id=405 data-nosnippet>405</a>    <span class="kw">let </span>n_diag_init: i32 = <span class="number">100</span>;
+<a href=#406 id=406 data-nosnippet>406</a>    <span class="kw">let </span>n_off_diag_init: i32 = <span class="number">10</span>;
+<a href=#407 id=407 data-nosnippet>407</a>
+<a href=#408 id=408 data-nosnippet>408</a>    <span class="macro">println!</span>(
+<a href=#409 id=409 data-nosnippet>409</a>        <span class="string">"\nCollecting {} initial samples of the diagonal contribution to E_PT"</span>,
+<a href=#410 id=410 data-nosnippet>410</a>        n_diag_init
+<a href=#411 id=411 data-nosnippet>411</a>    );
+<a href=#412 id=412 data-nosnippet>412</a>    <span class="kw">for </span>_i_batch <span class="kw">in </span><span class="number">0</span>..n_diag_init {
+<a href=#413 id=413 data-nosnippet>413</a>        <span class="comment">// Sample diag, update Welford
+<a href=#414 id=414 data-nosnippet>414</a>        </span>sample_diag_update_welford(
+<a href=#415 id=415 data-nosnippet>415</a>            <span class="kw-2">&amp;</span>screened_sampler,
+<a href=#416 id=416 data-nosnippet>416</a>            excite_gen,
+<a href=#417 id=417 data-nosnippet>417</a>            ham,
+<a href=#418 id=418 data-nosnippet>418</a>            rand,
+<a href=#419 id=419 data-nosnippet>419</a>            input_wf.energy,
+<a href=#420 id=420 data-nosnippet>420</a>            <span class="kw-2">&amp;mut </span>enpt2_diag,
+<a href=#421 id=421 data-nosnippet>421</a>        );
+<a href=#422 id=422 data-nosnippet>422</a>    }
+<a href=#423 id=423 data-nosnippet>423</a>    <span class="macro">println!</span>(
+<a href=#424 id=424 data-nosnippet>424</a>        <span class="string">"Initial estimate of the diagonal contribution: {:.4} +- {:.4}"</span>,
+<a href=#425 id=425 data-nosnippet>425</a>        enpt2_diag.mean,
+<a href=#426 id=426 data-nosnippet>426</a>        std_err(<span class="kw-2">&amp;</span>enpt2_diag)
 <a href=#427 id=427 data-nosnippet>427</a>    );
-<a href=#428 id=428 data-nosnippet>428</a>    <span class="kw">for </span>_i_batch <span class="kw">in </span><span class="number">0</span>..n_diag_init {
-<a href=#429 id=429 data-nosnippet>429</a>        <span class="comment">// Sample diag, update Welford
-<a href=#430 id=430 data-nosnippet>430</a>        </span>sample_diag_update_welford(
-<a href=#431 id=431 data-nosnippet>431</a>            <span class="kw-2">&amp;</span>screened_sampler,
-<a href=#432 id=432 data-nosnippet>432</a>            excite_gen,
-<a href=#433 id=433 data-nosnippet>433</a>            ham,
-<a href=#434 id=434 data-nosnippet>434</a>            rand,
-<a href=#435 id=435 data-nosnippet>435</a>            input_wf.energy,
-<a href=#436 id=436 data-nosnippet>436</a>            <span class="kw-2">&amp;mut </span>enpt2_diag,
-<a href=#437 id=437 data-nosnippet>437</a>        );
-<a href=#438 id=438 data-nosnippet>438</a>    }
-<a href=#439 id=439 data-nosnippet>439</a>    <span class="macro">println!</span>(
-<a href=#440 id=440 data-nosnippet>440</a>        <span class="string">"Initial estimate of the diagonal contribution: {:.4} +- {:.4}"</span>,
-<a href=#441 id=441 data-nosnippet>441</a>        enpt2_diag.mean,
-<a href=#442 id=442 data-nosnippet>442</a>        std_err(<span class="kw-2">&amp;</span>enpt2_diag)
-<a href=#443 id=443 data-nosnippet>443</a>    );
-<a href=#444 id=444 data-nosnippet>444</a>
-<a href=#445 id=445 data-nosnippet>445</a>    <span class="macro">println!</span>(
-<a href=#446 id=446 data-nosnippet>446</a>        <span class="string">"\nCollecting {} initial samples of the off-diagonal contribution to E_PT"</span>,
-<a href=#447 id=447 data-nosnippet>447</a>        n_off_diag_init
-<a href=#448 id=448 data-nosnippet>448</a>    );
-<a href=#449 id=449 data-nosnippet>449</a>    <span class="kw">for </span>_i_batch <span class="kw">in </span><span class="number">0</span>..n_off_diag_init {
-<a href=#450 id=450 data-nosnippet>450</a>        <span class="comment">// Sample off_diag, update Welford
-<a href=#451 id=451 data-nosnippet>451</a>        </span>sample_off_diag_update_welford(
-<a href=#452 id=452 data-nosnippet>452</a>            input_wf,
-<a href=#453 id=453 data-nosnippet>453</a>            excite_gen,
-<a href=#454 id=454 data-nosnippet>454</a>            ham,
-<a href=#455 id=455 data-nosnippet>455</a>            <span class="kw-2">&amp;</span>det_sampler,
-<a href=#456 id=456 data-nosnippet>456</a>            global.n_samples_per_batch,
-<a href=#457 id=457 data-nosnippet>457</a>            rand,
-<a href=#458 id=458 data-nosnippet>458</a>            <span class="kw-2">&amp;mut </span>enpt2_off_diag,
-<a href=#459 id=459 data-nosnippet>459</a>            <span class="prelude-val">Some</span>(global.eps_pt_dtm),
-<a href=#460 id=460 data-nosnippet>460</a>        );
-<a href=#461 id=461 data-nosnippet>461</a>    }
-<a href=#462 id=462 data-nosnippet>462</a>    <span class="macro">println!</span>(
-<a href=#463 id=463 data-nosnippet>463</a>        <span class="string">"Initial estimate of the off-diagonal contribution: {:.4} +- {:.4}"</span>,
-<a href=#464 id=464 data-nosnippet>464</a>        enpt2_off_diag.mean,
-<a href=#465 id=465 data-nosnippet>465</a>        std_err(<span class="kw-2">&amp;</span>enpt2_off_diag)
-<a href=#466 id=466 data-nosnippet>466</a>    );
-<a href=#467 id=467 data-nosnippet>467</a>
-<a href=#468 id=468 data-nosnippet>468</a>    <span class="kw">let </span><span class="kw-2">mut </span>total_std_err: f64 = (std_err(<span class="kw-2">&amp;</span>enpt2_diag) * std_err(<span class="kw-2">&amp;</span>enpt2_diag)
-<a href=#469 id=469 data-nosnippet>469</a>        + std_err(<span class="kw-2">&amp;</span>enpt2_off_diag) * std_err(<span class="kw-2">&amp;</span>enpt2_off_diag))
-<a href=#470 id=470 data-nosnippet>470</a>    .sqrt();
-<a href=#471 id=471 data-nosnippet>471</a>    <span class="macro">println!</span>(
-<a href=#472 id=472 data-nosnippet>472</a>        <span class="string">"After init, diag and off-diag components: {} +- {}, {} +- {}, total: {} +- {}"</span>,
-<a href=#473 id=473 data-nosnippet>473</a>        enpt2_diag.mean,
-<a href=#474 id=474 data-nosnippet>474</a>        std_err(<span class="kw-2">&amp;</span>enpt2_diag),
-<a href=#475 id=475 data-nosnippet>475</a>        enpt2_off_diag.mean,
-<a href=#476 id=476 data-nosnippet>476</a>        std_err(<span class="kw-2">&amp;</span>enpt2_off_diag),
-<a href=#477 id=477 data-nosnippet>477</a>        enpt2_diag.mean + enpt2_off_diag.mean,
-<a href=#478 id=478 data-nosnippet>478</a>        total_std_err
-<a href=#479 id=479 data-nosnippet>479</a>    );
-<a href=#480 id=480 data-nosnippet>480</a>
-<a href=#481 id=481 data-nosnippet>481</a>    <span class="kw">while </span>total_std_err &gt; global.target_uncertainty {
-<a href=#482 id=482 data-nosnippet>482</a>        <span class="comment">// Collect another batch of the less certain component
-<a href=#483 id=483 data-nosnippet>483</a>        </span><span class="kw">if </span>std_err(<span class="kw-2">&amp;</span>enpt2_diag) &gt;= <span class="number">0.5 </span>* std_err(<span class="kw-2">&amp;</span>enpt2_off_diag) {
-<a href=#484 id=484 data-nosnippet>484</a>            <span class="comment">// Sample diag, update Welford
-<a href=#485 id=485 data-nosnippet>485</a>            </span><span class="kw">for </span>_i_diag <span class="kw">in </span><span class="number">0</span>..global.n_samples_per_batch {
-<a href=#486 id=486 data-nosnippet>486</a>                sample_diag_update_welford(
-<a href=#487 id=487 data-nosnippet>487</a>                    <span class="kw-2">&amp;</span>screened_sampler,
-<a href=#488 id=488 data-nosnippet>488</a>                    excite_gen,
-<a href=#489 id=489 data-nosnippet>489</a>                    ham,
-<a href=#490 id=490 data-nosnippet>490</a>                    rand,
-<a href=#491 id=491 data-nosnippet>491</a>                    input_wf.energy,
-<a href=#492 id=492 data-nosnippet>492</a>                    <span class="kw-2">&amp;mut </span>enpt2_diag,
-<a href=#493 id=493 data-nosnippet>493</a>                );
-<a href=#494 id=494 data-nosnippet>494</a>            }
-<a href=#495 id=495 data-nosnippet>495</a>        } <span class="kw">else </span>{
-<a href=#496 id=496 data-nosnippet>496</a>            <span class="comment">// Sample off_diag, update Welford
-<a href=#497 id=497 data-nosnippet>497</a>            </span>sample_off_diag_update_welford(
-<a href=#498 id=498 data-nosnippet>498</a>                input_wf,
-<a href=#499 id=499 data-nosnippet>499</a>                excite_gen,
-<a href=#500 id=500 data-nosnippet>500</a>                ham,
-<a href=#501 id=501 data-nosnippet>501</a>                <span class="kw-2">&amp;</span>det_sampler,
-<a href=#502 id=502 data-nosnippet>502</a>                global.n_samples_per_batch,
-<a href=#503 id=503 data-nosnippet>503</a>                rand,
-<a href=#504 id=504 data-nosnippet>504</a>                <span class="kw-2">&amp;mut </span>enpt2_off_diag,
-<a href=#505 id=505 data-nosnippet>505</a>                <span class="prelude-val">Some</span>(global.eps_pt_dtm),
-<a href=#506 id=506 data-nosnippet>506</a>            );
-<a href=#507 id=507 data-nosnippet>507</a>        }
-<a href=#508 id=508 data-nosnippet>508</a>        total_std_err = (std_err(<span class="kw-2">&amp;</span>enpt2_diag) * std_err(<span class="kw-2">&amp;</span>enpt2_diag)
-<a href=#509 id=509 data-nosnippet>509</a>            + std_err(<span class="kw-2">&amp;</span>enpt2_off_diag) * std_err(<span class="kw-2">&amp;</span>enpt2_off_diag))
-<a href=#510 id=510 data-nosnippet>510</a>        .sqrt();
-<a href=#511 id=511 data-nosnippet>511</a>        <span class="macro">println!</span>(
-<a href=#512 id=512 data-nosnippet>512</a>            <span class="string">"diag ({} samples) and off-diag ({} batches) components: {} +- {}, {} +- {}, total: {} +- {}"</span>,
-<a href=#513 id=513 data-nosnippet>513</a>            enpt2_diag.count, enpt2_off_diag.count,
-<a href=#514 id=514 data-nosnippet>514</a>            enpt2_diag.mean,
-<a href=#515 id=515 data-nosnippet>515</a>            std_err(<span class="kw-2">&amp;</span>enpt2_diag),
-<a href=#516 id=516 data-nosnippet>516</a>            enpt2_off_diag.mean,
-<a href=#517 id=517 data-nosnippet>517</a>            std_err(<span class="kw-2">&amp;</span>enpt2_off_diag),
-<a href=#518 id=518 data-nosnippet>518</a>            enpt2_diag.mean + enpt2_off_diag.mean,
-<a href=#519 id=519 data-nosnippet>519</a>            total_std_err
-<a href=#520 id=520 data-nosnippet>520</a>        );
-<a href=#521 id=521 data-nosnippet>521</a>    }
-<a href=#522 id=522 data-nosnippet>522</a>
-<a href=#523 id=523 data-nosnippet>523</a>    <span class="macro">println!</span>(
-<a href=#524 id=524 data-nosnippet>524</a>        <span class="string">"Time for new stochastic PT algorithm: {:?}"</span>,
-<a href=#525 id=525 data-nosnippet>525</a>        start_pt.elapsed()
-<a href=#526 id=526 data-nosnippet>526</a>    );
-<a href=#527 id=527 data-nosnippet>527</a>
-<a href=#528 id=528 data-nosnippet>528</a>    (
-<a href=#529 id=529 data-nosnippet>529</a>        e_pt_dtm + enpt2_diag.mean + enpt2_off_diag.mean,
-<a href=#530 id=530 data-nosnippet>530</a>        total_std_err,
-<a href=#531 id=531 data-nosnippet>531</a>    )
-<a href=#532 id=532 data-nosnippet>532</a>}
-<a href=#533 id=533 data-nosnippet>533</a>
-<a href=#534 id=534 data-nosnippet>534</a><span class="doccomment">/// Implements a purely stochastic ENPT2 calculation
-<a href=#535 id=535 data-nosnippet>535</a>///
-<a href=#536 id=536 data-nosnippet>536</a>/// This function seems to skip any deterministic component and directly samples contributions
-<a href=#537 id=537 data-nosnippet>537</a>/// using the `PtSamples` structure and the `pt_estimator` function, which implements the
-<a href=#538 id=538 data-nosnippet>538</a>/// unbiased estimator from the SHCI papers. It samples excitations originating from variational
-<a href=#539 id=539 data-nosnippet>539</a>/// determinants (`i`) selected with probability proportional to `|c_i|`.
-<a href=#540 id=540 data-nosnippet>540</a>///
-<a href=#541 id=541 data-nosnippet>541</a>/// # Arguments
-<a href=#542 id=542 data-nosnippet>542</a>/// * `input_wf`: The converged variational wavefunction.
-<a href=#543 id=543 data-nosnippet>543</a>/// * `global`: Global calculation parameters.
-<a href=#544 id=544 data-nosnippet>544</a>/// * `ham`: The Hamiltonian operator.
-<a href=#545 id=545 data-nosnippet>545</a>/// * `excite_gen`: Pre-computed excitation generator.
-<a href=#546 id=546 data-nosnippet>546</a>/// * `rand`: Mutable random number generator state.
-<a href=#547 id=547 data-nosnippet>547</a>///
-<a href=#548 id=548 data-nosnippet>548</a>/// # Returns
-<a href=#549 id=549 data-nosnippet>549</a>/// A tuple `(pt2_energy, pt2_std_dev)` containing the estimated PT2 energy and its standard deviation.
-<a href=#550 id=550 data-nosnippet>550</a></span><span class="kw">pub fn </span>fast_stoch_enpt2(
-<a href=#551 id=551 data-nosnippet>551</a>    input_wf: <span class="kw-2">&amp;</span>Wf,
-<a href=#552 id=552 data-nosnippet>552</a>    global: <span class="kw-2">&amp;</span>Global,
-<a href=#553 id=553 data-nosnippet>553</a>    ham: <span class="kw-2">&amp;</span>Ham,
-<a href=#554 id=554 data-nosnippet>554</a>    excite_gen: <span class="kw-2">&amp;</span>ExciteGenerator,
-<a href=#555 id=555 data-nosnippet>555</a>    rand: <span class="kw-2">&amp;mut </span>Rand,
-<a href=#556 id=556 data-nosnippet>556</a>) -&gt; (f64, f64) {
-<a href=#557 id=557 data-nosnippet>557</a>    <span class="comment">// Stochastic Epstein-Nesbet PT2
-<a href=#558 id=558 data-nosnippet>558</a>    // In earlier SHCI paper, used the following strategy:
-<a href=#559 id=559 data-nosnippet>559</a>    // 1. Compute ENPT2 deterministically using large eps
-<a href=#560 id=560 data-nosnippet>560</a>    // 2. Sample some variational determinants, compute difference between large-eps and small-eps
-<a href=#561 id=561 data-nosnippet>561</a>    //    ENPT2 expressions for them
-<a href=#562 id=562 data-nosnippet>562</a>    // Here, we take a different (smarter?) approach that introduces importance sampling:
-<a href=#563 id=563 data-nosnippet>563</a>    // 1. Importance-sample the large set of H*psi terms that had been screened out in the variational
-<a href=#564 id=564 data-nosnippet>564</a>    //    stage
-<a href=#565 id=565 data-nosnippet>565</a>    // Main advantage: uses importance sampling, can take larger batch sizes since we don't have to
-<a href=#566 id=566 data-nosnippet>566</a>    // compute all connections.
-<a href=#567 id=567 data-nosnippet>567</a>
-<a href=#568 id=568 data-nosnippet>568</a>    // Compute deterministic component (even though not used), and create sampler object for sampling remaining component
-<a href=#569 id=569 data-nosnippet>569</a>    </span><span class="kw">let </span>start_dtm_enpt2: Instant = Instant::now();
-<a href=#570 id=570 data-nosnippet>570</a>    <span class="kw">let </span>(<span class="kw">_</span>, screened_sampler) =
-<a href=#571 id=571 data-nosnippet>571</a>        input_wf.approx_matmul_external_skip_singles(ham, excite_gen, global.eps_var);
-<a href=#572 id=572 data-nosnippet>572</a>    <span class="macro">println!</span>(<span class="string">"Time for sampling setup: {:?}"</span>, start_dtm_enpt2.elapsed());
-<a href=#573 id=573 data-nosnippet>573</a>
-<a href=#574 id=574 data-nosnippet>574</a>    <span class="comment">// Stochastic component
-<a href=#575 id=575 data-nosnippet>575</a>    </span><span class="kw">let </span><span class="kw-2">mut </span>stoch_enpt2_quadratic: Stats&lt;f64&gt; = Stats::new(); <span class="comment">// unbiased contribution from samples with themselves
-<a href=#576 id=576 data-nosnippet>576</a>    </span><span class="kw">let </span><span class="kw-2">mut </span>samples: PtSamples = Default::default(); <span class="comment">// data structure to contain sampled contributions to PT
+<a href=#428 id=428 data-nosnippet>428</a>
+<a href=#429 id=429 data-nosnippet>429</a>    <span class="macro">println!</span>(
+<a href=#430 id=430 data-nosnippet>430</a>        <span class="string">"\nCollecting {} initial samples of the off-diagonal contribution to E_PT"</span>,
+<a href=#431 id=431 data-nosnippet>431</a>        n_off_diag_init
+<a href=#432 id=432 data-nosnippet>432</a>    );
+<a href=#433 id=433 data-nosnippet>433</a>    <span class="kw">for </span>_i_batch <span class="kw">in </span><span class="number">0</span>..n_off_diag_init {
+<a href=#434 id=434 data-nosnippet>434</a>        <span class="comment">// Sample off_diag, update Welford
+<a href=#435 id=435 data-nosnippet>435</a>        </span>sample_off_diag_update_welford(
+<a href=#436 id=436 data-nosnippet>436</a>            input_wf,
+<a href=#437 id=437 data-nosnippet>437</a>            excite_gen,
+<a href=#438 id=438 data-nosnippet>438</a>            ham,
+<a href=#439 id=439 data-nosnippet>439</a>            <span class="kw-2">&amp;</span>det_sampler,
+<a href=#440 id=440 data-nosnippet>440</a>            global.n_samples_per_batch,
+<a href=#441 id=441 data-nosnippet>441</a>            rand,
+<a href=#442 id=442 data-nosnippet>442</a>            <span class="kw-2">&amp;mut </span>enpt2_off_diag,
+<a href=#443 id=443 data-nosnippet>443</a>            <span class="prelude-val">Some</span>(global.eps_pt_dtm),
+<a href=#444 id=444 data-nosnippet>444</a>        );
+<a href=#445 id=445 data-nosnippet>445</a>    }
+<a href=#446 id=446 data-nosnippet>446</a>    <span class="macro">println!</span>(
+<a href=#447 id=447 data-nosnippet>447</a>        <span class="string">"Initial estimate of the off-diagonal contribution: {:.4} +- {:.4}"</span>,
+<a href=#448 id=448 data-nosnippet>448</a>        enpt2_off_diag.mean,
+<a href=#449 id=449 data-nosnippet>449</a>        std_err(<span class="kw-2">&amp;</span>enpt2_off_diag)
+<a href=#450 id=450 data-nosnippet>450</a>    );
+<a href=#451 id=451 data-nosnippet>451</a>
+<a href=#452 id=452 data-nosnippet>452</a>    <span class="kw">let </span><span class="kw-2">mut </span>total_std_err: f64 = (std_err(<span class="kw-2">&amp;</span>enpt2_diag) * std_err(<span class="kw-2">&amp;</span>enpt2_diag)
+<a href=#453 id=453 data-nosnippet>453</a>        + std_err(<span class="kw-2">&amp;</span>enpt2_off_diag) * std_err(<span class="kw-2">&amp;</span>enpt2_off_diag))
+<a href=#454 id=454 data-nosnippet>454</a>    .sqrt();
+<a href=#455 id=455 data-nosnippet>455</a>    <span class="macro">println!</span>(
+<a href=#456 id=456 data-nosnippet>456</a>        <span class="string">"After init, diag and off-diag components: {} +- {}, {} +- {}, total: {} +- {}"</span>,
+<a href=#457 id=457 data-nosnippet>457</a>        enpt2_diag.mean,
+<a href=#458 id=458 data-nosnippet>458</a>        std_err(<span class="kw-2">&amp;</span>enpt2_diag),
+<a href=#459 id=459 data-nosnippet>459</a>        enpt2_off_diag.mean,
+<a href=#460 id=460 data-nosnippet>460</a>        std_err(<span class="kw-2">&amp;</span>enpt2_off_diag),
+<a href=#461 id=461 data-nosnippet>461</a>        enpt2_diag.mean + enpt2_off_diag.mean,
+<a href=#462 id=462 data-nosnippet>462</a>        total_std_err
+<a href=#463 id=463 data-nosnippet>463</a>    );
+<a href=#464 id=464 data-nosnippet>464</a>
+<a href=#465 id=465 data-nosnippet>465</a>    <span class="kw">while </span>total_std_err &gt; global.target_uncertainty {
+<a href=#466 id=466 data-nosnippet>466</a>        <span class="comment">// Collect another batch of the less certain component
+<a href=#467 id=467 data-nosnippet>467</a>        </span><span class="kw">if </span>std_err(<span class="kw-2">&amp;</span>enpt2_diag) &gt;= <span class="number">0.5 </span>* std_err(<span class="kw-2">&amp;</span>enpt2_off_diag) {
+<a href=#468 id=468 data-nosnippet>468</a>            <span class="comment">// Sample diag, update Welford
+<a href=#469 id=469 data-nosnippet>469</a>            </span><span class="kw">for </span>_i_diag <span class="kw">in </span><span class="number">0</span>..global.n_samples_per_batch {
+<a href=#470 id=470 data-nosnippet>470</a>                sample_diag_update_welford(
+<a href=#471 id=471 data-nosnippet>471</a>                    <span class="kw-2">&amp;</span>screened_sampler,
+<a href=#472 id=472 data-nosnippet>472</a>                    excite_gen,
+<a href=#473 id=473 data-nosnippet>473</a>                    ham,
+<a href=#474 id=474 data-nosnippet>474</a>                    rand,
+<a href=#475 id=475 data-nosnippet>475</a>                    input_wf.energy,
+<a href=#476 id=476 data-nosnippet>476</a>                    <span class="kw-2">&amp;mut </span>enpt2_diag,
+<a href=#477 id=477 data-nosnippet>477</a>                );
+<a href=#478 id=478 data-nosnippet>478</a>            }
+<a href=#479 id=479 data-nosnippet>479</a>        } <span class="kw">else </span>{
+<a href=#480 id=480 data-nosnippet>480</a>            <span class="comment">// Sample off_diag, update Welford
+<a href=#481 id=481 data-nosnippet>481</a>            </span>sample_off_diag_update_welford(
+<a href=#482 id=482 data-nosnippet>482</a>                input_wf,
+<a href=#483 id=483 data-nosnippet>483</a>                excite_gen,
+<a href=#484 id=484 data-nosnippet>484</a>                ham,
+<a href=#485 id=485 data-nosnippet>485</a>                <span class="kw-2">&amp;</span>det_sampler,
+<a href=#486 id=486 data-nosnippet>486</a>                global.n_samples_per_batch,
+<a href=#487 id=487 data-nosnippet>487</a>                rand,
+<a href=#488 id=488 data-nosnippet>488</a>                <span class="kw-2">&amp;mut </span>enpt2_off_diag,
+<a href=#489 id=489 data-nosnippet>489</a>                <span class="prelude-val">Some</span>(global.eps_pt_dtm),
+<a href=#490 id=490 data-nosnippet>490</a>            );
+<a href=#491 id=491 data-nosnippet>491</a>        }
+<a href=#492 id=492 data-nosnippet>492</a>        total_std_err = (std_err(<span class="kw-2">&amp;</span>enpt2_diag) * std_err(<span class="kw-2">&amp;</span>enpt2_diag)
+<a href=#493 id=493 data-nosnippet>493</a>            + std_err(<span class="kw-2">&amp;</span>enpt2_off_diag) * std_err(<span class="kw-2">&amp;</span>enpt2_off_diag))
+<a href=#494 id=494 data-nosnippet>494</a>        .sqrt();
+<a href=#495 id=495 data-nosnippet>495</a>        <span class="macro">println!</span>(
+<a href=#496 id=496 data-nosnippet>496</a>            <span class="string">"diag ({} samples) and off-diag ({} batches) components: {} +- {}, {} +- {}, total: {} +- {}"</span>,
+<a href=#497 id=497 data-nosnippet>497</a>            enpt2_diag.count, enpt2_off_diag.count,
+<a href=#498 id=498 data-nosnippet>498</a>            enpt2_diag.mean,
+<a href=#499 id=499 data-nosnippet>499</a>            std_err(<span class="kw-2">&amp;</span>enpt2_diag),
+<a href=#500 id=500 data-nosnippet>500</a>            enpt2_off_diag.mean,
+<a href=#501 id=501 data-nosnippet>501</a>            std_err(<span class="kw-2">&amp;</span>enpt2_off_diag),
+<a href=#502 id=502 data-nosnippet>502</a>            enpt2_diag.mean + enpt2_off_diag.mean,
+<a href=#503 id=503 data-nosnippet>503</a>            total_std_err
+<a href=#504 id=504 data-nosnippet>504</a>        );
+<a href=#505 id=505 data-nosnippet>505</a>    }
+<a href=#506 id=506 data-nosnippet>506</a>
+<a href=#507 id=507 data-nosnippet>507</a>    <span class="macro">println!</span>(
+<a href=#508 id=508 data-nosnippet>508</a>        <span class="string">"Time for new stochastic PT algorithm: {:?}"</span>,
+<a href=#509 id=509 data-nosnippet>509</a>        start_pt.elapsed()
+<a href=#510 id=510 data-nosnippet>510</a>    );
+<a href=#511 id=511 data-nosnippet>511</a>
+<a href=#512 id=512 data-nosnippet>512</a>    (
+<a href=#513 id=513 data-nosnippet>513</a>        e_pt_dtm + enpt2_diag.mean + enpt2_off_diag.mean,
+<a href=#514 id=514 data-nosnippet>514</a>        total_std_err,
+<a href=#515 id=515 data-nosnippet>515</a>    )
+<a href=#516 id=516 data-nosnippet>516</a>}
+<a href=#517 id=517 data-nosnippet>517</a>
+<a href=#518 id=518 data-nosnippet>518</a><span class="doccomment">/// Implements a purely stochastic ENPT2 calculation
+<a href=#519 id=519 data-nosnippet>519</a>///
+<a href=#520 id=520 data-nosnippet>520</a>/// This function seems to skip any deterministic component and directly samples contributions
+<a href=#521 id=521 data-nosnippet>521</a>/// using the `PtSamples` structure and the `pt_estimator` function, which implements the
+<a href=#522 id=522 data-nosnippet>522</a>/// unbiased estimator from the SHCI papers. It samples excitations originating from variational
+<a href=#523 id=523 data-nosnippet>523</a>/// determinants (`i`) selected with probability proportional to `|c_i|`.
+<a href=#524 id=524 data-nosnippet>524</a>///
+<a href=#525 id=525 data-nosnippet>525</a>/// # Arguments
+<a href=#526 id=526 data-nosnippet>526</a>/// * `input_wf`: The converged variational wavefunction.
+<a href=#527 id=527 data-nosnippet>527</a>/// * `global`: Global calculation parameters.
+<a href=#528 id=528 data-nosnippet>528</a>/// * `ham`: The Hamiltonian operator.
+<a href=#529 id=529 data-nosnippet>529</a>/// * `excite_gen`: Pre-computed excitation generator.
+<a href=#530 id=530 data-nosnippet>530</a>/// * `rand`: Mutable random number generator state.
+<a href=#531 id=531 data-nosnippet>531</a>///
+<a href=#532 id=532 data-nosnippet>532</a>/// # Returns
+<a href=#533 id=533 data-nosnippet>533</a>/// A tuple `(pt2_energy, pt2_std_dev)` containing the estimated PT2 energy and its standard deviation.
+<a href=#534 id=534 data-nosnippet>534</a></span><span class="kw">pub fn </span>fast_stoch_enpt2(
+<a href=#535 id=535 data-nosnippet>535</a>    input_wf: <span class="kw-2">&amp;</span>Wf,
+<a href=#536 id=536 data-nosnippet>536</a>    global: <span class="kw-2">&amp;</span>Global,
+<a href=#537 id=537 data-nosnippet>537</a>    ham: <span class="kw-2">&amp;</span>Ham,
+<a href=#538 id=538 data-nosnippet>538</a>    excite_gen: <span class="kw-2">&amp;</span>ExciteGenerator,
+<a href=#539 id=539 data-nosnippet>539</a>    rand: <span class="kw-2">&amp;mut </span>Rand,
+<a href=#540 id=540 data-nosnippet>540</a>) -&gt; (f64, f64) {
+<a href=#541 id=541 data-nosnippet>541</a>    <span class="comment">// Stochastic Epstein-Nesbet PT2
+<a href=#542 id=542 data-nosnippet>542</a>    // In earlier SHCI paper, used the following strategy:
+<a href=#543 id=543 data-nosnippet>543</a>    // 1. Compute ENPT2 deterministically using large eps
+<a href=#544 id=544 data-nosnippet>544</a>    // 2. Sample some variational determinants, compute difference between large-eps and small-eps
+<a href=#545 id=545 data-nosnippet>545</a>    //    ENPT2 expressions for them
+<a href=#546 id=546 data-nosnippet>546</a>    // Here, we take a different (smarter?) approach that introduces importance sampling:
+<a href=#547 id=547 data-nosnippet>547</a>    // 1. Importance-sample the large set of H*psi terms that had been screened out in the variational
+<a href=#548 id=548 data-nosnippet>548</a>    //    stage
+<a href=#549 id=549 data-nosnippet>549</a>    // Main advantage: uses importance sampling, can take larger batch sizes since we don't have to
+<a href=#550 id=550 data-nosnippet>550</a>    // compute all connections.
+<a href=#551 id=551 data-nosnippet>551</a>
+<a href=#552 id=552 data-nosnippet>552</a>    // Compute deterministic component (even though not used), and create sampler object for sampling remaining component
+<a href=#553 id=553 data-nosnippet>553</a>    </span><span class="kw">let </span>start_dtm_enpt2: Instant = Instant::now();
+<a href=#554 id=554 data-nosnippet>554</a>    <span class="kw">let </span>(<span class="kw">_</span>, screened_sampler) =
+<a href=#555 id=555 data-nosnippet>555</a>        input_wf.approx_matmul_external_skip_singles(ham, excite_gen, global.eps_var);
+<a href=#556 id=556 data-nosnippet>556</a>    <span class="macro">println!</span>(<span class="string">"Time for sampling setup: {:?}"</span>, start_dtm_enpt2.elapsed());
+<a href=#557 id=557 data-nosnippet>557</a>
+<a href=#558 id=558 data-nosnippet>558</a>    <span class="comment">// Stochastic component
+<a href=#559 id=559 data-nosnippet>559</a>    </span><span class="kw">let </span><span class="kw-2">mut </span>stoch_enpt2_quadratic: Stats&lt;f64&gt; = Stats::new(); <span class="comment">// unbiased contribution from samples with themselves
+<a href=#560 id=560 data-nosnippet>560</a>    </span><span class="kw">let </span><span class="kw-2">mut </span>samples: PtSamples = Default::default(); <span class="comment">// data structure to contain sampled contributions to PT
+<a href=#561 id=561 data-nosnippet>561</a>
+<a href=#562 id=562 data-nosnippet>562</a>    </span><span class="kw">let </span>start_quadratic: Instant = Instant::now();
+<a href=#563 id=563 data-nosnippet>563</a>    <span class="kw">let </span>n_batches_max = <span class="number">10</span>;
+<a href=#564 id=564 data-nosnippet>564</a>    <span class="kw">for </span>i_batch <span class="kw">in </span><span class="number">0</span>..n_batches_max {
+<a href=#565 id=565 data-nosnippet>565</a>        <span class="comment">// Sample a batch of samples, updating the stoch component of the energy for each sample
+<a href=#566 id=566 data-nosnippet>566</a>        </span><span class="macro">println!</span>(<span class="string">"\n Starting batch {}"</span>, i_batch);
+<a href=#567 id=567 data-nosnippet>567</a>        samples.clear();
+<a href=#568 id=568 data-nosnippet>568</a>        <span class="kw">for </span>_i_sample <span class="kw">in </span><span class="number">0</span>..global.n_samples_per_batch {
+<a href=#569 id=569 data-nosnippet>569</a>            <span class="comment">// Sample with probability proportional to (Hc)^2
+<a href=#570 id=570 data-nosnippet>570</a>            </span><span class="kw">let </span>(sampled_det_info, sampled_prob) = matmul_sample_remaining(
+<a href=#571 id=571 data-nosnippet>571</a>                <span class="kw-2">&amp;</span>screened_sampler,
+<a href=#572 id=572 data-nosnippet>572</a>                ImpSampleDist::HcSquared,
+<a href=#573 id=573 data-nosnippet>573</a>                excite_gen,
+<a href=#574 id=574 data-nosnippet>574</a>                ham,
+<a href=#575 id=575 data-nosnippet>575</a>                rand,
+<a href=#576 id=576 data-nosnippet>576</a>            );
 <a href=#577 id=577 data-nosnippet>577</a>
-<a href=#578 id=578 data-nosnippet>578</a>    </span><span class="kw">let </span>start_quadratic: Instant = Instant::now();
-<a href=#579 id=579 data-nosnippet>579</a>    <span class="kw">let </span>n_batches_max = <span class="number">10</span>;
-<a href=#580 id=580 data-nosnippet>580</a>    <span class="kw">for </span>i_batch <span class="kw">in </span><span class="number">0</span>..n_batches_max {
-<a href=#581 id=581 data-nosnippet>581</a>        <span class="comment">// Sample a batch of samples, updating the stoch component of the energy for each sample
-<a href=#582 id=582 data-nosnippet>582</a>        </span><span class="macro">println!</span>(<span class="string">"\n Starting batch {}"</span>, i_batch);
-<a href=#583 id=583 data-nosnippet>583</a>        samples.clear();
-<a href=#584 id=584 data-nosnippet>584</a>        <span class="kw">for </span>_i_sample <span class="kw">in </span><span class="number">0</span>..global.n_samples_per_batch {
-<a href=#585 id=585 data-nosnippet>585</a>            <span class="comment">// Sample with probability proportional to (Hc)^2
-<a href=#586 id=586 data-nosnippet>586</a>            </span><span class="kw">let </span>(sampled_det_info, sampled_prob) = matmul_sample_remaining(
-<a href=#587 id=587 data-nosnippet>587</a>                <span class="kw-2">&amp;</span>screened_sampler,
-<a href=#588 id=588 data-nosnippet>588</a>                ImpSampleDist::HcSquared,
-<a href=#589 id=589 data-nosnippet>589</a>                excite_gen,
-<a href=#590 id=590 data-nosnippet>590</a>                ham,
-<a href=#591 id=591 data-nosnippet>591</a>                rand,
-<a href=#592 id=592 data-nosnippet>592</a>            );
-<a href=#593 id=593 data-nosnippet>593</a>
-<a href=#594 id=594 data-nosnippet>594</a>            <span class="kw">match </span>sampled_det_info {
-<a href=#595 id=595 data-nosnippet>595</a>                <span class="prelude-val">None </span>=&gt; {}
-<a href=#596 id=596 data-nosnippet>596</a>                <span class="prelude-val">Some</span>((exciting_det, excite, target_det)) =&gt; {
-<a href=#597 id=597 data-nosnippet>597</a>                    <span class="comment">// Collect this sample for the quadratic contribution
-<a href=#598 id=598 data-nosnippet>598</a>                    // This is analogous to the SHCI contribution, but only applies to the (&lt;eps)
-<a href=#599 id=599 data-nosnippet>599</a>                    // terms. The sampling probability (Hc)^2 was chosen because the largest terms
-<a href=#600 id=600 data-nosnippet>600</a>                    // in this component are (Hc)^2 / (E_0 - E_a).
-<a href=#601 id=601 data-nosnippet>601</a>                    </span>samples.add_sample_compute_diag(
-<a href=#602 id=602 data-nosnippet>602</a>                        exciting_det,
-<a href=#603 id=603 data-nosnippet>603</a>                        <span class="kw-2">&amp;</span>excite,
-<a href=#604 id=604 data-nosnippet>604</a>                        target_det,
-<a href=#605 id=605 data-nosnippet>605</a>                        sampled_prob,
-<a href=#606 id=606 data-nosnippet>606</a>                        ham,
-<a href=#607 id=607 data-nosnippet>607</a>                    );
-<a href=#608 id=608 data-nosnippet>608</a>                }
-<a href=#609 id=609 data-nosnippet>609</a>            }
-<a href=#610 id=610 data-nosnippet>610</a>        }
+<a href=#578 id=578 data-nosnippet>578</a>            <span class="kw">match </span>sampled_det_info {
+<a href=#579 id=579 data-nosnippet>579</a>                <span class="prelude-val">None </span>=&gt; {}
+<a href=#580 id=580 data-nosnippet>580</a>                <span class="prelude-val">Some</span>((exciting_det, excite, target_det)) =&gt; {
+<a href=#581 id=581 data-nosnippet>581</a>                    <span class="comment">// Collect this sample for the quadratic contribution
+<a href=#582 id=582 data-nosnippet>582</a>                    // This is analogous to the SHCI contribution, but only applies to the (&lt;eps)
+<a href=#583 id=583 data-nosnippet>583</a>                    // terms. The sampling probability (Hc)^2 was chosen because the largest terms
+<a href=#584 id=584 data-nosnippet>584</a>                    // in this component are (Hc)^2 / (E_0 - E_a).
+<a href=#585 id=585 data-nosnippet>585</a>                    </span>samples.add_sample_compute_diag(
+<a href=#586 id=586 data-nosnippet>586</a>                        exciting_det,
+<a href=#587 id=587 data-nosnippet>587</a>                        <span class="kw-2">&amp;</span>excite,
+<a href=#588 id=588 data-nosnippet>588</a>                        target_det,
+<a href=#589 id=589 data-nosnippet>589</a>                        sampled_prob,
+<a href=#590 id=590 data-nosnippet>590</a>                        ham,
+<a href=#591 id=591 data-nosnippet>591</a>                    );
+<a href=#592 id=592 data-nosnippet>592</a>                }
+<a href=#593 id=593 data-nosnippet>593</a>            }
+<a href=#594 id=594 data-nosnippet>594</a>        }
+<a href=#595 id=595 data-nosnippet>595</a>
+<a href=#596 id=596 data-nosnippet>596</a>        <span class="comment">// Collect the samples, evaluate their contributions a la the original SHCI paper
+<a href=#597 id=597 data-nosnippet>597</a>        </span><span class="kw">let </span>sampled_e: f64 = samples.pt_estimator(input_wf.energy, samples.n);
+<a href=#598 id=598 data-nosnippet>598</a>        <span class="macro">println!</span>(<span class="string">"Sampled energy this batch = {}"</span>, sampled_e);
+<a href=#599 id=599 data-nosnippet>599</a>        stoch_enpt2_quadratic.update(sampled_e);
+<a href=#600 id=600 data-nosnippet>600</a>        <span class="macro">println!</span>(
+<a href=#601 id=601 data-nosnippet>601</a>            <span class="string">"Current estimate of stochastic component: {:.4} +- {:.4}"</span>,
+<a href=#602 id=602 data-nosnippet>602</a>            stoch_enpt2_quadratic.mean, stoch_enpt2_quadratic.std_dev
+<a href=#603 id=603 data-nosnippet>603</a>        );
+<a href=#604 id=604 data-nosnippet>604</a>
+<a href=#605 id=605 data-nosnippet>605</a>        <span class="kw">if </span>i_batch &gt; <span class="number">9 </span>&amp;&amp; stoch_enpt2_quadratic.std_dev &lt;= global.target_uncertainty / <span class="number">2f64</span>.sqrt() {
+<a href=#606 id=606 data-nosnippet>606</a>            <span class="macro">println!</span>(<span class="string">"Target uncertainty reached!"</span>);
+<a href=#607 id=607 data-nosnippet>607</a>            <span class="kw">break</span>;
+<a href=#608 id=608 data-nosnippet>608</a>        }
+<a href=#609 id=609 data-nosnippet>609</a>    }
+<a href=#610 id=610 data-nosnippet>610</a>    <span class="macro">println!</span>(<span class="string">"Time for sampling: {:?}"</span>, start_quadratic.elapsed());
 <a href=#611 id=611 data-nosnippet>611</a>
-<a href=#612 id=612 data-nosnippet>612</a>        <span class="comment">// Collect the samples, evaluate their contributions a la the original SHCI paper
-<a href=#613 id=613 data-nosnippet>613</a>        </span><span class="kw">let </span>sampled_e: f64 = samples.pt_estimator(input_wf.energy, samples.n);
-<a href=#614 id=614 data-nosnippet>614</a>        <span class="macro">println!</span>(<span class="string">"Sampled energy this batch = {}"</span>, sampled_e);
-<a href=#615 id=615 data-nosnippet>615</a>        stoch_enpt2_quadratic.update(sampled_e);
-<a href=#616 id=616 data-nosnippet>616</a>        <span class="macro">println!</span>(
-<a href=#617 id=617 data-nosnippet>617</a>            <span class="string">"Current estimate of stochastic component: {:.4} +- {:.4}"</span>,
-<a href=#618 id=618 data-nosnippet>618</a>            stoch_enpt2_quadratic.mean, stoch_enpt2_quadratic.std_dev
-<a href=#619 id=619 data-nosnippet>619</a>        );
-<a href=#620 id=620 data-nosnippet>620</a>
-<a href=#621 id=621 data-nosnippet>621</a>        <span class="kw">if </span>i_batch &gt; <span class="number">9 </span>&amp;&amp; stoch_enpt2_quadratic.std_dev &lt;= global.target_uncertainty / <span class="number">2f64</span>.sqrt() {
-<a href=#622 id=622 data-nosnippet>622</a>            <span class="macro">println!</span>(<span class="string">"Target uncertainty reached!"</span>);
-<a href=#623 id=623 data-nosnippet>623</a>            <span class="kw">break</span>;
-<a href=#624 id=624 data-nosnippet>624</a>        }
-<a href=#625 id=625 data-nosnippet>625</a>    }
-<a href=#626 id=626 data-nosnippet>626</a>    <span class="macro">println!</span>(<span class="string">"Time for sampling: {:?}"</span>, start_quadratic.elapsed());
-<a href=#627 id=627 data-nosnippet>627</a>
-<a href=#628 id=628 data-nosnippet>628</a>    (stoch_enpt2_quadratic.mean, stoch_enpt2_quadratic.std_dev)
-<a href=#629 id=629 data-nosnippet>629</a>}
-<a href=#630 id=630 data-nosnippet>630</a>
-<a href=#631 id=631 data-nosnippet>631</a><span class="doccomment">/// Old algorithm (2017) for semistochastic ENPT2
-<a href=#632 id=632 data-nosnippet>632</a></span><span class="kw">pub fn </span>old_semistoch_enpt2(
-<a href=#633 id=633 data-nosnippet>633</a>    input_wf: <span class="kw-2">&amp;</span>Wf,
-<a href=#634 id=634 data-nosnippet>634</a>    global: <span class="kw-2">&amp;</span>Global,
-<a href=#635 id=635 data-nosnippet>635</a>    ham: <span class="kw-2">&amp;</span>Ham,
-<a href=#636 id=636 data-nosnippet>636</a>    excite_gen: <span class="kw-2">&amp;</span>ExciteGenerator,
-<a href=#637 id=637 data-nosnippet>637</a>    use_optimal_probs: bool,
-<a href=#638 id=638 data-nosnippet>638</a>    rand: <span class="kw-2">&amp;mut </span>Rand,
-<a href=#639 id=639 data-nosnippet>639</a>) -&gt; (f64, f64) {
-<a href=#640 id=640 data-nosnippet>640</a>    <span class="comment">// If use_optimal_probs, then sample with probability proportional to sum of remaining (Hc)^2;
-<a href=#641 id=641 data-nosnippet>641</a>    // else, use probability proportional to |c|
+<a href=#612 id=612 data-nosnippet>612</a>    (stoch_enpt2_quadratic.mean, stoch_enpt2_quadratic.std_dev)
+<a href=#613 id=613 data-nosnippet>613</a>}
+<a href=#614 id=614 data-nosnippet>614</a>
+<a href=#615 id=615 data-nosnippet>615</a><span class="doccomment">/// Old algorithm (2017) for semistochastic ENPT2
+<a href=#616 id=616 data-nosnippet>616</a></span><span class="kw">pub fn </span>old_semistoch_enpt2(
+<a href=#617 id=617 data-nosnippet>617</a>    input_wf: <span class="kw-2">&amp;</span>Wf,
+<a href=#618 id=618 data-nosnippet>618</a>    global: <span class="kw-2">&amp;</span>Global,
+<a href=#619 id=619 data-nosnippet>619</a>    ham: <span class="kw-2">&amp;</span>Ham,
+<a href=#620 id=620 data-nosnippet>620</a>    excite_gen: <span class="kw-2">&amp;</span>ExciteGenerator,
+<a href=#621 id=621 data-nosnippet>621</a>    use_optimal_probs: bool,
+<a href=#622 id=622 data-nosnippet>622</a>    rand: <span class="kw-2">&amp;mut </span>Rand,
+<a href=#623 id=623 data-nosnippet>623</a>) -&gt; (f64, f64) {
+<a href=#624 id=624 data-nosnippet>624</a>    <span class="comment">// If use_optimal_probs, then sample with probability proportional to sum of remaining (Hc)^2;
+<a href=#625 id=625 data-nosnippet>625</a>    // else, use probability proportional to |c|
+<a href=#626 id=626 data-nosnippet>626</a>
+<a href=#627 id=627 data-nosnippet>627</a>    // Compute deterministic approximation to H psi using large eps
+<a href=#628 id=628 data-nosnippet>628</a>    </span><span class="kw">let </span>start_dtm_enpt2: Instant = Instant::now();
+<a href=#629 id=629 data-nosnippet>629</a>    <span class="kw">let </span>(dtm_result, optimal_probs) =
+<a href=#630 id=630 data-nosnippet>630</a>        input_wf.approx_matmul_external_dtm_only(ham, excite_gen, global.eps_pt_dtm);
+<a href=#631 id=631 data-nosnippet>631</a>    <span class="macro">println!</span>(<span class="string">"Time for dtm ENPT2: {:?}"</span>, start_dtm_enpt2.elapsed());
+<a href=#632 id=632 data-nosnippet>632</a>
+<a href=#633 id=633 data-nosnippet>633</a>    <span class="comment">// Compute approximate delta E using approx H psi
+<a href=#634 id=634 data-nosnippet>634</a>    </span><span class="kw">let </span><span class="kw-2">mut </span>dtm_enpt2: f64 = <span class="number">0.0</span>;
+<a href=#635 id=635 data-nosnippet>635</a>    <span class="kw">for </span>det <span class="kw">in </span>dtm_result.dets {
+<a href=#636 id=636 data-nosnippet>636</a>        dtm_enpt2 += det.coeff * det.coeff / (input_wf.energy - det.diag.unwrap());
+<a href=#637 id=637 data-nosnippet>637</a>    }
+<a href=#638 id=638 data-nosnippet>638</a>    <span class="macro">println!</span>(
+<a href=#639 id=639 data-nosnippet>639</a>        <span class="string">"Deterministic approximation to Delta E using eps = {} ({} dets): {:.6}"</span>,
+<a href=#640 id=640 data-nosnippet>640</a>        global.eps_pt_dtm, dtm_result.n, dtm_enpt2
+<a href=#641 id=641 data-nosnippet>641</a>    );
 <a href=#642 id=642 data-nosnippet>642</a>
-<a href=#643 id=643 data-nosnippet>643</a>    // Compute deterministic approximation to H psi using large eps
-<a href=#644 id=644 data-nosnippet>644</a>    </span><span class="kw">let </span>start_dtm_enpt2: Instant = Instant::now();
-<a href=#645 id=645 data-nosnippet>645</a>    <span class="kw">let </span>(dtm_result, optimal_probs) =
-<a href=#646 id=646 data-nosnippet>646</a>        input_wf.approx_matmul_external_dtm_only(ham, excite_gen, global.eps_pt_dtm);
-<a href=#647 id=647 data-nosnippet>647</a>    <span class="macro">println!</span>(<span class="string">"Time for dtm ENPT2: {:?}"</span>, start_dtm_enpt2.elapsed());
-<a href=#648 id=648 data-nosnippet>648</a>
-<a href=#649 id=649 data-nosnippet>649</a>    <span class="comment">// Compute approximate delta E using approx H psi
-<a href=#650 id=650 data-nosnippet>650</a>    </span><span class="kw">let </span><span class="kw-2">mut </span>dtm_enpt2: f64 = <span class="number">0.0</span>;
-<a href=#651 id=651 data-nosnippet>651</a>    <span class="kw">for </span>det <span class="kw">in </span>dtm_result.dets {
-<a href=#652 id=652 data-nosnippet>652</a>        dtm_enpt2 += det.coeff * det.coeff / (input_wf.energy - det.diag.unwrap());
-<a href=#653 id=653 data-nosnippet>653</a>    }
-<a href=#654 id=654 data-nosnippet>654</a>    <span class="macro">println!</span>(
-<a href=#655 id=655 data-nosnippet>655</a>        <span class="string">"Deterministic approximation to Delta E using eps = {} ({} dets): {:.6}"</span>,
-<a href=#656 id=656 data-nosnippet>656</a>        global.eps_pt_dtm, dtm_result.n, dtm_enpt2
-<a href=#657 id=657 data-nosnippet>657</a>    );
-<a href=#658 id=658 data-nosnippet>658</a>
-<a href=#659 id=659 data-nosnippet>659</a>    <span class="comment">// Sample dets from wf with probability |c|
-<a href=#660 id=660 data-nosnippet>660</a>    // Update estimate of difference between exact and approximate delta E using deterministic application of H
-<a href=#661 id=661 data-nosnippet>661</a>    </span><span class="kw">let </span>eps_pt: f64 = <span class="number">1e-9</span>; <span class="comment">// essentially zero in the SHCI paper
-<a href=#662 id=662 data-nosnippet>662</a>    </span><span class="kw">let </span><span class="kw-2">mut </span>stoch_enpt2: Stats&lt;f64&gt; = Stats::new();
-<a href=#663 id=663 data-nosnippet>663</a>    <span class="kw">let </span><span class="kw-2">mut </span>samples_all: PtSamples = Default::default(); <span class="comment">// data structure to contain sampled contributions to PT
-<a href=#664 id=664 data-nosnippet>664</a>    </span><span class="kw">let </span><span class="kw-2">mut </span>samples_large_eps: PtSamples = Default::default(); <span class="comment">// data structure to contain sampled contributions to PT that exceed eps
-<a href=#665 id=665 data-nosnippet>665</a>
-<a href=#666 id=666 data-nosnippet>666</a>    // Setup Alias sampling of var wf
-<a href=#667 id=667 data-nosnippet>667</a>    </span><span class="kw">let </span><span class="kw-2">mut </span>var_probs: Vec&lt;f64&gt; = <span class="macro">vec!</span>[<span class="number">0.0</span>; input_wf.n];
-<a href=#668 id=668 data-nosnippet>668</a>    <span class="kw">for </span>(i_det, det) <span class="kw">in </span>input_wf.dets.iter().enumerate() {
-<a href=#669 id=669 data-nosnippet>669</a>        <span class="kw">if </span>use_optimal_probs {
-<a href=#670 id=670 data-nosnippet>670</a>            <span class="comment">// P ~ sum_remaining (Hc)^2
-<a href=#671 id=671 data-nosnippet>671</a>            </span>var_probs[i_det] = optimal_probs[i_det];
-<a href=#672 id=672 data-nosnippet>672</a>        } <span class="kw">else </span>{
-<a href=#673 id=673 data-nosnippet>673</a>            <span class="comment">// P ~ |c|
-<a href=#674 id=674 data-nosnippet>674</a>            </span>var_probs[i_det] = det.coeff.abs() <span class="kw">as </span>f64;
-<a href=#675 id=675 data-nosnippet>675</a>        }
-<a href=#676 id=676 data-nosnippet>676</a>    }
-<a href=#677 id=677 data-nosnippet>677</a>    <span class="kw">let </span>prob_norm: f64 = var_probs.iter().sum::&lt;f64&gt;();
-<a href=#678 id=678 data-nosnippet>678</a>    <span class="kw">for </span>var_prob <span class="kw">in </span>var_probs.iter_mut() {
-<a href=#679 id=679 data-nosnippet>679</a>        <span class="kw-2">*</span>var_prob /= prob_norm;
-<a href=#680 id=680 data-nosnippet>680</a>    }
-<a href=#681 id=681 data-nosnippet>681</a>    <span class="macro">println!</span>(<span class="string">"Setting up wf sampler"</span>);
-<a href=#682 id=682 data-nosnippet>682</a>    <span class="macro">println!</span>(<span class="string">"Normalization: {}"</span>, var_probs.iter().sum::&lt;f64&gt;());
-<a href=#683 id=683 data-nosnippet>683</a>    <span class="kw">let </span>wf_sampler: Alias = Alias::new(var_probs);
-<a href=#684 id=684 data-nosnippet>684</a>    <span class="macro">println!</span>(<span class="string">"Done setting up wf sampler"</span>);
-<a href=#685 id=685 data-nosnippet>685</a>    <span class="comment">// println!("Alias sampler:");
-<a href=#686 id=686 data-nosnippet>686</a>    // wf_sampler.print();
-<a href=#687 id=687 data-nosnippet>687</a>    //
-<a href=#688 id=688 data-nosnippet>688</a>    // println!("Testing alias sampler...");
-<a href=#689 id=689 data-nosnippet>689</a>    // wf_sampler.test(1000000);
-<a href=#690 id=690 data-nosnippet>690</a>
-<a href=#691 id=691 data-nosnippet>691</a>    </span><span class="kw">let </span>n_batches_max = <span class="number">1000</span>;
-<a href=#692 id=692 data-nosnippet>692</a>
-<a href=#693 id=693 data-nosnippet>693</a>    <span class="kw">let </span>start_quadratic: Instant = Instant::now();
-<a href=#694 id=694 data-nosnippet>694</a>    <span class="kw">for </span>i_batch <span class="kw">in </span><span class="number">0</span>..n_batches_max {
-<a href=#695 id=695 data-nosnippet>695</a>        <span class="comment">// Sample a batch of samples, updating the stoch component of the energy for each sample
-<a href=#696 id=696 data-nosnippet>696</a>        </span><span class="macro">println!</span>(<span class="string">"\n Starting batch {}"</span>, i_batch);
-<a href=#697 id=697 data-nosnippet>697</a>
-<a href=#698 id=698 data-nosnippet>698</a>        samples_all.clear();
-<a href=#699 id=699 data-nosnippet>699</a>        samples_large_eps.clear();
-<a href=#700 id=700 data-nosnippet>700</a>
-<a href=#701 id=701 data-nosnippet>701</a>        <span class="kw">for </span>_i_sample <span class="kw">in </span><span class="number">0</span>..global.n_samples_per_batch {
-<a href=#702 id=702 data-nosnippet>702</a>            <span class="comment">// Sample with prob var_probs(:)
-<a href=#703 id=703 data-nosnippet>703</a>            </span><span class="kw">let </span>(sampled_var_det_ind, sampled_prob) = wf_sampler.sample_with_prob(rand);
-<a href=#704 id=704 data-nosnippet>704</a>            <span class="kw">let </span>sampled_var_det = input_wf.dets[sampled_var_det_ind];
-<a href=#705 id=705 data-nosnippet>705</a>            <span class="comment">// let sampled_var_det = wf_sampler.sample();
-<a href=#706 id=706 data-nosnippet>706</a>            // let sampled_prob = sampled_var_det.coeff.abs() / prob_norm;
-<a href=#707 id=707 data-nosnippet>707</a>
-<a href=#708 id=708 data-nosnippet>708</a>            // Generate (wastefully) all PT dets connected to the sampled variational det
-<a href=#709 id=709 data-nosnippet>709</a>
-<a href=#710 id=710 data-nosnippet>710</a>            // Collect samples using small eps (eps_pt)
-<a href=#711 id=711 data-nosnippet>711</a>            </span><span class="kw">let </span><span class="kw-2">mut </span>v_times_sampled_var_det = sampled_var_det
-<a href=#712 id=712 data-nosnippet>712</a>                .approx_matmul_external_dtm_only_compute_diags(input_wf, ham, excite_gen, eps_pt);
+<a href=#643 id=643 data-nosnippet>643</a>    <span class="comment">// Sample dets from wf with probability |c|
+<a href=#644 id=644 data-nosnippet>644</a>    // Update estimate of difference between exact and approximate delta E using deterministic application of H
+<a href=#645 id=645 data-nosnippet>645</a>    </span><span class="kw">let </span>eps_pt: f64 = <span class="number">1e-9</span>; <span class="comment">// essentially zero in the SHCI paper
+<a href=#646 id=646 data-nosnippet>646</a>    </span><span class="kw">let </span><span class="kw-2">mut </span>stoch_enpt2: Stats&lt;f64&gt; = Stats::new();
+<a href=#647 id=647 data-nosnippet>647</a>    <span class="kw">let </span><span class="kw-2">mut </span>samples_all: PtSamples = Default::default(); <span class="comment">// data structure to contain sampled contributions to PT
+<a href=#648 id=648 data-nosnippet>648</a>    </span><span class="kw">let </span><span class="kw-2">mut </span>samples_large_eps: PtSamples = Default::default(); <span class="comment">// data structure to contain sampled contributions to PT that exceed eps
+<a href=#649 id=649 data-nosnippet>649</a>
+<a href=#650 id=650 data-nosnippet>650</a>    // Setup Alias sampling of var wf
+<a href=#651 id=651 data-nosnippet>651</a>    </span><span class="kw">let </span><span class="kw-2">mut </span>var_probs: Vec&lt;f64&gt; = <span class="macro">vec!</span>[<span class="number">0.0</span>; input_wf.n];
+<a href=#652 id=652 data-nosnippet>652</a>    <span class="kw">for </span>(i_det, det) <span class="kw">in </span>input_wf.dets.iter().enumerate() {
+<a href=#653 id=653 data-nosnippet>653</a>        <span class="kw">if </span>use_optimal_probs {
+<a href=#654 id=654 data-nosnippet>654</a>            <span class="comment">// P ~ sum_remaining (Hc)^2
+<a href=#655 id=655 data-nosnippet>655</a>            </span>var_probs[i_det] = optimal_probs[i_det];
+<a href=#656 id=656 data-nosnippet>656</a>        } <span class="kw">else </span>{
+<a href=#657 id=657 data-nosnippet>657</a>            <span class="comment">// P ~ |c|
+<a href=#658 id=658 data-nosnippet>658</a>            </span>var_probs[i_det] = det.coeff.abs() <span class="kw">as </span>f64;
+<a href=#659 id=659 data-nosnippet>659</a>        }
+<a href=#660 id=660 data-nosnippet>660</a>    }
+<a href=#661 id=661 data-nosnippet>661</a>    <span class="kw">let </span>prob_norm: f64 = var_probs.iter().sum::&lt;f64&gt;();
+<a href=#662 id=662 data-nosnippet>662</a>    <span class="kw">for </span>var_prob <span class="kw">in </span>var_probs.iter_mut() {
+<a href=#663 id=663 data-nosnippet>663</a>        <span class="kw-2">*</span>var_prob /= prob_norm;
+<a href=#664 id=664 data-nosnippet>664</a>    }
+<a href=#665 id=665 data-nosnippet>665</a>    <span class="macro">println!</span>(<span class="string">"Setting up wf sampler"</span>);
+<a href=#666 id=666 data-nosnippet>666</a>    <span class="macro">println!</span>(<span class="string">"Normalization: {}"</span>, var_probs.iter().sum::&lt;f64&gt;());
+<a href=#667 id=667 data-nosnippet>667</a>    <span class="kw">let </span>wf_sampler: Alias = Alias::new(var_probs);
+<a href=#668 id=668 data-nosnippet>668</a>    <span class="macro">println!</span>(<span class="string">"Done setting up wf sampler"</span>);
+<a href=#669 id=669 data-nosnippet>669</a>    <span class="comment">// println!("Alias sampler:");
+<a href=#670 id=670 data-nosnippet>670</a>    // wf_sampler.print();
+<a href=#671 id=671 data-nosnippet>671</a>    //
+<a href=#672 id=672 data-nosnippet>672</a>    // println!("Testing alias sampler...");
+<a href=#673 id=673 data-nosnippet>673</a>    // wf_sampler.test(1000000);
+<a href=#674 id=674 data-nosnippet>674</a>
+<a href=#675 id=675 data-nosnippet>675</a>    </span><span class="kw">let </span>n_batches_max = <span class="number">1000</span>;
+<a href=#676 id=676 data-nosnippet>676</a>
+<a href=#677 id=677 data-nosnippet>677</a>    <span class="kw">let </span>start_quadratic: Instant = Instant::now();
+<a href=#678 id=678 data-nosnippet>678</a>    <span class="kw">for </span>i_batch <span class="kw">in </span><span class="number">0</span>..n_batches_max {
+<a href=#679 id=679 data-nosnippet>679</a>        <span class="comment">// Sample a batch of samples, updating the stoch component of the energy for each sample
+<a href=#680 id=680 data-nosnippet>680</a>        </span><span class="macro">println!</span>(<span class="string">"\n Starting batch {}"</span>, i_batch);
+<a href=#681 id=681 data-nosnippet>681</a>
+<a href=#682 id=682 data-nosnippet>682</a>        samples_all.clear();
+<a href=#683 id=683 data-nosnippet>683</a>        samples_large_eps.clear();
+<a href=#684 id=684 data-nosnippet>684</a>
+<a href=#685 id=685 data-nosnippet>685</a>        <span class="kw">for </span>_i_sample <span class="kw">in </span><span class="number">0</span>..global.n_samples_per_batch {
+<a href=#686 id=686 data-nosnippet>686</a>            <span class="comment">// Sample with prob var_probs(:)
+<a href=#687 id=687 data-nosnippet>687</a>            </span><span class="kw">let </span>(sampled_var_det_ind, sampled_prob) = wf_sampler.sample_with_prob(rand);
+<a href=#688 id=688 data-nosnippet>688</a>            <span class="kw">let </span>sampled_var_det = input_wf.dets[sampled_var_det_ind];
+<a href=#689 id=689 data-nosnippet>689</a>            <span class="comment">// let sampled_var_det = wf_sampler.sample();
+<a href=#690 id=690 data-nosnippet>690</a>            // let sampled_prob = sampled_var_det.coeff.abs() / prob_norm;
+<a href=#691 id=691 data-nosnippet>691</a>
+<a href=#692 id=692 data-nosnippet>692</a>            // Generate (wastefully) all PT dets connected to the sampled variational det
+<a href=#693 id=693 data-nosnippet>693</a>
+<a href=#694 id=694 data-nosnippet>694</a>            // Collect samples using small eps (eps_pt)
+<a href=#695 id=695 data-nosnippet>695</a>            </span><span class="kw">let </span><span class="kw-2">mut </span>v_times_sampled_var_det = sampled_var_det
+<a href=#696 id=696 data-nosnippet>696</a>                .approx_matmul_external_dtm_only_compute_diags(input_wf, ham, excite_gen, eps_pt);
+<a href=#697 id=697 data-nosnippet>697</a>            <span class="kw">for </span>target_det <span class="kw">in </span>v_times_sampled_var_det.dets {
+<a href=#698 id=698 data-nosnippet>698</a>                samples_all.add_sample_diag_already_stored(
+<a href=#699 id=699 data-nosnippet>699</a>                    sampled_var_det,
+<a href=#700 id=700 data-nosnippet>700</a>                    target_det,
+<a href=#701 id=701 data-nosnippet>701</a>                    sampled_prob,
+<a href=#702 id=702 data-nosnippet>702</a>                );
+<a href=#703 id=703 data-nosnippet>703</a>            }
+<a href=#704 id=704 data-nosnippet>704</a>
+<a href=#705 id=705 data-nosnippet>705</a>            <span class="comment">// Collect samples using large eps (eps) corresponding to deterministic part
+<a href=#706 id=706 data-nosnippet>706</a>            </span>v_times_sampled_var_det = sampled_var_det
+<a href=#707 id=707 data-nosnippet>707</a>                .approx_matmul_external_dtm_only_compute_diags(
+<a href=#708 id=708 data-nosnippet>708</a>                    input_wf,
+<a href=#709 id=709 data-nosnippet>709</a>                    ham,
+<a href=#710 id=710 data-nosnippet>710</a>                    excite_gen,
+<a href=#711 id=711 data-nosnippet>711</a>                    global.eps_pt_dtm,
+<a href=#712 id=712 data-nosnippet>712</a>                );
 <a href=#713 id=713 data-nosnippet>713</a>            <span class="kw">for </span>target_det <span class="kw">in </span>v_times_sampled_var_det.dets {
-<a href=#714 id=714 data-nosnippet>714</a>                samples_all.add_sample_diag_already_stored(
+<a href=#714 id=714 data-nosnippet>714</a>                samples_large_eps.add_sample_diag_already_stored(
 <a href=#715 id=715 data-nosnippet>715</a>                    sampled_var_det,
 <a href=#716 id=716 data-nosnippet>716</a>                    target_det,
 <a href=#717 id=717 data-nosnippet>717</a>                    sampled_prob,
 <a href=#718 id=718 data-nosnippet>718</a>                );
 <a href=#719 id=719 data-nosnippet>719</a>            }
-<a href=#720 id=720 data-nosnippet>720</a>
-<a href=#721 id=721 data-nosnippet>721</a>            <span class="comment">// Collect samples using large eps (eps) corresponding to deterministic part
-<a href=#722 id=722 data-nosnippet>722</a>            </span>v_times_sampled_var_det = sampled_var_det
-<a href=#723 id=723 data-nosnippet>723</a>                .approx_matmul_external_dtm_only_compute_diags(
-<a href=#724 id=724 data-nosnippet>724</a>                    input_wf,
-<a href=#725 id=725 data-nosnippet>725</a>                    ham,
-<a href=#726 id=726 data-nosnippet>726</a>                    excite_gen,
-<a href=#727 id=727 data-nosnippet>727</a>                    global.eps_pt_dtm,
-<a href=#728 id=728 data-nosnippet>728</a>                );
-<a href=#729 id=729 data-nosnippet>729</a>            <span class="kw">for </span>target_det <span class="kw">in </span>v_times_sampled_var_det.dets {
-<a href=#730 id=730 data-nosnippet>730</a>                samples_large_eps.add_sample_diag_already_stored(
-<a href=#731 id=731 data-nosnippet>731</a>                    sampled_var_det,
-<a href=#732 id=732 data-nosnippet>732</a>                    target_det,
-<a href=#733 id=733 data-nosnippet>733</a>                    sampled_prob,
-<a href=#734 id=734 data-nosnippet>734</a>                );
-<a href=#735 id=735 data-nosnippet>735</a>            }
+<a href=#720 id=720 data-nosnippet>720</a>        }
+<a href=#721 id=721 data-nosnippet>721</a>
+<a href=#722 id=722 data-nosnippet>722</a>        <span class="kw">let </span>sampled_e: f64 = samples_all.pt_estimator(input_wf.energy, global.n_samples_per_batch)
+<a href=#723 id=723 data-nosnippet>723</a>            - samples_large_eps.pt_estimator(input_wf.energy, global.n_samples_per_batch);
+<a href=#724 id=724 data-nosnippet>724</a>
+<a href=#725 id=725 data-nosnippet>725</a>        <span class="macro">println!</span>(<span class="string">"Sampled energy this batch = {}"</span>, sampled_e);
+<a href=#726 id=726 data-nosnippet>726</a>        stoch_enpt2.update(sampled_e);
+<a href=#727 id=727 data-nosnippet>727</a>        <span class="macro">println!</span>(
+<a href=#728 id=728 data-nosnippet>728</a>            <span class="string">"Current estimate of stochastic component: {:.4} +- {:.4}"</span>,
+<a href=#729 id=729 data-nosnippet>729</a>            stoch_enpt2.mean,
+<a href=#730 id=730 data-nosnippet>730</a>            std_err(<span class="kw-2">&amp;</span>stoch_enpt2)
+<a href=#731 id=731 data-nosnippet>731</a>        );
+<a href=#732 id=732 data-nosnippet>732</a>
+<a href=#733 id=733 data-nosnippet>733</a>        <span class="kw">if </span>i_batch &gt; <span class="number">9 </span>&amp;&amp; std_err(<span class="kw-2">&amp;</span>stoch_enpt2) &lt;= global.target_uncertainty {
+<a href=#734 id=734 data-nosnippet>734</a>            <span class="macro">println!</span>(<span class="string">"Target uncertainty reached!"</span>);
+<a href=#735 id=735 data-nosnippet>735</a>            <span class="kw">break</span>;
 <a href=#736 id=736 data-nosnippet>736</a>        }
-<a href=#737 id=737 data-nosnippet>737</a>
-<a href=#738 id=738 data-nosnippet>738</a>        <span class="kw">let </span>sampled_e: f64 = samples_all.pt_estimator(input_wf.energy, global.n_samples_per_batch)
-<a href=#739 id=739 data-nosnippet>739</a>            - samples_large_eps.pt_estimator(input_wf.energy, global.n_samples_per_batch);
-<a href=#740 id=740 data-nosnippet>740</a>
-<a href=#741 id=741 data-nosnippet>741</a>        <span class="macro">println!</span>(<span class="string">"Sampled energy this batch = {}"</span>, sampled_e);
-<a href=#742 id=742 data-nosnippet>742</a>        stoch_enpt2.update(sampled_e);
-<a href=#743 id=743 data-nosnippet>743</a>        <span class="macro">println!</span>(
-<a href=#744 id=744 data-nosnippet>744</a>            <span class="string">"Current estimate of stochastic component: {:.4} +- {:.4}"</span>,
-<a href=#745 id=745 data-nosnippet>745</a>            stoch_enpt2.mean,
-<a href=#746 id=746 data-nosnippet>746</a>            std_err(<span class="kw-2">&amp;</span>stoch_enpt2)
-<a href=#747 id=747 data-nosnippet>747</a>        );
+<a href=#737 id=737 data-nosnippet>737</a>    }
+<a href=#738 id=738 data-nosnippet>738</a>    <span class="macro">println!</span>(<span class="string">"Time for sampling: {:?}"</span>, start_quadratic.elapsed());
+<a href=#739 id=739 data-nosnippet>739</a>
+<a href=#740 id=740 data-nosnippet>740</a>    <span class="macro">println!</span>(
+<a href=#741 id=741 data-nosnippet>741</a>        <span class="string">"Stochastic component: {:.4} +- {:.4}"</span>,
+<a href=#742 id=742 data-nosnippet>742</a>        stoch_enpt2.mean,
+<a href=#743 id=743 data-nosnippet>743</a>        std_err(<span class="kw-2">&amp;</span>stoch_enpt2)
+<a href=#744 id=744 data-nosnippet>744</a>    );
+<a href=#745 id=745 data-nosnippet>745</a>
+<a href=#746 id=746 data-nosnippet>746</a>    (dtm_enpt2 + stoch_enpt2.mean, std_err(<span class="kw-2">&amp;</span>stoch_enpt2))
+<a href=#747 id=747 data-nosnippet>747</a>}
 <a href=#748 id=748 data-nosnippet>748</a>
-<a href=#749 id=749 data-nosnippet>749</a>        <span class="kw">if </span>i_batch &gt; <span class="number">9 </span>&amp;&amp; std_err(<span class="kw-2">&amp;</span>stoch_enpt2) &lt;= global.target_uncertainty {
-<a href=#750 id=750 data-nosnippet>750</a>            <span class="macro">println!</span>(<span class="string">"Target uncertainty reached!"</span>);
-<a href=#751 id=751 data-nosnippet>751</a>            <span class="kw">break</span>;
-<a href=#752 id=752 data-nosnippet>752</a>        }
-<a href=#753 id=753 data-nosnippet>753</a>    }
-<a href=#754 id=754 data-nosnippet>754</a>    <span class="macro">println!</span>(<span class="string">"Time for sampling: {:?}"</span>, start_quadratic.elapsed());
-<a href=#755 id=755 data-nosnippet>755</a>
-<a href=#756 id=756 data-nosnippet>756</a>    <span class="macro">println!</span>(
-<a href=#757 id=757 data-nosnippet>757</a>        <span class="string">"Stochastic component: {:.4} +- {:.4}"</span>,
-<a href=#758 id=758 data-nosnippet>758</a>        stoch_enpt2.mean,
-<a href=#759 id=759 data-nosnippet>759</a>        std_err(<span class="kw-2">&amp;</span>stoch_enpt2)
-<a href=#760 id=760 data-nosnippet>760</a>    );
-<a href=#761 id=761 data-nosnippet>761</a>
-<a href=#762 id=762 data-nosnippet>762</a>    (dtm_enpt2 + stoch_enpt2.mean, std_err(<span class="kw-2">&amp;</span>stoch_enpt2))
-<a href=#763 id=763 data-nosnippet>763</a>}
-<a href=#764 id=764 data-nosnippet>764</a>
-<a href=#765 id=765 data-nosnippet>765</a><span class="comment">// #[cfg(test)]
-<a href=#766 id=766 data-nosnippet>766</a>// mod tests {
-<a href=#767 id=767 data-nosnippet>767</a>//     use super::*;
-<a href=#768 id=768 data-nosnippet>768</a>//     use crate::excite::init::init_excite_generator;
-<a href=#769 id=769 data-nosnippet>769</a>//     use crate::ham::read_ints::read_ints;
-<a href=#770 id=770 data-nosnippet>770</a>//     use crate::ham::Ham;
-<a href=#771 id=771 data-nosnippet>771</a>//     use crate::utils::read_input::{read_input, Global};
-<a href=#772 id=772 data-nosnippet>772</a>//     use crate::wf::init_var_wf;
-<a href=#773 id=773 data-nosnippet>773</a>//
-<a href=#774 id=774 data-nosnippet>774</a>//     #[test]
-<a href=#775 id=775 data-nosnippet>775</a>//     fn test_iter() {
-<a href=#776 id=776 data-nosnippet>776</a>//         println!("Reading input file");
-<a href=#777 id=777 data-nosnippet>777</a>//         lazy_static! {
-<a href=#778 id=778 data-nosnippet>778</a>//             static ref GLOBAL: Global = read_input("in.json").unwrap();
-<a href=#779 id=779 data-nosnippet>779</a>//         }
-<a href=#780 id=780 data-nosnippet>780</a>//
-<a href=#781 id=781 data-nosnippet>781</a>//         println!("Reading integrals");
-<a href=#782 id=782 data-nosnippet>782</a>//         lazy_static! {
-<a href=#783 id=783 data-nosnippet>783</a>//             static ref HAM: Ham = read_ints(&amp;GLOBAL, "FCIDUMP");
-<a href=#784 id=784 data-nosnippet>784</a>//         }
-<a href=#785 id=785 data-nosnippet>785</a>//
-<a href=#786 id=786 data-nosnippet>786</a>//         println!("Initializing excitation generator");
-<a href=#787 id=787 data-nosnippet>787</a>//         lazy_static! {
-<a href=#788 id=788 data-nosnippet>788</a>//             static ref EXCITE_GEN: ExciteGenerator = init_excite_generator(&amp;GLOBAL, &amp;HAM);
-<a href=#789 id=789 data-nosnippet>789</a>//         }
-<a href=#790 id=790 data-nosnippet>790</a>//
-<a href=#791 id=791 data-nosnippet>791</a>//         println!("Initializing wavefunction");
-<a href=#792 id=792 data-nosnippet>792</a>//         let mut wf: Wf = init_var_wf(&amp;GLOBAL, &amp;HAM, &amp;EXCITE_GEN);
-<a href=#793 id=793 data-nosnippet>793</a>//         println!("Done initializing wf");
-<a href=#794 id=794 data-nosnippet>794</a>//         wf.print();
-<a href=#795 id=795 data-nosnippet>795</a>//
-<a href=#796 id=796 data-nosnippet>796</a>//         let eps = 0.1;
-<a href=#797 id=797 data-nosnippet>797</a>//         let n_samples = 10;
-<a href=#798 id=798 data-nosnippet>798</a>//         println!("Calling semistoch_matmul!");
-<a href=#799 id=799 data-nosnippet>799</a>//         semistoch_matmul(wf, &amp;HAM, &amp;EXCITE_GEN, eps, n_samples)
-<a href=#800 id=800 data-nosnippet>800</a>//     }
-<a href=#801 id=801 data-nosnippet>801</a>// }
+<a href=#749 id=749 data-nosnippet>749</a><span class="comment">// #[cfg(test)]
+<a href=#750 id=750 data-nosnippet>750</a>// mod tests {
+<a href=#751 id=751 data-nosnippet>751</a>//     use super::*;
+<a href=#752 id=752 data-nosnippet>752</a>//     use crate::excite::init::init_excite_generator;
+<a href=#753 id=753 data-nosnippet>753</a>//     use crate::ham::read_ints::read_ints;
+<a href=#754 id=754 data-nosnippet>754</a>//     use crate::ham::Ham;
+<a href=#755 id=755 data-nosnippet>755</a>//     use crate::utils::read_input::{read_input, Global};
+<a href=#756 id=756 data-nosnippet>756</a>//     use crate::wf::init_var_wf;
+<a href=#757 id=757 data-nosnippet>757</a>//
+<a href=#758 id=758 data-nosnippet>758</a>//     #[test]
+<a href=#759 id=759 data-nosnippet>759</a>//     fn test_iter() {
+<a href=#760 id=760 data-nosnippet>760</a>//         println!("Reading input file");
+<a href=#761 id=761 data-nosnippet>761</a>//         lazy_static! {
+<a href=#762 id=762 data-nosnippet>762</a>//             static ref GLOBAL: Global = read_input("in.json").unwrap();
+<a href=#763 id=763 data-nosnippet>763</a>//         }
+<a href=#764 id=764 data-nosnippet>764</a>//
+<a href=#765 id=765 data-nosnippet>765</a>//         println!("Reading integrals");
+<a href=#766 id=766 data-nosnippet>766</a>//         lazy_static! {
+<a href=#767 id=767 data-nosnippet>767</a>//             static ref HAM: Ham = read_ints(&amp;GLOBAL, "FCIDUMP");
+<a href=#768 id=768 data-nosnippet>768</a>//         }
+<a href=#769 id=769 data-nosnippet>769</a>//
+<a href=#770 id=770 data-nosnippet>770</a>//         println!("Initializing excitation generator");
+<a href=#771 id=771 data-nosnippet>771</a>//         lazy_static! {
+<a href=#772 id=772 data-nosnippet>772</a>//             static ref EXCITE_GEN: ExciteGenerator = init_excite_generator(&amp;GLOBAL, &amp;HAM);
+<a href=#773 id=773 data-nosnippet>773</a>//         }
+<a href=#774 id=774 data-nosnippet>774</a>//
+<a href=#775 id=775 data-nosnippet>775</a>//         println!("Initializing wavefunction");
+<a href=#776 id=776 data-nosnippet>776</a>//         let mut wf: Wf = init_var_wf(&amp;GLOBAL, &amp;HAM, &amp;EXCITE_GEN);
+<a href=#777 id=777 data-nosnippet>777</a>//         println!("Done initializing wf");
+<a href=#778 id=778 data-nosnippet>778</a>//         wf.print();
+<a href=#779 id=779 data-nosnippet>779</a>//
+<a href=#780 id=780 data-nosnippet>780</a>//         let eps = 0.1;
+<a href=#781 id=781 data-nosnippet>781</a>//         let n_samples = 10;
+<a href=#782 id=782 data-nosnippet>782</a>//         println!("Calling semistoch_matmul!");
+<a href=#783 id=783 data-nosnippet>783</a>//         semistoch_matmul(wf, &amp;HAM, &amp;EXCITE_GEN, eps, n_samples)
+<a href=#784 id=784 data-nosnippet>784</a>//     }
+<a href=#785 id=785 data-nosnippet>785</a>// }
 </span></code></pre></div></section></main></body></html>

@@ -4,28 +4,26 @@
 <a href=#4 id=4 data-nosnippet>4</a>
 <a href=#5 id=5 data-nosnippet>5</a></span><span class="kw">use </span><span class="kw">crate</span>::context::RisqContext;
 <a href=#6 id=6 data-nosnippet>6</a><span class="kw">use </span><span class="kw">crate</span>::error::RisqResult;
-<a href=#7 id=7 data-nosnippet>7</a><span class="kw">use </span><span class="kw">crate</span>::utils::read_input::Global;
-<a href=#8 id=8 data-nosnippet>8</a><span class="kw">use </span><span class="kw">crate</span>::wf::{init_var_wf <span class="kw">as </span>lib_init_var_wf, VarWf};
-<a href=#9 id=9 data-nosnippet>9</a><span class="kw">use </span><span class="kw">crate</span>::var::variational <span class="kw">as </span>lib_variational;
-<a href=#10 id=10 data-nosnippet>10</a><span class="kw">use </span><span class="kw">crate</span>::pt::perturbative <span class="kw">as </span>lib_perturbative;
-<a href=#11 id=11 data-nosnippet>11</a>
-<a href=#12 id=12 data-nosnippet>12</a><span class="doccomment">/// Temporary wrapper for init_var_wf
-<a href=#13 id=13 data-nosnippet>13</a></span><span class="kw">pub fn </span>init_var_wf(context: <span class="kw-2">&amp;</span>RisqContext) -&gt; RisqResult&lt;VarWf&gt; {
-<a href=#14 id=14 data-nosnippet>14</a>    <span class="kw">let </span>global = context.as_global();
-<a href=#15 id=15 data-nosnippet>15</a>    <span class="prelude-val">Ok</span>(lib_init_var_wf(<span class="kw-2">&amp;</span>global, <span class="kw-2">&amp;</span>context.hamiltonian, <span class="kw-2">&amp;</span>context.excitation_generator))
-<a href=#16 id=16 data-nosnippet>16</a>}
-<a href=#17 id=17 data-nosnippet>17</a>
-<a href=#18 id=18 data-nosnippet>18</a><span class="doccomment">/// Temporary wrapper for variational
-<a href=#19 id=19 data-nosnippet>19</a></span><span class="kw">pub fn </span>variational(context: <span class="kw-2">&amp;mut </span>RisqContext, wf: <span class="kw-2">&amp;mut </span>VarWf) -&gt; RisqResult&lt;f64&gt; {
-<a href=#20 id=20 data-nosnippet>20</a>    <span class="kw">let </span>global = context.as_global();
-<a href=#21 id=21 data-nosnippet>21</a>    lib_variational(<span class="kw-2">&amp;</span>global, <span class="kw-2">&amp;</span>context.hamiltonian, <span class="kw-2">&amp;</span>context.excitation_generator, wf);
-<a href=#22 id=22 data-nosnippet>22</a>    <span class="prelude-val">Ok</span>(wf.wf.energy)
-<a href=#23 id=23 data-nosnippet>23</a>}
-<a href=#24 id=24 data-nosnippet>24</a>
-<a href=#25 id=25 data-nosnippet>25</a><span class="doccomment">/// Temporary wrapper for perturbative
-<a href=#26 id=26 data-nosnippet>26</a></span><span class="kw">pub fn </span>perturbative(context: <span class="kw-2">&amp;</span>RisqContext, wf: <span class="kw-2">&amp;</span><span class="kw">crate</span>::wf::Wf) -&gt; RisqResult&lt;f64&gt; {
-<a href=#27 id=27 data-nosnippet>27</a>    <span class="kw">let </span>global = context.as_global();
-<a href=#28 id=28 data-nosnippet>28</a>    lib_perturbative(<span class="kw-2">&amp;</span>global, <span class="kw-2">&amp;</span>context.hamiltonian, <span class="kw-2">&amp;</span>context.excitation_generator, wf);
-<a href=#29 id=29 data-nosnippet>29</a>    <span class="comment">// TODO: Return actual PT2 energy
-<a href=#30 id=30 data-nosnippet>30</a>    </span><span class="prelude-val">Ok</span>(<span class="number">0.0</span>)
-<a href=#31 id=31 data-nosnippet>31</a>}</code></pre></div></section></main></body></html>
+<a href=#7 id=7 data-nosnippet>7</a><span class="kw">use </span><span class="kw">crate</span>::wf::{init_var_wf <span class="kw">as </span>lib_init_var_wf, VarWf};
+<a href=#8 id=8 data-nosnippet>8</a><span class="kw">use </span><span class="kw">crate</span>::var::variational <span class="kw">as </span>lib_variational;
+<a href=#9 id=9 data-nosnippet>9</a><span class="kw">use </span><span class="kw">crate</span>::pt::perturbative <span class="kw">as </span>lib_perturbative;
+<a href=#10 id=10 data-nosnippet>10</a>
+<a href=#11 id=11 data-nosnippet>11</a><span class="doccomment">/// Temporary wrapper for init_var_wf
+<a href=#12 id=12 data-nosnippet>12</a></span><span class="kw">pub fn </span>init_var_wf(context: <span class="kw-2">&amp;</span>RisqContext) -&gt; RisqResult&lt;VarWf&gt; {
+<a href=#13 id=13 data-nosnippet>13</a>    <span class="kw">let </span>global = context.as_global();
+<a href=#14 id=14 data-nosnippet>14</a>    <span class="prelude-val">Ok</span>(lib_init_var_wf(<span class="kw-2">&amp;</span>global, <span class="kw-2">&amp;</span>context.hamiltonian, <span class="kw-2">&amp;</span>context.excitation_generator))
+<a href=#15 id=15 data-nosnippet>15</a>}
+<a href=#16 id=16 data-nosnippet>16</a>
+<a href=#17 id=17 data-nosnippet>17</a><span class="doccomment">/// Temporary wrapper for variational
+<a href=#18 id=18 data-nosnippet>18</a></span><span class="kw">pub fn </span>variational(context: <span class="kw-2">&amp;mut </span>RisqContext, wf: <span class="kw-2">&amp;mut </span>VarWf) -&gt; RisqResult&lt;f64&gt; {
+<a href=#19 id=19 data-nosnippet>19</a>    <span class="kw">let </span>global = context.as_global();
+<a href=#20 id=20 data-nosnippet>20</a>    lib_variational(<span class="kw-2">&amp;</span>global, <span class="kw-2">&amp;</span>context.hamiltonian, <span class="kw-2">&amp;</span>context.excitation_generator, wf);
+<a href=#21 id=21 data-nosnippet>21</a>    <span class="prelude-val">Ok</span>(wf.wf.energy)
+<a href=#22 id=22 data-nosnippet>22</a>}
+<a href=#23 id=23 data-nosnippet>23</a>
+<a href=#24 id=24 data-nosnippet>24</a><span class="doccomment">/// Temporary wrapper for perturbative
+<a href=#25 id=25 data-nosnippet>25</a></span><span class="kw">pub fn </span>perturbative(context: <span class="kw-2">&amp;</span>RisqContext, wf: <span class="kw-2">&amp;</span><span class="kw">crate</span>::wf::Wf) -&gt; RisqResult&lt;f64&gt; {
+<a href=#26 id=26 data-nosnippet>26</a>    <span class="kw">let </span>global = context.as_global();
+<a href=#27 id=27 data-nosnippet>27</a>    <span class="kw">let </span>(e_pt2, _std_dev) = lib_perturbative(<span class="kw-2">&amp;</span>global, <span class="kw-2">&amp;</span>context.hamiltonian, <span class="kw-2">&amp;</span>context.excitation_generator, wf);
+<a href=#28 id=28 data-nosnippet>28</a>    <span class="prelude-val">Ok</span>(e_pt2)
+<a href=#29 id=29 data-nosnippet>29</a>}</code></pre></div></section></main></body></html>

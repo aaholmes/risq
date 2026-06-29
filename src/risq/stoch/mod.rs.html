@@ -81,304 +81,320 @@
 <a href=#81 id=81 data-nosnippet>81</a>    </span><span class="kw">pub </span>sum_hc_squared_all_dets_orbs: f64,
 <a href=#82 id=82 data-nosnippet>82</a>}
 <a href=#83 id=83 data-nosnippet>83</a>
-<a href=#84 id=84 data-nosnippet>84</a><span class="doccomment">/// Represents a potential starting point for sampling an excitation.
-<a href=#85 id=85 data-nosnippet>85</a>///
-<a href=#86 id=86 data-nosnippet>86</a>/// Contains a reference to a source determinant (`det`) and the specific initial
-<a href=#87 id=87 data-nosnippet>87</a>/// orbital(s) (`init`) and spin (`is_alpha`) from which an excitation originates.
-<a href=#88 id=88 data-nosnippet>88</a>/// It also stores pre-calculated sums of Hamiltonian estimates (`sum_*_h`) and
-<a href=#89 id=89 data-nosnippet>89</a>/// wavefunction-weighted estimates (`sum_*_hc`) over all possible *target* excitations
-<a href=#90 id=90 data-nosnippet>90</a>/// originating from this specific `det`/`init`/`is_alpha` combination that fall *below*
-<a href=#91 id=91 data-nosnippet>91</a>/// the deterministic threshold (`eps_pt_dtm`). These sums are used to build the
-<a href=#92 id=92 data-nosnippet>92</a>/// `ScreenedSampler`'s Alias tables.
-<a href=#93 id=93 data-nosnippet>93</a></span><span class="attr">#[derive(Clone, Copy, Debug)]
-<a href=#94 id=94 data-nosnippet>94</a></span><span class="kw">pub struct </span>DetOrbSample&lt;<span class="lifetime">'a</span>&gt; {
-<a href=#95 id=95 data-nosnippet>95</a>    <span class="doccomment">/// Reference to the source determinant (`i`). Lifetime `'a` ensures it lives as long as the source `Wf`.
-<a href=#96 id=96 data-nosnippet>96</a>    </span><span class="kw">pub </span>det: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Det,
-<a href=#97 id=97 data-nosnippet>97</a>    <span class="doccomment">/// The initial orbital(s) the excitation originates from.
-<a href=#98 id=98 data-nosnippet>98</a>    </span><span class="kw">pub </span>init: Orbs,
-<a href=#99 id=99 data-nosnippet>99</a>    <span class="doccomment">/// The spin channel of the excitation (None for opposite-spin doubles).
-<a href=#100 id=100 data-nosnippet>100</a>    </span><span class="kw">pub </span>is_alpha: <span class="prelude-ty">Option</span>&lt;bool&gt;,
-<a href=#101 id=101 data-nosnippet>101</a>    <span class="doccomment">/// Sum of `|H_ai|` over all target excitations `a` originating from this `det`/`init`/`is_alpha`
-<a href=#102 id=102 data-nosnippet>102</a>    /// that were screened out (i.e., below `eps_pt_dtm`).
-<a href=#103 id=103 data-nosnippet>103</a>    </span><span class="kw">pub </span>sum_abs_h: f64,
-<a href=#104 id=104 data-nosnippet>104</a>    <span class="doccomment">/// Sum of `H_ai^2` over all target excitations `a` originating from this `det`/`init`/`is_alpha`
-<a href=#105 id=105 data-nosnippet>105</a>    /// that were screened out.
-<a href=#106 id=106 data-nosnippet>106</a>    </span><span class="kw">pub </span>sum_h_squared: f64,
-<a href=#107 id=107 data-nosnippet>107</a>    <span class="doccomment">/// Sum of `|H_ai * c_i|` over all target excitations `a` originating from this `det`/`init`/`is_alpha`
-<a href=#108 id=108 data-nosnippet>108</a>    /// that were screened out. Used for `AbsHc` importance sampling distribution.
-<a href=#109 id=109 data-nosnippet>109</a>    </span><span class="kw">pub </span>sum_abs_hc: f64,
-<a href=#110 id=110 data-nosnippet>110</a>    <span class="doccomment">/// Sum of `(H_ai * c_i)^2` over all target excitations `a` originating from this `det`/`init`/`is_alpha`
-<a href=#111 id=111 data-nosnippet>111</a>    /// that were screened out. Used for `HcSquared` importance sampling distribution.
-<a href=#112 id=112 data-nosnippet>112</a>    </span><span class="kw">pub </span>sum_hc_squared: f64,
-<a href=#113 id=113 data-nosnippet>113</a>}
-<a href=#114 id=114 data-nosnippet>114</a>
-<a href=#115 id=115 data-nosnippet>115</a><span class="kw">impl </span>PartialEq <span class="kw">for </span>DetOrbSample&lt;<span class="lifetime">'_</span>&gt; {
-<a href=#116 id=116 data-nosnippet>116</a>    <span class="doccomment">/// Equality based on determinant configuration, initial orbitals, and spin channel.
-<a href=#117 id=117 data-nosnippet>117</a>    </span><span class="kw">fn </span>eq(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; bool {
-<a href=#118 id=118 data-nosnippet>118</a>        <span class="self">self</span>.det.config == other.det.config <span class="comment">// Use Config's PartialEq
-<a href=#119 id=119 data-nosnippet>119</a>            </span>&amp;&amp; <span class="self">self</span>.init == other.init
-<a href=#120 id=120 data-nosnippet>120</a>            &amp;&amp; <span class="self">self</span>.is_alpha == other.is_alpha
-<a href=#121 id=121 data-nosnippet>121</a>    }
-<a href=#122 id=122 data-nosnippet>122</a>}
-<a href=#123 id=123 data-nosnippet>123</a><span class="kw">impl </span>Eq <span class="kw">for </span>DetOrbSample&lt;<span class="lifetime">'_</span>&gt; {}
+<a href=#84 id=84 data-nosnippet>84</a><span class="kw">impl </span>ScreenedSampler&lt;<span class="lifetime">'_</span>&gt; {
+<a href=#85 id=85 data-nosnippet>85</a>    <span class="doccomment">/// Returns `true` if there are no determinant/orbital pairs to sample from.
+<a href=#86 id=86 data-nosnippet>86</a>    ///
+<a href=#87 id=87 data-nosnippet>87</a>    /// This happens when every screened contribution was handled deterministically
+<a href=#88 id=88 data-nosnippet>88</a>    /// (all `sum_abs_h == 0`), in which case the stochastic correction is exactly zero.
+<a href=#89 id=89 data-nosnippet>89</a>    </span><span class="kw">pub fn </span>is_empty(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+<a href=#90 id=90 data-nosnippet>90</a>        <span class="self">self</span>.elements.is_empty()
+<a href=#91 id=91 data-nosnippet>91</a>    }
+<a href=#92 id=92 data-nosnippet>92</a>}
+<a href=#93 id=93 data-nosnippet>93</a>
+<a href=#94 id=94 data-nosnippet>94</a><span class="doccomment">/// Represents a potential starting point for sampling an excitation.
+<a href=#95 id=95 data-nosnippet>95</a>///
+<a href=#96 id=96 data-nosnippet>96</a>/// Contains a reference to a source determinant (`det`) and the specific initial
+<a href=#97 id=97 data-nosnippet>97</a>/// orbital(s) (`init`) and spin (`is_alpha`) from which an excitation originates.
+<a href=#98 id=98 data-nosnippet>98</a>/// It also stores pre-calculated sums of Hamiltonian estimates (`sum_*_h`) and
+<a href=#99 id=99 data-nosnippet>99</a>/// wavefunction-weighted estimates (`sum_*_hc`) over all possible *target* excitations
+<a href=#100 id=100 data-nosnippet>100</a>/// originating from this specific `det`/`init`/`is_alpha` combination that fall *below*
+<a href=#101 id=101 data-nosnippet>101</a>/// the deterministic threshold (`eps_pt_dtm`). These sums are used to build the
+<a href=#102 id=102 data-nosnippet>102</a>/// `ScreenedSampler`'s Alias tables.
+<a href=#103 id=103 data-nosnippet>103</a></span><span class="attr">#[derive(Clone, Copy, Debug)]
+<a href=#104 id=104 data-nosnippet>104</a></span><span class="kw">pub struct </span>DetOrbSample&lt;<span class="lifetime">'a</span>&gt; {
+<a href=#105 id=105 data-nosnippet>105</a>    <span class="doccomment">/// Reference to the source determinant (`i`). Lifetime `'a` ensures it lives as long as the source `Wf`.
+<a href=#106 id=106 data-nosnippet>106</a>    </span><span class="kw">pub </span>det: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Det,
+<a href=#107 id=107 data-nosnippet>107</a>    <span class="doccomment">/// The initial orbital(s) the excitation originates from.
+<a href=#108 id=108 data-nosnippet>108</a>    </span><span class="kw">pub </span>init: Orbs,
+<a href=#109 id=109 data-nosnippet>109</a>    <span class="doccomment">/// The spin channel of the excitation (None for opposite-spin doubles).
+<a href=#110 id=110 data-nosnippet>110</a>    </span><span class="kw">pub </span>is_alpha: <span class="prelude-ty">Option</span>&lt;bool&gt;,
+<a href=#111 id=111 data-nosnippet>111</a>    <span class="doccomment">/// Sum of `|H_ai|` over all target excitations `a` originating from this `det`/`init`/`is_alpha`
+<a href=#112 id=112 data-nosnippet>112</a>    /// that were screened out (i.e., below `eps_pt_dtm`).
+<a href=#113 id=113 data-nosnippet>113</a>    </span><span class="kw">pub </span>sum_abs_h: f64,
+<a href=#114 id=114 data-nosnippet>114</a>    <span class="doccomment">/// Sum of `H_ai^2` over all target excitations `a` originating from this `det`/`init`/`is_alpha`
+<a href=#115 id=115 data-nosnippet>115</a>    /// that were screened out.
+<a href=#116 id=116 data-nosnippet>116</a>    </span><span class="kw">pub </span>sum_h_squared: f64,
+<a href=#117 id=117 data-nosnippet>117</a>    <span class="doccomment">/// Sum of `|H_ai * c_i|` over all target excitations `a` originating from this `det`/`init`/`is_alpha`
+<a href=#118 id=118 data-nosnippet>118</a>    /// that were screened out. Used for `AbsHc` importance sampling distribution.
+<a href=#119 id=119 data-nosnippet>119</a>    </span><span class="kw">pub </span>sum_abs_hc: f64,
+<a href=#120 id=120 data-nosnippet>120</a>    <span class="doccomment">/// Sum of `(H_ai * c_i)^2` over all target excitations `a` originating from this `det`/`init`/`is_alpha`
+<a href=#121 id=121 data-nosnippet>121</a>    /// that were screened out. Used for `HcSquared` importance sampling distribution.
+<a href=#122 id=122 data-nosnippet>122</a>    </span><span class="kw">pub </span>sum_hc_squared: f64,
+<a href=#123 id=123 data-nosnippet>123</a>}
 <a href=#124 id=124 data-nosnippet>124</a>
-<a href=#125 id=125 data-nosnippet>125</a><span class="kw">impl </span>Hash <span class="kw">for </span>DetOrbSample&lt;<span class="lifetime">'_</span>&gt; {
-<a href=#126 id=126 data-nosnippet>126</a>    <span class="doccomment">/// Hashes based on determinant configuration, initial orbitals, and spin channel. Consistent with `PartialEq`.
-<a href=#127 id=127 data-nosnippet>127</a>    </span><span class="kw">fn </span>hash&lt;H: Hasher&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, state: <span class="kw-2">&amp;mut </span>H) {
-<a href=#128 id=128 data-nosnippet>128</a>        <span class="self">self</span>.det.config.hash(state);
-<a href=#129 id=129 data-nosnippet>129</a>        <span class="self">self</span>.init.hash(state);
-<a href=#130 id=130 data-nosnippet>130</a>        <span class="self">self</span>.is_alpha.hash(state);
+<a href=#125 id=125 data-nosnippet>125</a><span class="kw">impl </span>PartialEq <span class="kw">for </span>DetOrbSample&lt;<span class="lifetime">'_</span>&gt; {
+<a href=#126 id=126 data-nosnippet>126</a>    <span class="doccomment">/// Equality based on determinant configuration, initial orbitals, and spin channel.
+<a href=#127 id=127 data-nosnippet>127</a>    </span><span class="kw">fn </span>eq(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; bool {
+<a href=#128 id=128 data-nosnippet>128</a>        <span class="self">self</span>.det.config == other.det.config <span class="comment">// Use Config's PartialEq
+<a href=#129 id=129 data-nosnippet>129</a>            </span>&amp;&amp; <span class="self">self</span>.init == other.init
+<a href=#130 id=130 data-nosnippet>130</a>            &amp;&amp; <span class="self">self</span>.is_alpha == other.is_alpha
 <a href=#131 id=131 data-nosnippet>131</a>    }
 <a href=#132 id=132 data-nosnippet>132</a>}
-<a href=#133 id=133 data-nosnippet>133</a>
-<a href=#134 id=134 data-nosnippet>134</a><span class="doccomment">/// Creates a `ScreenedSampler` from a vector of `DetOrbSample` instances.
-<a href=#135 id=135 data-nosnippet>135</a>///
-<a href=#136 id=136 data-nosnippet>136</a>/// Calculates the total sums (`sum_*_all_dets_orbs`) and constructs the Alias tables
-<a href=#137 id=137 data-nosnippet>137</a>/// (`det_orb_sampler_*`) based on the normalized `sum_abs_hc` and `sum_hc_squared` values
-<a href=#138 id=138 data-nosnippet>138</a>/// from the input `det_orbs`. Filters out any `DetOrbSample` with zero probability (`sum_abs_h == 0.0`).
-<a href=#139 id=139 data-nosnippet>139</a>///
-<a href=#140 id=140 data-nosnippet>140</a>/// # Arguments
-<a href=#141 id=141 data-nosnippet>141</a>/// * `det_orbs`: A vector containing all `DetOrbSample` instances representing the space to be sampled.
-<a href=#142 id=142 data-nosnippet>142</a>///
-<a href=#143 id=143 data-nosnippet>143</a>/// # Returns
-<a href=#144 id=144 data-nosnippet>144</a>/// An initialized `ScreenedSampler` ready for O(1) sampling.
-<a href=#145 id=145 data-nosnippet>145</a></span><span class="kw">pub fn </span>generate_screened_sampler(det_orbs: Vec&lt;DetOrbSample&gt;) -&gt; ScreenedSampler {
-<a href=#146 id=146 data-nosnippet>146</a>    <span class="comment">// pub fn generate_screened_sampler&lt;'a&gt;(eps: f64, det_orbs: &amp;'a Vec&lt;DetOrbSample&gt;) -&gt; ScreenedSampler&lt;'a&gt; {
-<a href=#147 id=147 data-nosnippet>147</a>
-<a href=#148 id=148 data-nosnippet>148</a>    </span><span class="macro">println!</span>(<span class="string">"Generating screened sampler of size {}"</span>, det_orbs.len());
-<a href=#149 id=149 data-nosnippet>149</a>
-<a href=#150 id=150 data-nosnippet>150</a>    <span class="comment">// Normalize probs (both |Hc| and (Hc)^2)
-<a href=#151 id=151 data-nosnippet>151</a>    </span><span class="kw">let </span><span class="kw-2">mut </span>det_orbs_nonzero: Vec&lt;DetOrbSample&gt; = Vec::with_capacity(det_orbs.len());
-<a href=#152 id=152 data-nosnippet>152</a>    <span class="kw">let </span><span class="kw-2">mut </span>probs_abs_hc: Vec&lt;f64&gt; = Vec::with_capacity(det_orbs.len());
-<a href=#153 id=153 data-nosnippet>153</a>    <span class="kw">let </span><span class="kw-2">mut </span>probs_hc_squared: Vec&lt;f64&gt; = Vec::with_capacity(det_orbs.len());
-<a href=#154 id=154 data-nosnippet>154</a>
-<a href=#155 id=155 data-nosnippet>155</a>    <span class="kw">let </span>sum_abs_hc_all_dets_orbs: f64 = det_orbs
-<a href=#156 id=156 data-nosnippet>156</a>        .iter()
-<a href=#157 id=157 data-nosnippet>157</a>        .fold(<span class="number">0f64</span>, |sum, <span class="kw-2">&amp;</span>val| sum + val.sum_abs_hc <span class="kw">as </span>f64);
-<a href=#158 id=158 data-nosnippet>158</a>    <span class="kw">let </span>sum_hc_squared_all_dets_orbs: f64 = det_orbs
-<a href=#159 id=159 data-nosnippet>159</a>        .iter()
-<a href=#160 id=160 data-nosnippet>160</a>        .fold(<span class="number">0f64</span>, |sum, <span class="kw-2">&amp;</span>val| sum + val.sum_hc_squared <span class="kw">as </span>f64);
-<a href=#161 id=161 data-nosnippet>161</a>
-<a href=#162 id=162 data-nosnippet>162</a>    <span class="kw">for </span>val <span class="kw">in </span>det_orbs.iter() {
-<a href=#163 id=163 data-nosnippet>163</a>        <span class="kw">if </span>val.sum_abs_h != <span class="number">0.0 </span>{
-<a href=#164 id=164 data-nosnippet>164</a>            det_orbs_nonzero.push(<span class="kw-2">*</span>val);
-<a href=#165 id=165 data-nosnippet>165</a>            probs_abs_hc.push(val.sum_abs_hc / sum_abs_hc_all_dets_orbs);
-<a href=#166 id=166 data-nosnippet>166</a>            probs_hc_squared.push(val.sum_hc_squared / sum_hc_squared_all_dets_orbs);
-<a href=#167 id=167 data-nosnippet>167</a>        }
-<a href=#168 id=168 data-nosnippet>168</a>    }
-<a href=#169 id=169 data-nosnippet>169</a>
-<a href=#170 id=170 data-nosnippet>170</a>    <span class="macro">println!</span>(<span class="string">"Done generating screened sampler of size {}"</span>, det_orbs.len());
+<a href=#133 id=133 data-nosnippet>133</a><span class="kw">impl </span>Eq <span class="kw">for </span>DetOrbSample&lt;<span class="lifetime">'_</span>&gt; {}
+<a href=#134 id=134 data-nosnippet>134</a>
+<a href=#135 id=135 data-nosnippet>135</a><span class="kw">impl </span>Hash <span class="kw">for </span>DetOrbSample&lt;<span class="lifetime">'_</span>&gt; {
+<a href=#136 id=136 data-nosnippet>136</a>    <span class="doccomment">/// Hashes based on determinant configuration, initial orbitals, and spin channel. Consistent with `PartialEq`.
+<a href=#137 id=137 data-nosnippet>137</a>    </span><span class="kw">fn </span>hash&lt;H: Hasher&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, state: <span class="kw-2">&amp;mut </span>H) {
+<a href=#138 id=138 data-nosnippet>138</a>        <span class="self">self</span>.det.config.hash(state);
+<a href=#139 id=139 data-nosnippet>139</a>        <span class="self">self</span>.init.hash(state);
+<a href=#140 id=140 data-nosnippet>140</a>        <span class="self">self</span>.is_alpha.hash(state);
+<a href=#141 id=141 data-nosnippet>141</a>    }
+<a href=#142 id=142 data-nosnippet>142</a>}
+<a href=#143 id=143 data-nosnippet>143</a>
+<a href=#144 id=144 data-nosnippet>144</a><span class="doccomment">/// Creates a `ScreenedSampler` from a vector of `DetOrbSample` instances.
+<a href=#145 id=145 data-nosnippet>145</a>///
+<a href=#146 id=146 data-nosnippet>146</a>/// Calculates the total sums (`sum_*_all_dets_orbs`) and constructs the Alias tables
+<a href=#147 id=147 data-nosnippet>147</a>/// (`det_orb_sampler_*`) based on the normalized `sum_abs_hc` and `sum_hc_squared` values
+<a href=#148 id=148 data-nosnippet>148</a>/// from the input `det_orbs`. Filters out any `DetOrbSample` with zero probability (`sum_abs_h == 0.0`).
+<a href=#149 id=149 data-nosnippet>149</a>///
+<a href=#150 id=150 data-nosnippet>150</a>/// # Arguments
+<a href=#151 id=151 data-nosnippet>151</a>/// * `det_orbs`: A vector containing all `DetOrbSample` instances representing the space to be sampled.
+<a href=#152 id=152 data-nosnippet>152</a>///
+<a href=#153 id=153 data-nosnippet>153</a>/// # Returns
+<a href=#154 id=154 data-nosnippet>154</a>/// An initialized `ScreenedSampler` ready for O(1) sampling.
+<a href=#155 id=155 data-nosnippet>155</a></span><span class="kw">pub fn </span>generate_screened_sampler(det_orbs: Vec&lt;DetOrbSample&gt;) -&gt; ScreenedSampler {
+<a href=#156 id=156 data-nosnippet>156</a>    <span class="comment">// pub fn generate_screened_sampler&lt;'a&gt;(eps: f64, det_orbs: &amp;'a Vec&lt;DetOrbSample&gt;) -&gt; ScreenedSampler&lt;'a&gt; {
+<a href=#157 id=157 data-nosnippet>157</a>
+<a href=#158 id=158 data-nosnippet>158</a>    </span><span class="macro">println!</span>(<span class="string">"Generating screened sampler of size {}"</span>, det_orbs.len());
+<a href=#159 id=159 data-nosnippet>159</a>
+<a href=#160 id=160 data-nosnippet>160</a>    <span class="comment">// Normalize probs (both |Hc| and (Hc)^2)
+<a href=#161 id=161 data-nosnippet>161</a>    </span><span class="kw">let </span><span class="kw-2">mut </span>det_orbs_nonzero: Vec&lt;DetOrbSample&gt; = Vec::with_capacity(det_orbs.len());
+<a href=#162 id=162 data-nosnippet>162</a>    <span class="kw">let </span><span class="kw-2">mut </span>probs_abs_hc: Vec&lt;f64&gt; = Vec::with_capacity(det_orbs.len());
+<a href=#163 id=163 data-nosnippet>163</a>    <span class="kw">let </span><span class="kw-2">mut </span>probs_hc_squared: Vec&lt;f64&gt; = Vec::with_capacity(det_orbs.len());
+<a href=#164 id=164 data-nosnippet>164</a>
+<a href=#165 id=165 data-nosnippet>165</a>    <span class="kw">let </span>sum_abs_hc_all_dets_orbs: f64 = det_orbs
+<a href=#166 id=166 data-nosnippet>166</a>        .iter()
+<a href=#167 id=167 data-nosnippet>167</a>        .fold(<span class="number">0f64</span>, |sum, <span class="kw-2">&amp;</span>val| sum + val.sum_abs_hc <span class="kw">as </span>f64);
+<a href=#168 id=168 data-nosnippet>168</a>    <span class="kw">let </span>sum_hc_squared_all_dets_orbs: f64 = det_orbs
+<a href=#169 id=169 data-nosnippet>169</a>        .iter()
+<a href=#170 id=170 data-nosnippet>170</a>        .fold(<span class="number">0f64</span>, |sum, <span class="kw-2">&amp;</span>val| sum + val.sum_hc_squared <span class="kw">as </span>f64);
 <a href=#171 id=171 data-nosnippet>171</a>
-<a href=#172 id=172 data-nosnippet>172</a>    ScreenedSampler {
-<a href=#173 id=173 data-nosnippet>173</a>        elements: det_orbs_nonzero,
-<a href=#174 id=174 data-nosnippet>174</a>        det_orb_sampler_abs_hc: Alias::new(probs_abs_hc),
-<a href=#175 id=175 data-nosnippet>175</a>        det_orb_sampler_hc_squared: Alias::new(probs_hc_squared),
-<a href=#176 id=176 data-nosnippet>176</a>        sum_abs_hc_all_dets_orbs,
-<a href=#177 id=177 data-nosnippet>177</a>        sum_hc_squared_all_dets_orbs,
+<a href=#172 id=172 data-nosnippet>172</a>    <span class="kw">for </span>val <span class="kw">in </span>det_orbs.iter() {
+<a href=#173 id=173 data-nosnippet>173</a>        <span class="kw">if </span>val.sum_abs_h != <span class="number">0.0 </span>{
+<a href=#174 id=174 data-nosnippet>174</a>            det_orbs_nonzero.push(<span class="kw-2">*</span>val);
+<a href=#175 id=175 data-nosnippet>175</a>            probs_abs_hc.push(val.sum_abs_hc / sum_abs_hc_all_dets_orbs);
+<a href=#176 id=176 data-nosnippet>176</a>            probs_hc_squared.push(val.sum_hc_squared / sum_hc_squared_all_dets_orbs);
+<a href=#177 id=177 data-nosnippet>177</a>        }
 <a href=#178 id=178 data-nosnippet>178</a>    }
-<a href=#179 id=179 data-nosnippet>179</a>}
-<a href=#180 id=180 data-nosnippet>180</a>
-<a href=#181 id=181 data-nosnippet>181</a><span class="doccomment">/// Performs one full importance sampling step for the screened (stochastic) part of H*psi.
-<a href=#182 id=182 data-nosnippet>182</a>///
-<a href=#183 id=183 data-nosnippet>183</a>/// This function combines two sampling steps:
-<a href=#184 id=184 data-nosnippet>184</a>/// 1. **Sample Source:** Samples a `DetOrbSample` (representing source determinant `i` and
-<a href=#185 id=185 data-nosnippet>185</a>///    initial orbitals `init`) from the `screened_sampler` using Alias sampling according
-<a href=#186 id=186 data-nosnippet>186</a>///    to the specified `imp_sample_dist` (`|Hc|` or `(Hc)^2`). This gives `det_orb_sample`
-<a href=#187 id=187 data-nosnippet>187</a>///    and its sampling probability `det_orb_prob`.
-<a href=#188 id=188 data-nosnippet>188</a>/// 2. **Sample Target:** Samples a specific target excitation (`StoredExcite`) from the list
-<a href=#189 id=189 data-nosnippet>189</a>///    associated with the chosen `det_orb_sample` (using `excite_gen`). This step uses
-<a href=#190 id=190 data-nosnippet>190</a>///    CDF sampling (`sample_cdf`) weighted by the same `imp_sample_dist`. This gives
-<a href=#191 id=191 data-nosnippet>191</a>///    `sampled_excite` and its conditional probability `sampled_excite_prob`.
+<a href=#179 id=179 data-nosnippet>179</a>
+<a href=#180 id=180 data-nosnippet>180</a>    <span class="macro">println!</span>(<span class="string">"Done generating screened sampler of size {}"</span>, det_orbs.len());
+<a href=#181 id=181 data-nosnippet>181</a>
+<a href=#182 id=182 data-nosnippet>182</a>    ScreenedSampler {
+<a href=#183 id=183 data-nosnippet>183</a>        elements: det_orbs_nonzero,
+<a href=#184 id=184 data-nosnippet>184</a>        det_orb_sampler_abs_hc: Alias::new(probs_abs_hc),
+<a href=#185 id=185 data-nosnippet>185</a>        det_orb_sampler_hc_squared: Alias::new(probs_hc_squared),
+<a href=#186 id=186 data-nosnippet>186</a>        sum_abs_hc_all_dets_orbs,
+<a href=#187 id=187 data-nosnippet>187</a>        sum_hc_squared_all_dets_orbs,
+<a href=#188 id=188 data-nosnippet>188</a>    }
+<a href=#189 id=189 data-nosnippet>189</a>}
+<a href=#190 id=190 data-nosnippet>190</a>
+<a href=#191 id=191 data-nosnippet>191</a><span class="doccomment">/// Performs one full importance sampling step for the screened (stochastic) part of H*psi.
 <a href=#192 id=192 data-nosnippet>192</a>///
-<a href=#193 id=193 data-nosnippet>193</a>/// It then reconstructs the full `Excite` object, applies it to the source determinant's
-<a href=#194 id=194 data-nosnippet>194</a>/// configuration, calculates the resulting determinant's coefficient (`H_ai * c_i`), and
-<a href=#195 id=195 data-nosnippet>195</a>/// returns the source `Det`, the `Excite`, the resulting `Det` (with coefficient but `diag=None`),
-<a href=#196 id=196 data-nosnippet>196</a>/// and the total probability (`det_orb_prob * sampled_excite_prob`).
-<a href=#197 id=197 data-nosnippet>197</a>/// Returns `None` for the `Det` tuple if the sampled excitation was invalid (e.g., target occupied).
-<a href=#198 id=198 data-nosnippet>198</a>///
-<a href=#199 id=199 data-nosnippet>199</a>/// # Arguments
-<a href=#200 id=200 data-nosnippet>200</a>/// * `screened_sampler`: The pre-computed sampler for source det/orb pairs.
-<a href=#201 id=201 data-nosnippet>201</a>/// * `imp_sample_dist`: The importance sampling distribution to use for both steps.
-<a href=#202 id=202 data-nosnippet>202</a>/// * `excite_gen`: Contains the lists of target excitations.
-<a href=#203 id=203 data-nosnippet>203</a>/// * `ham`: The Hamiltonian operator (needed to compute the final coefficient).
-<a href=#204 id=204 data-nosnippet>204</a>/// * `rand`: Mutable random number generator state.
-<a href=#205 id=205 data-nosnippet>205</a>///
-<a href=#206 id=206 data-nosnippet>206</a>/// # Returns
-<a href=#207 id=207 data-nosnippet>207</a>/// A tuple `(Option&lt;(source_det, excitation, target_det)&gt;, total_probability)`.
-<a href=#208 id=208 data-nosnippet>208</a></span><span class="kw">pub fn </span>matmul_sample_remaining(
-<a href=#209 id=209 data-nosnippet>209</a>    screened_sampler: <span class="kw-2">&amp;</span>ScreenedSampler,
-<a href=#210 id=210 data-nosnippet>210</a>    imp_sample_dist: ImpSampleDist,
-<a href=#211 id=211 data-nosnippet>211</a>    excite_gen: <span class="kw-2">&amp;</span>ExciteGenerator,
-<a href=#212 id=212 data-nosnippet>212</a>    ham: <span class="kw-2">&amp;</span>Ham,
-<a href=#213 id=213 data-nosnippet>213</a>    rand: <span class="kw-2">&amp;mut </span>Rand,
-<a href=#214 id=214 data-nosnippet>214</a>) -&gt; (<span class="prelude-ty">Option</span>&lt;(Det, Excite, Det)&gt;, f64) {
-<a href=#215 id=215 data-nosnippet>215</a>    <span class="kw">let </span>det_orb_sample: DetOrbSample;
-<a href=#216 id=216 data-nosnippet>216</a>    <span class="kw">let </span>det_orb_prob: f64;
-<a href=#217 id=217 data-nosnippet>217</a>    <span class="kw">let </span>sampled_excite: <span class="kw-2">&amp;</span>StoredExcite;
-<a href=#218 id=218 data-nosnippet>218</a>    <span class="kw">let </span>sampled_excite_prob: f64;
-<a href=#219 id=219 data-nosnippet>219</a>
-<a href=#220 id=220 data-nosnippet>220</a>    <span class="kw">match </span>imp_sample_dist {
-<a href=#221 id=221 data-nosnippet>221</a>        ImpSampleDist::AbsHc =&gt; {
-<a href=#222 id=222 data-nosnippet>222</a>            <span class="comment">// First, sample a (determinant, orbs) pair using Alias sampling with prob |Hc|
-<a href=#223 id=223 data-nosnippet>223</a>            </span><span class="kw">let </span>sample = screened_sampler
-<a href=#224 id=224 data-nosnippet>224</a>                .det_orb_sampler_abs_hc
-<a href=#225 id=225 data-nosnippet>225</a>                .sample_with_prob(rand);
-<a href=#226 id=226 data-nosnippet>226</a>            det_orb_sample = screened_sampler.elements[sample.<span class="number">0</span>];
-<a href=#227 id=227 data-nosnippet>227</a>            det_orb_prob = sample.<span class="number">1</span>;
-<a href=#228 id=228 data-nosnippet>228</a>            <span class="comment">// println!("Sampled det {}, prob {}", det_orb_sample, det_orb_prob);
-<a href=#229 id=229 data-nosnippet>229</a>
-<a href=#230 id=230 data-nosnippet>230</a>            // Sample excitation from this det/orb pair by binary search the stored cdf with prob |H|
-<a href=#231 id=231 data-nosnippet>231</a>            </span><span class="kw">match </span>det_orb_sample.is_alpha {
-<a href=#232 id=232 data-nosnippet>232</a>                <span class="prelude-val">None </span>=&gt; {
-<a href=#233 id=233 data-nosnippet>233</a>                    <span class="comment">// Opposite spin double
-<a href=#234 id=234 data-nosnippet>234</a>                    </span><span class="kw">let </span>sample2 = sample_cdf(
-<a href=#235 id=235 data-nosnippet>235</a>                        excite_gen
-<a href=#236 id=236 data-nosnippet>236</a>                            .opp_doub_sorted_list
-<a href=#237 id=237 data-nosnippet>237</a>                            .get(<span class="kw-2">&amp;</span>det_orb_sample.init)
-<a href=#238 id=238 data-nosnippet>238</a>                            .unwrap(),
-<a href=#239 id=239 data-nosnippet>239</a>                        <span class="kw-2">&amp;</span>ImpSampleDist::AbsHc,
-<a href=#240 id=240 data-nosnippet>240</a>                        <span class="prelude-val">Some</span>(det_orb_sample.sum_abs_h),
-<a href=#241 id=241 data-nosnippet>241</a>                        rand,
-<a href=#242 id=242 data-nosnippet>242</a>                    )
-<a href=#243 id=243 data-nosnippet>243</a>                    .unwrap();
-<a href=#244 id=244 data-nosnippet>244</a>                    sampled_excite = sample2.<span class="number">0</span>;
-<a href=#245 id=245 data-nosnippet>245</a>                    sampled_excite_prob = sample2.<span class="number">1</span>;
-<a href=#246 id=246 data-nosnippet>246</a>                }
-<a href=#247 id=247 data-nosnippet>247</a>                <span class="prelude-val">Some</span>(<span class="kw">_</span>) =&gt; {
-<a href=#248 id=248 data-nosnippet>248</a>                    <span class="kw">match </span>det_orb_sample.init {
-<a href=#249 id=249 data-nosnippet>249</a>                        Orbs::Double(<span class="kw">_</span>) =&gt; {
-<a href=#250 id=250 data-nosnippet>250</a>                            <span class="comment">// Same spin double
-<a href=#251 id=251 data-nosnippet>251</a>                            </span><span class="kw">let </span>sample2 = sample_cdf(
-<a href=#252 id=252 data-nosnippet>252</a>                                excite_gen
-<a href=#253 id=253 data-nosnippet>253</a>                                    .same_doub_sorted_list
-<a href=#254 id=254 data-nosnippet>254</a>                                    .get(<span class="kw-2">&amp;</span>det_orb_sample.init)
-<a href=#255 id=255 data-nosnippet>255</a>                                    .unwrap(),
-<a href=#256 id=256 data-nosnippet>256</a>                                <span class="kw-2">&amp;</span>ImpSampleDist::AbsHc,
-<a href=#257 id=257 data-nosnippet>257</a>                                <span class="prelude-val">Some</span>(det_orb_sample.sum_abs_h),
-<a href=#258 id=258 data-nosnippet>258</a>                                rand,
-<a href=#259 id=259 data-nosnippet>259</a>                            )
-<a href=#260 id=260 data-nosnippet>260</a>                            .unwrap();
-<a href=#261 id=261 data-nosnippet>261</a>                            sampled_excite = sample2.<span class="number">0</span>;
-<a href=#262 id=262 data-nosnippet>262</a>                            sampled_excite_prob = sample2.<span class="number">1</span>;
-<a href=#263 id=263 data-nosnippet>263</a>                        }
-<a href=#264 id=264 data-nosnippet>264</a>                        Orbs::Single(<span class="kw">_</span>) =&gt; {
-<a href=#265 id=265 data-nosnippet>265</a>                            <span class="comment">// Single
-<a href=#266 id=266 data-nosnippet>266</a>                            </span><span class="kw">let </span>sample2 = sample_cdf(
-<a href=#267 id=267 data-nosnippet>267</a>                                excite_gen
-<a href=#268 id=268 data-nosnippet>268</a>                                    .sing_sorted_list
-<a href=#269 id=269 data-nosnippet>269</a>                                    .get(<span class="kw-2">&amp;</span>det_orb_sample.init)
-<a href=#270 id=270 data-nosnippet>270</a>                                    .unwrap(),
-<a href=#271 id=271 data-nosnippet>271</a>                                <span class="kw-2">&amp;</span>ImpSampleDist::AbsHc,
-<a href=#272 id=272 data-nosnippet>272</a>                                <span class="prelude-val">Some</span>(det_orb_sample.sum_abs_h),
-<a href=#273 id=273 data-nosnippet>273</a>                                rand,
-<a href=#274 id=274 data-nosnippet>274</a>                            )
-<a href=#275 id=275 data-nosnippet>275</a>                            .unwrap();
-<a href=#276 id=276 data-nosnippet>276</a>                            sampled_excite = sample2.<span class="number">0</span>;
-<a href=#277 id=277 data-nosnippet>277</a>                            sampled_excite_prob = sample2.<span class="number">1</span>;
-<a href=#278 id=278 data-nosnippet>278</a>                        }
-<a href=#279 id=279 data-nosnippet>279</a>                    }
-<a href=#280 id=280 data-nosnippet>280</a>                }
-<a href=#281 id=281 data-nosnippet>281</a>            }
-<a href=#282 id=282 data-nosnippet>282</a>        }
-<a href=#283 id=283 data-nosnippet>283</a>        ImpSampleDist::HcSquared =&gt; {
-<a href=#284 id=284 data-nosnippet>284</a>            <span class="comment">// First, sample a (determinant, orbs) pair using Alias sampling with prob (Hc)^2
-<a href=#285 id=285 data-nosnippet>285</a>            </span><span class="kw">let </span>sample = screened_sampler
-<a href=#286 id=286 data-nosnippet>286</a>                .det_orb_sampler_hc_squared
-<a href=#287 id=287 data-nosnippet>287</a>                .sample_with_prob(rand);
-<a href=#288 id=288 data-nosnippet>288</a>            det_orb_sample = screened_sampler.elements[sample.<span class="number">0</span>];
-<a href=#289 id=289 data-nosnippet>289</a>            det_orb_prob = sample.<span class="number">1</span>;
-<a href=#290 id=290 data-nosnippet>290</a>
-<a href=#291 id=291 data-nosnippet>291</a>            <span class="comment">// Sample excitation from this det/orb pair by binary search the stored cdf with prob H^2
-<a href=#292 id=292 data-nosnippet>292</a>            </span><span class="kw">match </span>det_orb_sample.is_alpha {
-<a href=#293 id=293 data-nosnippet>293</a>                <span class="prelude-val">None </span>=&gt; {
-<a href=#294 id=294 data-nosnippet>294</a>                    <span class="comment">// Opposite spin double
-<a href=#295 id=295 data-nosnippet>295</a>                    </span><span class="kw">let </span>sample2 = sample_cdf(
-<a href=#296 id=296 data-nosnippet>296</a>                        excite_gen
-<a href=#297 id=297 data-nosnippet>297</a>                            .opp_doub_sorted_list
-<a href=#298 id=298 data-nosnippet>298</a>                            .get(<span class="kw-2">&amp;</span>det_orb_sample.init)
-<a href=#299 id=299 data-nosnippet>299</a>                            .unwrap(),
-<a href=#300 id=300 data-nosnippet>300</a>                        <span class="kw-2">&amp;</span>ImpSampleDist::HcSquared,
-<a href=#301 id=301 data-nosnippet>301</a>                        <span class="prelude-val">Some</span>(det_orb_sample.sum_h_squared),
-<a href=#302 id=302 data-nosnippet>302</a>                        rand,
-<a href=#303 id=303 data-nosnippet>303</a>                    )
-<a href=#304 id=304 data-nosnippet>304</a>                    .unwrap();
-<a href=#305 id=305 data-nosnippet>305</a>                    sampled_excite = sample2.<span class="number">0</span>;
-<a href=#306 id=306 data-nosnippet>306</a>                    sampled_excite_prob = sample2.<span class="number">1</span>;
-<a href=#307 id=307 data-nosnippet>307</a>                }
-<a href=#308 id=308 data-nosnippet>308</a>                <span class="prelude-val">Some</span>(<span class="kw">_</span>) =&gt; {
-<a href=#309 id=309 data-nosnippet>309</a>                    <span class="kw">match </span>det_orb_sample.init {
-<a href=#310 id=310 data-nosnippet>310</a>                        Orbs::Double(<span class="kw">_</span>) =&gt; {
-<a href=#311 id=311 data-nosnippet>311</a>                            <span class="comment">// Same spin double
-<a href=#312 id=312 data-nosnippet>312</a>                            </span><span class="kw">let </span>sample2 = sample_cdf(
-<a href=#313 id=313 data-nosnippet>313</a>                                excite_gen
-<a href=#314 id=314 data-nosnippet>314</a>                                    .same_doub_sorted_list
-<a href=#315 id=315 data-nosnippet>315</a>                                    .get(<span class="kw-2">&amp;</span>det_orb_sample.init)
-<a href=#316 id=316 data-nosnippet>316</a>                                    .unwrap(),
-<a href=#317 id=317 data-nosnippet>317</a>                                <span class="kw-2">&amp;</span>ImpSampleDist::HcSquared,
-<a href=#318 id=318 data-nosnippet>318</a>                                <span class="prelude-val">Some</span>(det_orb_sample.sum_h_squared),
-<a href=#319 id=319 data-nosnippet>319</a>                                rand,
-<a href=#320 id=320 data-nosnippet>320</a>                            )
-<a href=#321 id=321 data-nosnippet>321</a>                            .unwrap();
-<a href=#322 id=322 data-nosnippet>322</a>                            sampled_excite = sample2.<span class="number">0</span>;
-<a href=#323 id=323 data-nosnippet>323</a>                            sampled_excite_prob = sample2.<span class="number">1</span>;
-<a href=#324 id=324 data-nosnippet>324</a>                        }
-<a href=#325 id=325 data-nosnippet>325</a>                        Orbs::Single(<span class="kw">_</span>) =&gt; {
-<a href=#326 id=326 data-nosnippet>326</a>                            <span class="comment">// Single
-<a href=#327 id=327 data-nosnippet>327</a>                            </span><span class="kw">let </span>sample2 = sample_cdf(
-<a href=#328 id=328 data-nosnippet>328</a>                                excite_gen
-<a href=#329 id=329 data-nosnippet>329</a>                                    .sing_sorted_list
-<a href=#330 id=330 data-nosnippet>330</a>                                    .get(<span class="kw-2">&amp;</span>det_orb_sample.init)
-<a href=#331 id=331 data-nosnippet>331</a>                                    .unwrap(),
-<a href=#332 id=332 data-nosnippet>332</a>                                <span class="kw-2">&amp;</span>ImpSampleDist::HcSquared,
-<a href=#333 id=333 data-nosnippet>333</a>                                <span class="prelude-val">Some</span>(det_orb_sample.sum_h_squared),
-<a href=#334 id=334 data-nosnippet>334</a>                                rand,
-<a href=#335 id=335 data-nosnippet>335</a>                            )
-<a href=#336 id=336 data-nosnippet>336</a>                            .unwrap();
-<a href=#337 id=337 data-nosnippet>337</a>                            sampled_excite = sample2.<span class="number">0</span>;
-<a href=#338 id=338 data-nosnippet>338</a>                            sampled_excite_prob = sample2.<span class="number">1</span>;
-<a href=#339 id=339 data-nosnippet>339</a>                        }
-<a href=#340 id=340 data-nosnippet>340</a>                    }
-<a href=#341 id=341 data-nosnippet>341</a>                }
-<a href=#342 id=342 data-nosnippet>342</a>            }
-<a href=#343 id=343 data-nosnippet>343</a>        }
-<a href=#344 id=344 data-nosnippet>344</a>    }
-<a href=#345 id=345 data-nosnippet>345</a>
-<a href=#346 id=346 data-nosnippet>346</a>    <span class="comment">// Construct the excitation (for output)
-<a href=#347 id=347 data-nosnippet>347</a>    </span><span class="kw">let </span>excite = Excite {
-<a href=#348 id=348 data-nosnippet>348</a>        init: det_orb_sample.init,
-<a href=#349 id=349 data-nosnippet>349</a>        target: sampled_excite.target,
-<a href=#350 id=350 data-nosnippet>350</a>        abs_h: sampled_excite.abs_h,
-<a href=#351 id=351 data-nosnippet>351</a>        is_alpha: det_orb_sample.is_alpha,
-<a href=#352 id=352 data-nosnippet>352</a>    };
-<a href=#353 id=353 data-nosnippet>353</a>
-<a href=#354 id=354 data-nosnippet>354</a>    <span class="comment">// Apply the excitation to the sampled det
-<a href=#355 id=355 data-nosnippet>355</a>    </span><span class="kw">let </span>sampled_det = det_orb_sample.det.config.safe_excite_det(<span class="kw-2">&amp;</span>excite);
-<a href=#356 id=356 data-nosnippet>356</a>
-<a href=#357 id=357 data-nosnippet>357</a>    <span class="comment">// Compute total probability
-<a href=#358 id=358 data-nosnippet>358</a>    </span><span class="kw">let </span>prob_sampled_det: f64 = det_orb_prob * sampled_excite_prob;
-<a href=#359 id=359 data-nosnippet>359</a>
-<a href=#360 id=360 data-nosnippet>360</a>    <span class="kw">match </span>sampled_det {
-<a href=#361 id=361 data-nosnippet>361</a>        <span class="prelude-val">None </span>=&gt; (<span class="prelude-val">None</span>, prob_sampled_det), <span class="comment">// Proposed excitation would excite to already-occupied orbs
-<a href=#362 id=362 data-nosnippet>362</a>        </span><span class="prelude-val">Some</span>(d) =&gt; {
-<a href=#363 id=363 data-nosnippet>363</a>            <span class="comment">// Compute new det coefficient
-<a href=#364 id=364 data-nosnippet>364</a>            </span><span class="kw">let </span><span class="kw-2">mut </span>new_det_coeff = det_orb_sample.det.coeff;
-<a href=#365 id=365 data-nosnippet>365</a>            <span class="kw">match </span>det_orb_sample.init {
-<a href=#366 id=366 data-nosnippet>366</a>                Orbs::Double(<span class="kw">_</span>) =&gt; new_det_coeff <span class="kw-2">*</span>= ham.ham_doub(<span class="kw-2">&amp;</span>det_orb_sample.det.config, <span class="kw-2">&amp;</span>d),
-<a href=#367 id=367 data-nosnippet>367</a>                Orbs::Single(<span class="kw">_</span>) =&gt; new_det_coeff <span class="kw-2">*</span>= ham.ham_sing(<span class="kw-2">&amp;</span>det_orb_sample.det.config, <span class="kw-2">&amp;</span>d),
-<a href=#368 id=368 data-nosnippet>368</a>            }
-<a href=#369 id=369 data-nosnippet>369</a>            (
-<a href=#370 id=370 data-nosnippet>370</a>                <span class="prelude-val">Some</span>((
-<a href=#371 id=371 data-nosnippet>371</a>                    <span class="kw-2">*</span>det_orb_sample.det,
-<a href=#372 id=372 data-nosnippet>372</a>                    excite,
-<a href=#373 id=373 data-nosnippet>373</a>                    Det {
-<a href=#374 id=374 data-nosnippet>374</a>                        config: d,
-<a href=#375 id=375 data-nosnippet>375</a>                        coeff: new_det_coeff,
-<a href=#376 id=376 data-nosnippet>376</a>                        diag: <span class="prelude-val">None</span>, <span class="comment">// Compute diagonal element later, only if needed (since it would be the most expensive step)
-<a href=#377 id=377 data-nosnippet>377</a>                    </span>},
-<a href=#378 id=378 data-nosnippet>378</a>                )),
-<a href=#379 id=379 data-nosnippet>379</a>                prob_sampled_det,
-<a href=#380 id=380 data-nosnippet>380</a>            )
-<a href=#381 id=381 data-nosnippet>381</a>        }
-<a href=#382 id=382 data-nosnippet>382</a>    }
-<a href=#383 id=383 data-nosnippet>383</a>}
+<a href=#193 id=193 data-nosnippet>193</a>/// This function combines two sampling steps:
+<a href=#194 id=194 data-nosnippet>194</a>/// 1. **Sample Source:** Samples a `DetOrbSample` (representing source determinant `i` and
+<a href=#195 id=195 data-nosnippet>195</a>///    initial orbitals `init`) from the `screened_sampler` using Alias sampling according
+<a href=#196 id=196 data-nosnippet>196</a>///    to the specified `imp_sample_dist` (`|Hc|` or `(Hc)^2`). This gives `det_orb_sample`
+<a href=#197 id=197 data-nosnippet>197</a>///    and its sampling probability `det_orb_prob`.
+<a href=#198 id=198 data-nosnippet>198</a>/// 2. **Sample Target:** Samples a specific target excitation (`StoredExcite`) from the list
+<a href=#199 id=199 data-nosnippet>199</a>///    associated with the chosen `det_orb_sample` (using `excite_gen`). This step uses
+<a href=#200 id=200 data-nosnippet>200</a>///    CDF sampling (`sample_cdf`) weighted by the same `imp_sample_dist`. This gives
+<a href=#201 id=201 data-nosnippet>201</a>///    `sampled_excite` and its conditional probability `sampled_excite_prob`.
+<a href=#202 id=202 data-nosnippet>202</a>///
+<a href=#203 id=203 data-nosnippet>203</a>/// It then reconstructs the full `Excite` object, applies it to the source determinant's
+<a href=#204 id=204 data-nosnippet>204</a>/// configuration, calculates the resulting determinant's coefficient (`H_ai * c_i`), and
+<a href=#205 id=205 data-nosnippet>205</a>/// returns the source `Det`, the `Excite`, the resulting `Det` (with coefficient but `diag=None`),
+<a href=#206 id=206 data-nosnippet>206</a>/// and the total probability (`det_orb_prob * sampled_excite_prob`).
+<a href=#207 id=207 data-nosnippet>207</a>/// Returns `None` for the `Det` tuple if the sampled excitation was invalid (e.g., target occupied).
+<a href=#208 id=208 data-nosnippet>208</a>///
+<a href=#209 id=209 data-nosnippet>209</a>/// # Arguments
+<a href=#210 id=210 data-nosnippet>210</a>/// * `screened_sampler`: The pre-computed sampler for source det/orb pairs.
+<a href=#211 id=211 data-nosnippet>211</a>/// * `imp_sample_dist`: The importance sampling distribution to use for both steps.
+<a href=#212 id=212 data-nosnippet>212</a>/// * `excite_gen`: Contains the lists of target excitations.
+<a href=#213 id=213 data-nosnippet>213</a>/// * `ham`: The Hamiltonian operator (needed to compute the final coefficient).
+<a href=#214 id=214 data-nosnippet>214</a>/// * `rand`: Mutable random number generator state.
+<a href=#215 id=215 data-nosnippet>215</a>///
+<a href=#216 id=216 data-nosnippet>216</a>/// # Returns
+<a href=#217 id=217 data-nosnippet>217</a>/// A tuple `(Option&lt;(source_det, excitation, target_det)&gt;, total_probability)`.
+<a href=#218 id=218 data-nosnippet>218</a></span><span class="kw">pub fn </span>matmul_sample_remaining(
+<a href=#219 id=219 data-nosnippet>219</a>    screened_sampler: <span class="kw-2">&amp;</span>ScreenedSampler,
+<a href=#220 id=220 data-nosnippet>220</a>    imp_sample_dist: ImpSampleDist,
+<a href=#221 id=221 data-nosnippet>221</a>    excite_gen: <span class="kw-2">&amp;</span>ExciteGenerator,
+<a href=#222 id=222 data-nosnippet>222</a>    ham: <span class="kw-2">&amp;</span>Ham,
+<a href=#223 id=223 data-nosnippet>223</a>    rand: <span class="kw-2">&amp;mut </span>Rand,
+<a href=#224 id=224 data-nosnippet>224</a>) -&gt; (<span class="prelude-ty">Option</span>&lt;(Det, Excite, Det)&gt;, f64) {
+<a href=#225 id=225 data-nosnippet>225</a>    <span class="comment">// Nothing to sample (everything was captured deterministically): report no
+<a href=#226 id=226 data-nosnippet>226</a>    // valid sample rather than drawing from an empty distribution, which panics.
+<a href=#227 id=227 data-nosnippet>227</a>    </span><span class="kw">if </span>screened_sampler.is_empty() {
+<a href=#228 id=228 data-nosnippet>228</a>        <span class="kw">return </span>(<span class="prelude-val">None</span>, <span class="number">1.0</span>);
+<a href=#229 id=229 data-nosnippet>229</a>    }
+<a href=#230 id=230 data-nosnippet>230</a>
+<a href=#231 id=231 data-nosnippet>231</a>    <span class="kw">let </span>det_orb_sample: DetOrbSample;
+<a href=#232 id=232 data-nosnippet>232</a>    <span class="kw">let </span>det_orb_prob: f64;
+<a href=#233 id=233 data-nosnippet>233</a>    <span class="kw">let </span>sampled_excite: <span class="kw-2">&amp;</span>StoredExcite;
+<a href=#234 id=234 data-nosnippet>234</a>    <span class="kw">let </span>sampled_excite_prob: f64;
+<a href=#235 id=235 data-nosnippet>235</a>
+<a href=#236 id=236 data-nosnippet>236</a>    <span class="kw">match </span>imp_sample_dist {
+<a href=#237 id=237 data-nosnippet>237</a>        ImpSampleDist::AbsHc =&gt; {
+<a href=#238 id=238 data-nosnippet>238</a>            <span class="comment">// First, sample a (determinant, orbs) pair using Alias sampling with prob |Hc|
+<a href=#239 id=239 data-nosnippet>239</a>            </span><span class="kw">let </span>sample = screened_sampler
+<a href=#240 id=240 data-nosnippet>240</a>                .det_orb_sampler_abs_hc
+<a href=#241 id=241 data-nosnippet>241</a>                .sample_with_prob(rand);
+<a href=#242 id=242 data-nosnippet>242</a>            det_orb_sample = screened_sampler.elements[sample.<span class="number">0</span>];
+<a href=#243 id=243 data-nosnippet>243</a>            det_orb_prob = sample.<span class="number">1</span>;
+<a href=#244 id=244 data-nosnippet>244</a>            <span class="comment">// println!("Sampled det {}, prob {}", det_orb_sample, det_orb_prob);
+<a href=#245 id=245 data-nosnippet>245</a>
+<a href=#246 id=246 data-nosnippet>246</a>            // Sample excitation from this det/orb pair by binary search the stored cdf with prob |H|
+<a href=#247 id=247 data-nosnippet>247</a>            </span><span class="kw">match </span>det_orb_sample.is_alpha {
+<a href=#248 id=248 data-nosnippet>248</a>                <span class="prelude-val">None </span>=&gt; {
+<a href=#249 id=249 data-nosnippet>249</a>                    <span class="comment">// Opposite spin double
+<a href=#250 id=250 data-nosnippet>250</a>                    </span><span class="kw">let </span>sample2 = sample_cdf(
+<a href=#251 id=251 data-nosnippet>251</a>                        excite_gen
+<a href=#252 id=252 data-nosnippet>252</a>                            .opp_doub_sorted_list
+<a href=#253 id=253 data-nosnippet>253</a>                            .get(<span class="kw-2">&amp;</span>det_orb_sample.init)
+<a href=#254 id=254 data-nosnippet>254</a>                            .unwrap(),
+<a href=#255 id=255 data-nosnippet>255</a>                        <span class="kw-2">&amp;</span>ImpSampleDist::AbsHc,
+<a href=#256 id=256 data-nosnippet>256</a>                        <span class="prelude-val">Some</span>(det_orb_sample.sum_abs_h),
+<a href=#257 id=257 data-nosnippet>257</a>                        rand,
+<a href=#258 id=258 data-nosnippet>258</a>                    )
+<a href=#259 id=259 data-nosnippet>259</a>                    .unwrap();
+<a href=#260 id=260 data-nosnippet>260</a>                    sampled_excite = sample2.<span class="number">0</span>;
+<a href=#261 id=261 data-nosnippet>261</a>                    sampled_excite_prob = sample2.<span class="number">1</span>;
+<a href=#262 id=262 data-nosnippet>262</a>                }
+<a href=#263 id=263 data-nosnippet>263</a>                <span class="prelude-val">Some</span>(<span class="kw">_</span>) =&gt; {
+<a href=#264 id=264 data-nosnippet>264</a>                    <span class="kw">match </span>det_orb_sample.init {
+<a href=#265 id=265 data-nosnippet>265</a>                        Orbs::Double(<span class="kw">_</span>) =&gt; {
+<a href=#266 id=266 data-nosnippet>266</a>                            <span class="comment">// Same spin double
+<a href=#267 id=267 data-nosnippet>267</a>                            </span><span class="kw">let </span>sample2 = sample_cdf(
+<a href=#268 id=268 data-nosnippet>268</a>                                excite_gen
+<a href=#269 id=269 data-nosnippet>269</a>                                    .same_doub_sorted_list
+<a href=#270 id=270 data-nosnippet>270</a>                                    .get(<span class="kw-2">&amp;</span>det_orb_sample.init)
+<a href=#271 id=271 data-nosnippet>271</a>                                    .unwrap(),
+<a href=#272 id=272 data-nosnippet>272</a>                                <span class="kw-2">&amp;</span>ImpSampleDist::AbsHc,
+<a href=#273 id=273 data-nosnippet>273</a>                                <span class="prelude-val">Some</span>(det_orb_sample.sum_abs_h),
+<a href=#274 id=274 data-nosnippet>274</a>                                rand,
+<a href=#275 id=275 data-nosnippet>275</a>                            )
+<a href=#276 id=276 data-nosnippet>276</a>                            .unwrap();
+<a href=#277 id=277 data-nosnippet>277</a>                            sampled_excite = sample2.<span class="number">0</span>;
+<a href=#278 id=278 data-nosnippet>278</a>                            sampled_excite_prob = sample2.<span class="number">1</span>;
+<a href=#279 id=279 data-nosnippet>279</a>                        }
+<a href=#280 id=280 data-nosnippet>280</a>                        Orbs::Single(<span class="kw">_</span>) =&gt; {
+<a href=#281 id=281 data-nosnippet>281</a>                            <span class="comment">// Single
+<a href=#282 id=282 data-nosnippet>282</a>                            </span><span class="kw">let </span>sample2 = sample_cdf(
+<a href=#283 id=283 data-nosnippet>283</a>                                excite_gen
+<a href=#284 id=284 data-nosnippet>284</a>                                    .sing_sorted_list
+<a href=#285 id=285 data-nosnippet>285</a>                                    .get(<span class="kw-2">&amp;</span>det_orb_sample.init)
+<a href=#286 id=286 data-nosnippet>286</a>                                    .unwrap(),
+<a href=#287 id=287 data-nosnippet>287</a>                                <span class="kw-2">&amp;</span>ImpSampleDist::AbsHc,
+<a href=#288 id=288 data-nosnippet>288</a>                                <span class="prelude-val">Some</span>(det_orb_sample.sum_abs_h),
+<a href=#289 id=289 data-nosnippet>289</a>                                rand,
+<a href=#290 id=290 data-nosnippet>290</a>                            )
+<a href=#291 id=291 data-nosnippet>291</a>                            .unwrap();
+<a href=#292 id=292 data-nosnippet>292</a>                            sampled_excite = sample2.<span class="number">0</span>;
+<a href=#293 id=293 data-nosnippet>293</a>                            sampled_excite_prob = sample2.<span class="number">1</span>;
+<a href=#294 id=294 data-nosnippet>294</a>                        }
+<a href=#295 id=295 data-nosnippet>295</a>                    }
+<a href=#296 id=296 data-nosnippet>296</a>                }
+<a href=#297 id=297 data-nosnippet>297</a>            }
+<a href=#298 id=298 data-nosnippet>298</a>        }
+<a href=#299 id=299 data-nosnippet>299</a>        ImpSampleDist::HcSquared =&gt; {
+<a href=#300 id=300 data-nosnippet>300</a>            <span class="comment">// First, sample a (determinant, orbs) pair using Alias sampling with prob (Hc)^2
+<a href=#301 id=301 data-nosnippet>301</a>            </span><span class="kw">let </span>sample = screened_sampler
+<a href=#302 id=302 data-nosnippet>302</a>                .det_orb_sampler_hc_squared
+<a href=#303 id=303 data-nosnippet>303</a>                .sample_with_prob(rand);
+<a href=#304 id=304 data-nosnippet>304</a>            det_orb_sample = screened_sampler.elements[sample.<span class="number">0</span>];
+<a href=#305 id=305 data-nosnippet>305</a>            det_orb_prob = sample.<span class="number">1</span>;
+<a href=#306 id=306 data-nosnippet>306</a>
+<a href=#307 id=307 data-nosnippet>307</a>            <span class="comment">// Sample excitation from this det/orb pair by binary search the stored cdf with prob H^2
+<a href=#308 id=308 data-nosnippet>308</a>            </span><span class="kw">match </span>det_orb_sample.is_alpha {
+<a href=#309 id=309 data-nosnippet>309</a>                <span class="prelude-val">None </span>=&gt; {
+<a href=#310 id=310 data-nosnippet>310</a>                    <span class="comment">// Opposite spin double
+<a href=#311 id=311 data-nosnippet>311</a>                    </span><span class="kw">let </span>sample2 = sample_cdf(
+<a href=#312 id=312 data-nosnippet>312</a>                        excite_gen
+<a href=#313 id=313 data-nosnippet>313</a>                            .opp_doub_sorted_list
+<a href=#314 id=314 data-nosnippet>314</a>                            .get(<span class="kw-2">&amp;</span>det_orb_sample.init)
+<a href=#315 id=315 data-nosnippet>315</a>                            .unwrap(),
+<a href=#316 id=316 data-nosnippet>316</a>                        <span class="kw-2">&amp;</span>ImpSampleDist::HcSquared,
+<a href=#317 id=317 data-nosnippet>317</a>                        <span class="prelude-val">Some</span>(det_orb_sample.sum_h_squared),
+<a href=#318 id=318 data-nosnippet>318</a>                        rand,
+<a href=#319 id=319 data-nosnippet>319</a>                    )
+<a href=#320 id=320 data-nosnippet>320</a>                    .unwrap();
+<a href=#321 id=321 data-nosnippet>321</a>                    sampled_excite = sample2.<span class="number">0</span>;
+<a href=#322 id=322 data-nosnippet>322</a>                    sampled_excite_prob = sample2.<span class="number">1</span>;
+<a href=#323 id=323 data-nosnippet>323</a>                }
+<a href=#324 id=324 data-nosnippet>324</a>                <span class="prelude-val">Some</span>(<span class="kw">_</span>) =&gt; {
+<a href=#325 id=325 data-nosnippet>325</a>                    <span class="kw">match </span>det_orb_sample.init {
+<a href=#326 id=326 data-nosnippet>326</a>                        Orbs::Double(<span class="kw">_</span>) =&gt; {
+<a href=#327 id=327 data-nosnippet>327</a>                            <span class="comment">// Same spin double
+<a href=#328 id=328 data-nosnippet>328</a>                            </span><span class="kw">let </span>sample2 = sample_cdf(
+<a href=#329 id=329 data-nosnippet>329</a>                                excite_gen
+<a href=#330 id=330 data-nosnippet>330</a>                                    .same_doub_sorted_list
+<a href=#331 id=331 data-nosnippet>331</a>                                    .get(<span class="kw-2">&amp;</span>det_orb_sample.init)
+<a href=#332 id=332 data-nosnippet>332</a>                                    .unwrap(),
+<a href=#333 id=333 data-nosnippet>333</a>                                <span class="kw-2">&amp;</span>ImpSampleDist::HcSquared,
+<a href=#334 id=334 data-nosnippet>334</a>                                <span class="prelude-val">Some</span>(det_orb_sample.sum_h_squared),
+<a href=#335 id=335 data-nosnippet>335</a>                                rand,
+<a href=#336 id=336 data-nosnippet>336</a>                            )
+<a href=#337 id=337 data-nosnippet>337</a>                            .unwrap();
+<a href=#338 id=338 data-nosnippet>338</a>                            sampled_excite = sample2.<span class="number">0</span>;
+<a href=#339 id=339 data-nosnippet>339</a>                            sampled_excite_prob = sample2.<span class="number">1</span>;
+<a href=#340 id=340 data-nosnippet>340</a>                        }
+<a href=#341 id=341 data-nosnippet>341</a>                        Orbs::Single(<span class="kw">_</span>) =&gt; {
+<a href=#342 id=342 data-nosnippet>342</a>                            <span class="comment">// Single
+<a href=#343 id=343 data-nosnippet>343</a>                            </span><span class="kw">let </span>sample2 = sample_cdf(
+<a href=#344 id=344 data-nosnippet>344</a>                                excite_gen
+<a href=#345 id=345 data-nosnippet>345</a>                                    .sing_sorted_list
+<a href=#346 id=346 data-nosnippet>346</a>                                    .get(<span class="kw-2">&amp;</span>det_orb_sample.init)
+<a href=#347 id=347 data-nosnippet>347</a>                                    .unwrap(),
+<a href=#348 id=348 data-nosnippet>348</a>                                <span class="kw-2">&amp;</span>ImpSampleDist::HcSquared,
+<a href=#349 id=349 data-nosnippet>349</a>                                <span class="prelude-val">Some</span>(det_orb_sample.sum_h_squared),
+<a href=#350 id=350 data-nosnippet>350</a>                                rand,
+<a href=#351 id=351 data-nosnippet>351</a>                            )
+<a href=#352 id=352 data-nosnippet>352</a>                            .unwrap();
+<a href=#353 id=353 data-nosnippet>353</a>                            sampled_excite = sample2.<span class="number">0</span>;
+<a href=#354 id=354 data-nosnippet>354</a>                            sampled_excite_prob = sample2.<span class="number">1</span>;
+<a href=#355 id=355 data-nosnippet>355</a>                        }
+<a href=#356 id=356 data-nosnippet>356</a>                    }
+<a href=#357 id=357 data-nosnippet>357</a>                }
+<a href=#358 id=358 data-nosnippet>358</a>            }
+<a href=#359 id=359 data-nosnippet>359</a>        }
+<a href=#360 id=360 data-nosnippet>360</a>    }
+<a href=#361 id=361 data-nosnippet>361</a>
+<a href=#362 id=362 data-nosnippet>362</a>    <span class="comment">// Construct the excitation (for output)
+<a href=#363 id=363 data-nosnippet>363</a>    </span><span class="kw">let </span>excite = Excite {
+<a href=#364 id=364 data-nosnippet>364</a>        init: det_orb_sample.init,
+<a href=#365 id=365 data-nosnippet>365</a>        target: sampled_excite.target,
+<a href=#366 id=366 data-nosnippet>366</a>        abs_h: sampled_excite.abs_h,
+<a href=#367 id=367 data-nosnippet>367</a>        is_alpha: det_orb_sample.is_alpha,
+<a href=#368 id=368 data-nosnippet>368</a>    };
+<a href=#369 id=369 data-nosnippet>369</a>
+<a href=#370 id=370 data-nosnippet>370</a>    <span class="comment">// Apply the excitation to the sampled det
+<a href=#371 id=371 data-nosnippet>371</a>    </span><span class="kw">let </span>sampled_det = det_orb_sample.det.config.safe_excite_det(<span class="kw-2">&amp;</span>excite);
+<a href=#372 id=372 data-nosnippet>372</a>
+<a href=#373 id=373 data-nosnippet>373</a>    <span class="comment">// Compute total probability
+<a href=#374 id=374 data-nosnippet>374</a>    </span><span class="kw">let </span>prob_sampled_det: f64 = det_orb_prob * sampled_excite_prob;
+<a href=#375 id=375 data-nosnippet>375</a>
+<a href=#376 id=376 data-nosnippet>376</a>    <span class="kw">match </span>sampled_det {
+<a href=#377 id=377 data-nosnippet>377</a>        <span class="prelude-val">None </span>=&gt; (<span class="prelude-val">None</span>, prob_sampled_det), <span class="comment">// Proposed excitation would excite to already-occupied orbs
+<a href=#378 id=378 data-nosnippet>378</a>        </span><span class="prelude-val">Some</span>(d) =&gt; {
+<a href=#379 id=379 data-nosnippet>379</a>            <span class="comment">// Compute new det coefficient
+<a href=#380 id=380 data-nosnippet>380</a>            </span><span class="kw">let </span><span class="kw-2">mut </span>new_det_coeff = det_orb_sample.det.coeff;
+<a href=#381 id=381 data-nosnippet>381</a>            <span class="kw">match </span>det_orb_sample.init {
+<a href=#382 id=382 data-nosnippet>382</a>                Orbs::Double(<span class="kw">_</span>) =&gt; new_det_coeff <span class="kw-2">*</span>= ham.ham_doub(<span class="kw-2">&amp;</span>det_orb_sample.det.config, <span class="kw-2">&amp;</span>d),
+<a href=#383 id=383 data-nosnippet>383</a>                Orbs::Single(<span class="kw">_</span>) =&gt; new_det_coeff <span class="kw-2">*</span>= ham.ham_sing(<span class="kw-2">&amp;</span>det_orb_sample.det.config, <span class="kw-2">&amp;</span>d),
+<a href=#384 id=384 data-nosnippet>384</a>            }
+<a href=#385 id=385 data-nosnippet>385</a>            (
+<a href=#386 id=386 data-nosnippet>386</a>                <span class="prelude-val">Some</span>((
+<a href=#387 id=387 data-nosnippet>387</a>                    <span class="kw-2">*</span>det_orb_sample.det,
+<a href=#388 id=388 data-nosnippet>388</a>                    excite,
+<a href=#389 id=389 data-nosnippet>389</a>                    Det {
+<a href=#390 id=390 data-nosnippet>390</a>                        config: d,
+<a href=#391 id=391 data-nosnippet>391</a>                        coeff: new_det_coeff,
+<a href=#392 id=392 data-nosnippet>392</a>                        diag: <span class="prelude-val">None</span>, <span class="comment">// Compute diagonal element later, only if needed (since it would be the most expensive step)
+<a href=#393 id=393 data-nosnippet>393</a>                    </span>},
+<a href=#394 id=394 data-nosnippet>394</a>                )),
+<a href=#395 id=395 data-nosnippet>395</a>                prob_sampled_det,
+<a href=#396 id=396 data-nosnippet>396</a>            )
+<a href=#397 id=397 data-nosnippet>397</a>        }
+<a href=#398 id=398 data-nosnippet>398</a>    }
+<a href=#399 id=399 data-nosnippet>399</a>}
 </code></pre></div></section></main></body></html>
