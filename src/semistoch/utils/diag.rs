@@ -14,6 +14,14 @@ pub fn sample_diag_update_welford(
     e0: f64,
     enpt2_diag: &mut Stats<f64>,
 ) {
+    // Nothing survived screening, so the diagonal stochastic contribution is exactly
+    // zero. Record a zero sample (instead of sampling an empty distribution, which
+    // would panic) so the Welford estimate converges to 0 +- 0.
+    if screened_sampler.is_empty() {
+        enpt2_diag.update(0.0);
+        return;
+    }
+
     // Sample with probability proportional to (Hc)^2
     let (sampled_det_info, sampled_prob) = matmul_sample_remaining(
         screened_sampler,

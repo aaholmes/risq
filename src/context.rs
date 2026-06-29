@@ -4,7 +4,7 @@
 //! dependency injection for the entire calculation pipeline.
 
 use crate::config::{AlgorithmParameters, GlobalConfig};
-use crate::error::{RisqError, RisqResult};
+use crate::error::RisqResult;
 use crate::excite::init::{init_excite_generator, ExciteGenerator};
 use crate::ham::{read_ints::read_ints, Ham};
 use crate::rng::{init_rand, Rand};
@@ -150,6 +150,7 @@ impl RisqContext {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::error::RisqError;
     use std::io::Write;
     use tempfile::NamedTempFile;
 

@@ -81,6 +81,16 @@ pub struct ScreenedSampler<'a> {
     pub sum_hc_squared_all_dets_orbs: f64,
 }
 
+impl ScreenedSampler<'_> {
+    /// Returns `true` if there are no determinant/orbital pairs to sample from.
+    ///
+    /// This happens when every screened contribution was handled deterministically
+    /// (all `sum_abs_h == 0`), in which case the stochastic correction is exactly zero.
+    pub fn is_empty(&self) -> bool {
+        self.elements.is_empty()
+    }
+}
+
 /// Represents a potential starting point for sampling an excitation.
 ///
 /// Contains a reference to a source determinant (`det`) and the specific initial
@@ -212,6 +222,12 @@ pub fn matmul_sample_remaining(
     ham: &Ham,
     rand: &mut Rand,
 ) -> (Option<(Det, Excite, Det)>, f64) {
+    // Nothing to sample (everything was captured deterministically): report no
+    // valid sample rather than drawing from an empty distribution, which panics.
+    if screened_sampler.is_empty() {
+        return (None, 1.0);
+    }
+
     let det_orb_sample: DetOrbSample;
     let det_orb_prob: f64;
     let sampled_excite: &StoredExcite;

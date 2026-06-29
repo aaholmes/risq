@@ -17,9 +17,7 @@ use crate::semistoch::{new_semistoch_enpt2_dtm_diag_singles, old_semistoch_enpt2
 use crate::utils::read_input::Global;
 use crate::wf::det::{Config, Det};
 use crate::wf::Wf;
-use itertools::enumerate;
 use std::collections::HashMap;
-use crate::utils::bits::valence_elecs_and_epairs;
 
 /// Orchestrates the calculation of the second-order Epstein-Nesbet perturbation theory correction (PT2).
 ///
@@ -33,7 +31,11 @@ use crate::utils::bits::valence_elecs_and_epairs;
 /// * `ham`: The Hamiltonian operator.
 /// * `excite_gen`: Pre-computed excitation generator data.
 /// * `wf`: The converged variational wavefunction (from HCI).
-pub fn perturbative(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, wf: &Wf) {
+///
+/// # Returns
+/// A tuple `(e_pt2, std_dev)` of the PT2 energy correction and its standard
+/// deviation (the latter is zero for fully deterministic estimates).
+pub fn perturbative(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, wf: &Wf) -> (f64, f64) {
     // Initialize random number genrator
     let mut rand: Rand = init_rand().unwrap(); // TODO: Pass this in context
 
@@ -56,6 +58,7 @@ pub fn perturbative(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, wf
     println!("Variational energy: {:.6}", wf.energy);
     println!("PT energy: {:.6} +- {:.6}", e_pt2, std_dev);
     println!("Total energy: {:.6} +- {:.6}", wf.energy + e_pt2, std_dev);
+    (e_pt2, std_dev)
 }
 
 /// Calculates the deterministic second-order Epstein-Nesbet PT correction.

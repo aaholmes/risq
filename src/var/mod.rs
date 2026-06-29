@@ -28,11 +28,9 @@
 //! *   `utils`: Helper functions specific to the variational stage.
 
 mod davidson;
-pub mod davidson_unified;
 pub mod eigenvalues;
 pub mod fast_ham;
 mod fast_ham_tests;
-pub mod debug_fast_ham;
 mod ham_gen;
 pub mod off_diag;
 pub(crate) mod sparse;
@@ -44,7 +42,6 @@ use crate::utils::read_input::Global;
 use crate::var::davidson::sparse_optimize;
 use crate::wf::VarWf;
 use std::time::Instant;
-use crate::excite::iterator::dets_excites_and_excited_dets;
 
 /// Performs the iterative variational Heat-bath Configuration Interaction (HCI) calculation.
 ///
@@ -67,9 +64,6 @@ pub fn variational(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, var
         var_wf.wf.n, var_wf.wf.energy
     );
 
-    // let eps_energy_converged: f64 = 2.5e-4;
-    let mut last_energy: Option<f64>;
-
     while !var_wf.converged {
         iter += 1;
 
@@ -91,8 +85,6 @@ pub fn variational(global: &Global, ham: &Ham, excite_gen: &ExciteGenerator, var
             var_wf.converged = true;
             break; // Exit the loop
         }
-
-        last_energy = Some(var_wf.wf.energy);
 
         let coeff_eps: f64 = 1e-4; // Davidson convergence epsilon for coefficients
         let energy_eps: f64 = 1e-8; // Davidson convergence epsilon for energy

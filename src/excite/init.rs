@@ -10,7 +10,7 @@ use core::default::Default;
 use std::collections::HashMap;
 
 use crate::config::GlobalConfig;
-use crate::error::{RisqError, RisqResult};
+use crate::error::RisqResult;
 use crate::excite::{Excite, Orbs, StoredExcite};
 use crate::ham::Ham;
 use crate::rng::Rand;
@@ -18,7 +18,6 @@ use crate::stoch::utils::sample_cdf;
 use crate::stoch::ImpSampleDist;
 use crate::utils::bits::{bit_pairs, bits, ibset};
 use crate::wf::det::Config;
-use crate::{risq_bail, risq_ensure};
 
 /// Stores pre-computed and sorted excitation information for efficient generation and sampling.
 ///

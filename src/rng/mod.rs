@@ -4,7 +4,7 @@
 //! for use in stochastic parts of the calculations. Using a seeded RNG ensures
 //! reproducibility of stochastic results.
 
-use crate::error::{RisqError, RisqResult};
+use crate::error::RisqResult;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 

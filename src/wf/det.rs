@@ -56,20 +56,10 @@ impl Config {
 
     // Return whether connected to another config by up to a double excitation
     pub fn is_connected(&self, other: &Config) -> bool {
-        let mut diff = 0;
-        for i in bits(self.up & !other.up) {
-            diff += 1;
-            if diff > 2 {
-                return false;
-            }
-        }
-        for i in bits(self.up & !other.up) {
-            diff += 1;
-            if diff > 2 {
-                return false;
-            }
-        }
-        true
+        // Number of orbitals occupied in self but not other, summed over both
+        // spin channels, equals the excitation order connecting the two configs.
+        let diff = (self.up & !other.up).count_ones() + (self.dn & !other.dn).count_ones();
+        diff <= 2
     }
 
     pub fn is_valid_stored(&self, is_alpha: &Option<bool>, excite: &StoredExcite) -> bool {

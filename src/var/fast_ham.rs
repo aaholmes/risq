@@ -6,10 +6,10 @@
 //! lookup tables.
 
 use crate::ham::Ham;
-use crate::utils::bits::{bits, ibset, ibclr};
+use crate::utils::bits::{bits, ibclr};
 use crate::utils::read_input::Global;
 use crate::var::off_diag::add_el;
-use crate::wf::det::{Config, Det};
+use crate::wf::det::Config;
 use crate::wf::VarWf;
 use std::collections::HashMap;
 
@@ -42,8 +42,10 @@ pub struct VariationalSpace {
     /// Maps beta string to all beta strings connected by single excitation.
     pub beta_singles: HashMap<BetaString, Vec<BetaString>>,
 
-    /// Map from (alpha_string, beta_r1) to list of (det_index, beta_string)
-    /// Used for fast opposite-spin excitation finding.
+    /// Map from (alpha_string, beta_r1) to list of (det_index, beta_string).
+    /// Built for fast opposite-spin excitation finding; not yet consumed by the
+    /// connection-finding routines (WIP fast path), but covered by a construction test.
+    #[allow(dead_code)]
     alpha_beta_lookup: HashMap<(AlphaString, BetaString), Vec<(usize, BetaString)>>,
 }
 
@@ -67,7 +69,7 @@ impl VariationalSpace {
         }
 
         // Step 2: Build alpha_strings and alpha_to_index from grouped data
-        for (alpha, det_indices) in alpha_to_dets_map.iter() {
+        for (alpha, _det_indices) in alpha_to_dets_map.iter() {
             let alpha_idx = alpha_strings.len();
             alpha_strings.push(*alpha);
             alpha_to_index.insert(*alpha, alpha_idx);
@@ -523,7 +525,7 @@ impl VariationalSpace {
 /// * `wf` - Mutable reference to the variational wavefunction.
 /// * `ham` - The Hamiltonian operator.
 pub fn gen_sparse_ham_fast_lookup(
-    global: &Global,
+    _global: &Global,
     wf: &mut VarWf,
     ham: &Ham,
 ) {
@@ -575,7 +577,7 @@ pub fn gen_sparse_ham_fast_lookup(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::utils::bits::{ibset, ibclr};
+    use crate::utils::bits::ibset;
     use crate::ham::Ham;
     use crate::wf::{VarWf, Wf};
     use crate::wf::det::Det;
@@ -605,7 +607,7 @@ mod tests {
 
     /// Create a mock VarWf with given determinants
     fn mock_var_wf(determinants: Vec<Config>) -> VarWf {
-        use crate::var::sparse::SparseMatUpperTri;
+        
         
         let n = determinants.len();
         let mut dets = Vec::with_capacity(n);
@@ -775,8 +777,8 @@ mod tests {
         // Alpha: |01⟩ -> |02⟩ (single), Beta: |01⟩ -> |02⟩ (single) = overall double
         let alpha1 = test_config(&[0, 1], &[]).up;
         let alpha2 = test_config(&[0, 2], &[]).up;
-        let beta1 = test_config(&[], &[0, 1]).dn;
-        let beta2 = test_config(&[], &[0, 2]).dn;
+        let _beta1 = test_config(&[], &[0, 1]).dn;
+        let _beta2 = test_config(&[], &[0, 2]).dn;
 
         // Should detect single excitation in both alpha and beta
         assert!(var_space.alpha_singles.get(&alpha1).is_none() || 
@@ -844,7 +846,7 @@ mod tests {
         
         // Test that alpha_beta_lookup was constructed correctly
         let alpha_01 = test_config(&[0, 1], &[]).up;
-        let alpha_02 = test_config(&[0, 2], &[]).up;
+        let _alpha_02 = test_config(&[0, 2], &[]).up;
         
         // For determinant 0: alpha=01, beta=01
         // Removing electron from position 0 of beta gives beta_r1 = 01 (just electron 1)

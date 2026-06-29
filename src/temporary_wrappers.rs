@@ -4,7 +4,6 @@
 
 use crate::context::RisqContext;
 use crate::error::RisqResult;
-use crate::utils::read_input::Global;
 use crate::wf::{init_var_wf as lib_init_var_wf, VarWf};
 use crate::var::variational as lib_variational;
 use crate::pt::perturbative as lib_perturbative;
@@ -25,7 +24,6 @@ pub fn variational(context: &mut RisqContext, wf: &mut VarWf) -> RisqResult<f64>
 /// Temporary wrapper for perturbative
 pub fn perturbative(context: &RisqContext, wf: &crate::wf::Wf) -> RisqResult<f64> {
     let global = context.as_global();
-    lib_perturbative(&global, &context.hamiltonian, &context.excitation_generator, wf);
-    // TODO: Return actual PT2 energy
-    Ok(0.0)
+    let (e_pt2, _std_dev) = lib_perturbative(&global, &context.hamiltonian, &context.excitation_generator, wf);
+    Ok(e_pt2)
 }
