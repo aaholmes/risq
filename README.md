@@ -4,7 +4,7 @@
 
 ![RISQ Logo](risq_logo.png)
 
-**Note:** This is research code developed during PhD and postdoctoral work, primarily focused on implementing and testing specific electronic structure methods. It may lack the polish, flexibility, and extensive testing (especially automated test coverage) of production software.
+**Note:** A personal Rust implementation (2021–22, maintained since) of selected-configuration-interaction and semistochastic quantum Monte Carlo methods drawn from my computational electronic-structure research. It's research code centered on the algorithms rather than a production package: automated test coverage is partial, and a few methods (e.g. SC-NEVPT2) are work-in-progress.
 
 ## Overview
 
