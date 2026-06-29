@@ -11,7 +11,7 @@ use crate::excite::init::ExciteGenerator;
 use crate::excite::iterator::{dets_and_excitable_orbs, excites_from_det_and_orbs};
 use crate::excite::{Excite, Orbs};
 use crate::ham::Ham;
-use crate::pt::{pt, pt_off_diag, PtSamples};
+use crate::pt::{pt, PtSamples};
 use crate::rng::Rand;
 use crate::semistoch::utils::diag::sample_diag_update_welford;
 use crate::semistoch::utils::off_diag::sample_off_diag_update_welford;
@@ -248,12 +248,11 @@ pub fn new_semistoch_enpt2_dtm_diag_singles(
 
     let mut excite: Excite;
     let mut h_ai_c_i: f64;
-    let mut diag: f64;
     let mut h_psi: Wf = Wf::default();
     // let mut h_psi_sq: Wf = Wf::default();
     // let mut e: f64;
-    let mut e_pt_diag_doubles: f64 = 0.0;
-    let mut e_pt_diag_singles: f64 = 0.0;
+    let _e_pt_diag_doubles: f64 = 0.0;
+    let _e_pt_diag_singles: f64 = 0.0;
 
     // Loop over all doubles that exceed eps, and all singles
     // Separate out the iteration over var_dets and orbs from the iteration over excites leaving those orbs
@@ -303,34 +302,19 @@ pub fn new_semistoch_enpt2_dtm_diag_singles(
                 rel_probs[i_det] = h_ai_c_i.abs();
             }
 
-            // Off-diagonal term
-            // Compute diagonal element in O(N) time only if necessary, store diag energy for next step
-            // For single excitations: Check whether this excite actually exceeds eps
-            if matches!(init, Orbs::Single(_)) && h_ai_c_i.abs() < global.eps_pt_dtm {
-                // Compute or lookup diag term for later, but don't add to h_psi
+            // Off-diagonal term: add h_ai_c_i to h_psi, computing the diagonal
+            // element in O(N) time only when a new PT determinant is created.
+            // Single excitations below the deterministic threshold are skipped.
+            if !(matches!(init, Orbs::Single(_)) && h_ai_c_i.abs() < global.eps_pt_dtm) {
                 if let Some(ind) = h_psi.inds.get_mut(&pt_config) {
-                    diag = h_psi.dets[*ind].diag.unwrap();
-                } else {
-                    diag = var_det.new_diag(ham, &excite);
-                }
-            } else {
-                // Compute or lookup diag term and add h_ai_c_i to h_psi
-                if let Some(ind) = h_psi.inds.get_mut(&pt_config) {
-                    diag = h_psi.dets[*ind].diag.unwrap();
                     h_psi.dets[*ind].coeff += h_ai_c_i;
-                    // h_psi_sq.dets[*ind].coeff += h_ai_c_i * h_ai_c_i;
                 } else {
-                    diag = var_det.new_diag(ham, &excite);
+                    let diag = var_det.new_diag(ham, &excite);
                     h_psi.push(Det {
                         config: pt_config,
                         coeff: h_ai_c_i,
                         diag: Some(diag),
                     });
-                    // h_psi_sq.push(Det {
-                    //     config: pt_config,
-                    //     coeff: h_ai_c_i * h_ai_c_i,
-                    //     diag: Some(diag),
-                    // });
                 }
             }
 

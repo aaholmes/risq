@@ -7,8 +7,7 @@ use crate::excite::init::ExciteGenerator;
 use crate::ham::Ham;
 use crate::var::eigenvalues::algorithms::davidson::{Davidson, DavidsonError};
 use crate::var::eigenvalues::algorithms::{DavidsonCorrection, SpectrumTarget};
-use crate::var::sparse::SparseMatUpperTri;
-use crate::wf::{VarWf, Wf};
+use crate::wf::VarWf;
 use nalgebra::{DMatrix, DVector};
 use std::fmt;
 

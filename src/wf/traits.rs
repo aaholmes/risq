@@ -5,9 +5,8 @@
 
 use crate::excite::init::ExciteGenerator;
 use crate::ham::Ham;
-use crate::stoch::ScreenedSampler;
 use crate::wf::{Wf, VarWf};
-use nalgebra::{Const, Dynamic, Matrix, VecStorage};
+use nalgebra::{Dynamic, Matrix, VecStorage};
 
 /// Strategy for handling single excitations in matrix-vector products
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -169,9 +168,11 @@ pub struct DavidsonSolver {
     iterations: usize,
     /// Convergence status
     converged: bool,
-    /// Energy convergence threshold
+    /// Energy convergence threshold (reserved for the not-yet-wired trait-based solve path)
+    #[allow(dead_code)]
     energy_eps: f64,
-    /// Coefficient convergence threshold
+    /// Coefficient convergence threshold (reserved for the not-yet-wired trait-based solve path)
+    #[allow(dead_code)]
     coeff_eps: f64,
 }
 
@@ -215,12 +216,12 @@ impl EigenSolver for DavidsonSolver {
 
     fn solve(
         &mut self,
-        wf: &mut VarWf,
-        ham: &Ham,
-        excite_gen: &ExciteGenerator,
-        n_states: usize,
-        tolerance: f64,
-        max_iterations: usize,
+        _wf: &mut VarWf,
+        _ham: &Ham,
+        _excite_gen: &ExciteGenerator,
+        _n_states: usize,
+        _tolerance: f64,
+        _max_iterations: usize,
     ) -> Result<Self::Solution, Self::Error> {
         // This will delegate to the existing Davidson implementation
         // For now, return a placeholder to establish the interface

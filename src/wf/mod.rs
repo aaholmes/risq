@@ -27,7 +27,6 @@ use std::collections::HashMap;
 use super::ham::Ham;
 use super::utils::read_input::Global;
 use crate::excite::init::ExciteGenerator;
-use crate::excite::iterator::dets_excites_and_excited_dets;
 use crate::excite::{Excite, Orbs};
 use crate::stoch::{generate_screened_sampler, DetOrbSample, ScreenedSampler};
 use crate::utils::bits::{bit_pairs, bits};
@@ -344,7 +343,7 @@ impl Wf {
         ham: &Ham,
         excite_gen: &ExciteGenerator,
         eps: f64,
-    ) -> (Wf, ScreenedSampler) {
+    ) -> (Wf, ScreenedSampler<'_>) {
         // Approximate matrix-vector multiplication
         // Uses eps as a cutoff for doubles, but uses additional singles (since checking whether
         // they meet the cutoff is as expensive as actually calculating the matrix element)
@@ -538,7 +537,7 @@ impl Wf {
         ham: &Ham,
         excite_gen: &ExciteGenerator,
         eps: f64,
-    ) -> (Wf, ScreenedSampler) {
+    ) -> (Wf, ScreenedSampler<'_>) {
         // For debugging: Skip singles entirely
 
         // Approximate matrix-vector multiplication
@@ -717,7 +716,7 @@ impl Wf {
         ham: &Ham,
         excite_gen: &ExciteGenerator,
         eps: f64,
-    ) -> (Wf, ScreenedSampler) {
+    ) -> (Wf, ScreenedSampler<'_>) {
         // Approximate matrix-vector multiplication
         // Deterministic step uses eps as a cutoff for both doubles and singles
         // Prepares screened sampler that is intended to sample singles and doubles separately
@@ -1038,7 +1037,7 @@ impl Wf {
         ham: &Ham,
         excite_gen: &ExciteGenerator,
         eps: f64,
-    ) -> (Wf, ScreenedSampler) {
+    ) -> (Wf, ScreenedSampler<'_>) {
         // Same as above, but no single excitations in deterministic step (still sets up singles for sampling later)
         // Approximate matrix-vector multiplication
         // Deterministic step uses eps as a cutoff for doubles, but ignores singles

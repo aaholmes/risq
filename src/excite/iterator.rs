@@ -5,17 +5,12 @@
 //! iterating through determinants, initial orbitals, and target orbitals, applying
 //! screening thresholds and validity checks.
 
-use crate::ham::Ham;
-use crate::ham::read_ints::read_ints;
-use crate::utils::read_input::{read_input, Global};
-use crate::excite::init::{init_excite_generator, ExciteGenerator};
+use crate::excite::init::ExciteGenerator;
 use crate::excite::{Excite, Orbs, StoredExcite};
 use crate::utils::bits::valence_elecs_and_epairs;
 use crate::wf::det::{Config, Det};
-use crate::wf::{init_var_wf, VarWf, Wf};
+use crate::wf::Wf;
 use std::iter::repeat;
-use std::time::Instant;
-use crate::var::variational;
 
 /// Creates an iterator yielding deterministically significant external excitations.
 ///

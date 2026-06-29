@@ -6,7 +6,7 @@
 #[cfg(test)]
 mod detailed_tests {
     use crate::var::fast_ham::*;
-    use crate::utils::bits::{ibset, ibclr, bits};
+    use crate::utils::bits::ibset;
     use crate::wf::det::Config;
     use crate::ham::Ham;
     use crate::wf::{VarWf, Wf};

@@ -3,44 +3,8 @@
 //! This test demonstrates how the new eigensolver traits provide a unified
 //! interface for different eigenvalue solving algorithms.
 
-use risq::context::RisqContext;
 use risq::error::RisqResult;
 use risq::wf::eigensolver::{EigenConfig, EigenSolver, EigenSolverFactory, DavidsonSolver};
-use risq::var::davidson_unified::UnifiedDavidsonSolver;
-use risq::temporary_wrappers::init_var_wf;
-use std::path::Path;
-
-#[test]
-fn test_unified_davidson_solver() -> RisqResult<()> {
-    // Use the Beryllium system for testing
-    let config_path = Path::new("examples/be/in.json");
-    let fcidump_path = Path::new("examples/be/FCIDUMP");
-    
-    // Skip test if files don't exist
-    if !config_path.exists() || !fcidump_path.exists() {
-        println!("Skipping test - example files not found");
-        return Ok(());
-    }
-    
-    let context = RisqContext::from_files(config_path, fcidump_path)?;
-    let mut wf = init_var_wf(&context)?;
-    
-    // Test the unified Davidson solver interface
-    let mut solver = UnifiedDavidsonSolver::new();
-    let config = EigenConfig::default();
-    
-    println!("🔧 Testing Unified Davidson Solver");
-    println!("   Solver name: {}", solver.name());
-    println!("   Initial wavefunction size: {}", wf.wf.n);
-    println!("   Initial energy: {:.10} Hartree", wf.wf.energy);
-    
-    // Note: This test demonstrates the interface but may not work perfectly
-    // due to the Global dependency in the current implementation
-    println!("✅ Unified Davidson solver interface test passed");
-    println!("   Interface is properly abstracted through EigenSolver trait");
-    
-    Ok(())
-}
 
 #[test]
 fn test_eigensolver_factory() -> RisqResult<()> {
@@ -95,7 +59,7 @@ fn test_eigen_config_defaults() {
 fn test_davidson_solver_trait() {
     println!("🔍 Testing Davidson solver trait implementation");
     
-    let mut solver = DavidsonSolver::new();
+    let solver = DavidsonSolver::new();
     
     println!("   Solver name: {}", solver.name());
     println!("   Initial converged: {}", solver.is_converged());
