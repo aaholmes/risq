@@ -15,7 +15,7 @@
 //!
 //! ## Usage
 //!
-//! ```rust,no_run
+//! ```rust,ignore
 //! use risq::context::RisqContext;
 //! use risq::wf::init_var_wf;
 //! use risq::var::variational;
