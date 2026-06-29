@@ -1,1 +1,0 @@
-initSidebarItems({"enum":[["ImpSampleDist",""]],"fn":[["generate_screened_sampler",""],["matmul_sample_remaining",""]],"mod":[["alias",""],["utils",""]],"struct":[["DetOrbSample",""],["ScreenedSampler",""]]});

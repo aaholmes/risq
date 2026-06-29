@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["add_el","add_el_and_spin_flipped"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["variational"],"mod":["davidson_unified","debug_fast_ham","eigenvalues","fast_ham","off_diag"]};

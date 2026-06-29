@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["DoublesStrategy","MatVecResult","SinglesStrategy"],"struct":["MatVecConfig","MatVecOperations"]};

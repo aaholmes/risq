@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["init_excite_generator"],"struct":["ExciteGenerator"]};

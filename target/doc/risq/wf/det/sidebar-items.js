@@ -1,1 +1,0 @@
-initSidebarItems({"struct":[["Config","Binary representation of the up- and down-spin orbital occupancies of a Slater determinant"],["Det","Full determinant struct. Contains the determinant’s `Config`, as well as its coefficient `coeff` and diagonal Hamiltonian matrix element `diag`"]]});

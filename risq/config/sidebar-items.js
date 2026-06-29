@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["AlgorithmVariant"],"struct":["AlgorithmParameters","GlobalConfig"]};

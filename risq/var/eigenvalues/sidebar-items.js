@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["algorithms","matrix_operations","modified_gram_schmidt","utils"]};

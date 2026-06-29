@@ -1,1 +1,0 @@
-initSidebarItems({"fn":[["init_rand",""]],"struct":[["Rand","Contains the seeded random number generator.  Must be used each time a random number is generated"]]});

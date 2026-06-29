@@ -1,1 +1,0 @@
-initSidebarItems({"fn":[["main",""]],"mod":[["excite","Generating most important excitations, importance sampling the rest"],["ham",""],["pt",""],["rng",""],["semistoch",""],["stoch",""],["utils",""],["var",""],["wf",""]]});

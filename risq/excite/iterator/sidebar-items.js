@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["dets_and_excitable_orbs","dets_excites_and_excited_dets","excites","excites_from_det_and_orbs"]};

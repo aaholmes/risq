@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["gen_sparse_ham_fast_lookup"],"struct":["VariationalSpace"],"type":["AlphaString","BetaString"]};

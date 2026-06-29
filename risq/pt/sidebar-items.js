@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["dtm_pt","perturbative","pt","pt_off_diag"],"struct":["PtSamples"]};

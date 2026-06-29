@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["ImpSampleDist"],"fn":["generate_screened_sampler","matmul_sample_remaining"],"struct":["DetOrbSample","ScreenedSampler"]};

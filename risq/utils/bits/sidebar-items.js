@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["bit_pairs","bits","btest","det_bits","elecs","epairs","ibclr","ibset","orbs","parity","product_bits","valence_elecs","valence_elecs_and_epairs","valence_epairs"]};

@@ -1,0 +1,9 @@
+(function() {
+    const implementors = Object.fromEntries([["risq",[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.96.0/core/error/trait.Error.html\" title=\"trait core::error::Error\">Error</a> for <a class=\"enum\" href=\"risq/error/enum.RisqError.html\" title=\"enum risq::error::RisqError\">RisqError</a>",0],["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.96.0/core/error/trait.Error.html\" title=\"trait core::error::Error\">Error</a> for <a class=\"enum\" href=\"risq/wf/eigensolver/enum.EigenSolverError.html\" title=\"enum risq::wf::eigensolver::EigenSolverError\">EigenSolverError</a>",0],["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.96.0/core/error/trait.Error.html\" title=\"trait core::error::Error\">Error</a> for <a class=\"enum\" href=\"risq/wf/traits/enum.DavidsonError.html\" title=\"enum risq::wf::traits::DavidsonError\">DavidsonError</a>",0],["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.96.0/core/error/trait.Error.html\" title=\"trait core::error::Error\">Error</a> for <a class=\"struct\" href=\"risq/var/eigenvalues/algorithms/davidson/struct.DavidsonError.html\" title=\"struct risq::var::eigenvalues::algorithms::davidson::DavidsonError\">DavidsonError</a>",0],["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.96.0/core/error/trait.Error.html\" title=\"trait core::error::Error\">Error</a> for <a class=\"struct\" href=\"risq/var/eigenvalues/algorithms/lanczos/struct.LanczosError.html\" title=\"struct risq::var::eigenvalues::algorithms::lanczos::LanczosError\">LanczosError</a>",0]]]]);
+    if (window.register_implementors) {
+        window.register_implementors(implementors);
+    } else {
+        window.pending_implementors = implementors;
+    }
+})()
+//{"start":59,"fragment_lengths":[1523]}

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["DavidsonError","DoublesStrategy","MatVecResult","SinglesStrategy"],"struct":["DavidsonSolution","DavidsonSolver","MatVecConfig"],"trait":["EigenSolver","MatrixVectorProduct"]};

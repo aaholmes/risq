@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["VERSION"],"macro":["risq_bail","risq_ensure"],"mod":["config","context","error","excite","ham","pt","rng","semistoch","stoch","temporary_wrappers","utils","var","wf"]};

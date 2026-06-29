@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["init_var_wf"],"mod":["det","eigensolver","operations","traits"],"struct":["VarWf","Wf"]};

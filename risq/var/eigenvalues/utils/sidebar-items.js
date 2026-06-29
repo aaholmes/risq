@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["sort_eigenpairs","sort_vector"]};
