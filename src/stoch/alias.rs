@@ -134,8 +134,16 @@ impl Alias {
             sample_prob: norm_prob,
             alias,
             alias_prob: prob,
-            uniform: Uniform::from(0..size),
+            // `Uniform::from(0..0)` panics, so fall back to a dummy range when there
+            // is nothing to sample. An empty alias must never actually be sampled;
+            // callers guard against this via `Alias::is_empty`.
+            uniform: Uniform::from(0..size.max(1)),
         }
+    }
+
+    /// Returns `true` if there are no elements to sample from.
+    pub fn is_empty(&self) -> bool {
+        self.sample_prob.is_empty()
     }
 
     /// Samples an index from the distribution in O(1) time.
